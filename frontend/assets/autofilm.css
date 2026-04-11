@@ -1,0 +1,353 @@
+/* ══════════════════════════════════════════════════════
+   AUTOFILM DESIGN SYSTEM
+   ──────────────────────────────────────────────────────
+   Single source of truth for tokens, primitives, and
+   shared components across every AutoFilm surface.
+
+   Aligned to hartecash design DNA (background depth,
+   layer system, type scale, spacing rhythm) but with
+   AutoFilm fire as the primary brand color and a steel
+   neutral filling the role hartecash gives to blue.
+
+   Every page should:
+     <link rel="stylesheet" href="/assets/autofilm.css">
+   and then layer page-specific styles on top.
+   ══════════════════════════════════════════════════════ */
+
+:root{
+  /* ── BACKGROUND STACK (deeper than v1, hartecash-grade) */
+  --bg:    #0a0a0d;
+  --bg1:   #111116;
+  --bg2:   #18181e;
+  --bg3:   #202028;
+  --bg4:   #292932;
+
+  /* ── BORDERS */
+  --b0:    rgba(255,255,255,.05);
+  --b1:    rgba(255,255,255,.09);
+  --b2:    rgba(255,255,255,.16);
+  --b3:    rgba(255,255,255,.24);
+
+  /* ── TEXT */
+  --t1:    rgba(255,255,255,.96);
+  --t2:    rgba(255,255,255,.65);
+  --t3:    rgba(255,255,255,.40);
+  --t4:    rgba(255,255,255,.20);
+
+  /* ── BRAND: AUTOFILM FIRE (primary) */
+  --fire:  #D94F00;
+  --fire2: #E85A0A;
+  --fire3: #FF7A3C;
+  --firet: rgba(217,79,0,.10);
+  --fireb: rgba(217,79,0,.24);
+  --fires: 0 6px 28px rgba(217,79,0,.34);
+
+  /* ── NEUTRAL ACCENT (steel — fills hartecash's blue role on
+        AutoFilm surfaces, so we don't fight Harte's identity) */
+  --steel:  #475569;
+  --steel2: #64748b;
+  --steel3: #94a3b8;
+  --steelt: rgba(100,116,139,.10);
+  --steelb: rgba(100,116,139,.28);
+
+  /* ── BUNDLED MODE (when AutoFilm is mounted inside AutoCurb,
+        these get overridden by the tenant's brand colors) */
+  --tenant-primary:  var(--fire);
+  --tenant-primary2: var(--fire2);
+  --tenant-tint:     var(--firet);
+  --tenant-border:   var(--fireb);
+
+  /* ── SEMANTIC */
+  --green: #22c55e;
+  --amber: #f59e0b;
+  --rose:  #f43f5e;
+  --sky:   #38bdf8;
+
+  /* ── TYPE */
+  --ff:    'Geist',-apple-system,BlinkMacSystemFont,sans-serif;
+  --fm:    'Geist Mono',ui-monospace,monospace;
+
+  /* ── RADIUS */
+  --r-sm:  6px;
+  --r:     10px;
+  --r-md:  12px;
+  --r-lg:  16px;
+  --r-xl:  20px;
+  --r-2xl: 28px;
+
+  /* ── ELEVATION */
+  --e1: 0 1px 2px rgba(0,0,0,.5);
+  --e2: 0 4px 16px rgba(0,0,0,.4);
+  --e3: 0 12px 40px rgba(0,0,0,.55);
+  --e4: 0 24px 80px rgba(0,0,0,.6);
+}
+
+/* ── RESET ─────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--ff);
+  background:var(--bg);
+  color:var(--t1);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  min-height:100vh;
+  text-rendering:optimizeLegibility;
+}
+a{color:inherit;text-decoration:none}
+button{font-family:var(--ff);cursor:pointer;border:none;background:none;color:inherit}
+input,select,textarea{font-family:var(--ff)}
+img,svg{display:block;max-width:100%}
+
+/* ── BRAND MARK ────────────────────────────────────── */
+.af-mark{
+  background:var(--fire);border-radius:var(--r);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(217,79,0,.38);
+  flex-shrink:0;
+}
+.af-mark svg{stroke:#fff;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.af-wordmark{font-weight:900;letter-spacing:-.4px;color:var(--t1)}
+.af-wordmark em{color:var(--fire2);font-style:normal}
+
+/* ── PRIMITIVES: CARDS ─────────────────────────────── */
+.af-card{
+  background:var(--bg1);
+  border:1px solid var(--b1);
+  border-radius:var(--r-xl);
+  overflow:hidden;
+}
+.af-card-flush{padding:0}
+.af-card-pad{padding:24px 26px}
+.af-card-section{padding:22px 26px;border-bottom:1px solid var(--b0)}
+.af-card-section:last-child{border-bottom:none}
+
+/* ── PRIMITIVES: SECTION HEADER (numbered) ─────────── */
+.af-shdr{display:flex;align-items:center;gap:11px;margin-bottom:18px}
+.af-snum{
+  width:24px;height:24px;border-radius:50%;
+  background:var(--fire);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(217,79,0,.4);
+}
+.af-stitle{font-size:14px;font-weight:700;color:var(--t1)}
+.af-ssub{font-size:11px;color:var(--t3);margin-top:2px}
+
+/* ── PRIMITIVES: FORM FIELDS ───────────────────────── */
+.af-field{margin-bottom:16px}
+.af-field:last-child{margin-bottom:0}
+.af-label{
+  font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--t3);margin-bottom:7px;display:block;
+}
+.af-input,.af-textarea,.af-select{
+  width:100%;padding:12px 14px;
+  background:var(--bg2);border:1px solid var(--b1);border-radius:var(--r);
+  color:var(--t1);font-size:14px;font-family:var(--ff);
+  outline:none;transition:border-color .15s,background .15s;
+  -webkit-appearance:none;appearance:none;
+}
+.af-input:focus,.af-textarea:focus,.af-select:focus{
+  border-color:var(--fire);background:var(--bg2);
+}
+.af-input::placeholder,.af-textarea::placeholder{color:var(--t4)}
+.af-input.prefilled{
+  background:rgba(217,79,0,.06);border-color:var(--fireb);
+}
+.af-textarea{resize:vertical;line-height:1.5;min-height:88px}
+.af-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.af-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media (max-width:520px){
+  .af-row2,.af-row3{grid-template-columns:1fr}
+}
+
+/* ── PRIMITIVES: BUTTONS ───────────────────────────── */
+.af-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:13px 22px;border-radius:var(--r-md);
+  font-size:14px;font-weight:800;font-family:var(--ff);
+  letter-spacing:-.1px;cursor:pointer;
+  transition:transform .14s,box-shadow .14s,background .14s,border-color .14s;
+}
+.af-btn-primary{
+  background:var(--fire);color:#fff;
+  box-shadow:var(--fires);
+}
+.af-btn-primary:hover{
+  background:var(--fire2);transform:translateY(-1px);
+  box-shadow:0 10px 38px rgba(217,79,0,.44);
+}
+.af-btn-ghost{
+  background:transparent;color:var(--t2);
+  border:1px solid var(--b2);
+}
+.af-btn-ghost:hover{color:var(--t1);background:rgba(255,255,255,.04);border-color:var(--b3)}
+.af-btn-soft{
+  background:var(--firet);color:var(--fire2);
+  border:1px solid var(--fireb);
+}
+.af-btn-soft:hover{background:rgba(217,79,0,.16);border-color:rgba(217,79,0,.4)}
+.af-btn-block{width:100%;padding:16px}
+.af-btn-lg{padding:16px 30px;font-size:15px}
+.af-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* ── PRIMITIVES: BADGES & EYEBROWS ─────────────────── */
+.af-eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--firet);border:1px solid var(--fireb);
+  color:var(--fire2);font-size:11px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;
+  padding:5px 13px;border-radius:20px;
+}
+.af-eyebrow::before{
+  content:'';width:6px;height:6px;border-radius:50%;
+  background:var(--fire);animation:af-pulse 1.8s ease-in-out infinite;
+}
+.af-eyebrow-steel{
+  background:var(--steelt);border-color:var(--steelb);color:var(--steel3);
+}
+.af-eyebrow-steel::before{background:var(--steel2);animation:none}
+.af-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  padding:4px 9px;border-radius:20px;
+  background:var(--firet);border:1px solid var(--fireb);color:var(--fire2);
+}
+.af-badge-green{background:rgba(34,197,94,.10);border-color:rgba(34,197,94,.24);color:var(--green)}
+.af-badge-steel{background:var(--steelt);border-color:var(--steelb);color:var(--steel3)}
+
+/* ── PRIMITIVES: TRUST ROW ─────────────────────────── */
+.af-trust{
+  display:flex;align-items:center;justify-content:center;
+  gap:18px;flex-wrap:wrap;
+  padding:18px 22px;
+}
+.af-trust-item{
+  display:flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:600;color:var(--t3);
+}
+.af-trust-item svg{width:13px;height:13px;color:var(--green);flex-shrink:0}
+
+/* ── PRIMITIVES: STAT TILE ─────────────────────────── */
+.af-stat{
+  background:var(--bg1);border:1px solid var(--b1);
+  border-radius:var(--r-lg);padding:24px 22px;
+  position:relative;overflow:hidden;
+  transition:border-color .2s,transform .2s;
+}
+.af-stat:hover{border-color:var(--b2);transform:translateY(-2px)}
+.af-stat-n{
+  font-size:38px;font-weight:900;font-family:var(--fm);
+  letter-spacing:-1.5px;line-height:1;color:var(--t1);
+}
+.af-stat-l{font-size:12px;font-weight:600;color:var(--t3);margin-top:8px;line-height:1.4}
+
+/* ── PRIMITIVES: NAV ───────────────────────────────── */
+.af-nav{
+  position:fixed;top:0;left:0;right:0;
+  height:64px;
+  background:rgba(10,10,13,.88);
+  backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px);
+  border-bottom:1px solid var(--b0);
+  z-index:200;
+  display:flex;align-items:center;
+}
+.af-nav-wrap{
+  max-width:1240px;margin:0 auto;padding:0 32px;
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+}
+.af-nav-logo{display:flex;align-items:center;gap:11px}
+.af-nav-mark{width:34px;height:34px}
+.af-nav-mark svg{width:14px;height:14px}
+.af-nav-wordmark{font-size:19px}
+.af-nav-links{display:flex;align-items:center;gap:32px;list-style:none}
+.af-nav-links a{font-size:13px;font-weight:600;color:var(--t3);transition:color .14s}
+.af-nav-links a:hover{color:var(--t1)}
+.af-nav-right{display:flex;align-items:center;gap:10px}
+@media (max-width:840px){.af-nav-links{display:none}}
+
+/* ── PRIMITIVES: FOOTER ────────────────────────────── */
+.af-footer{
+  border-top:1px solid var(--b0);padding:48px 32px 64px;
+  background:var(--bg);
+}
+.af-footer-wrap{
+  max-width:1240px;margin:0 auto;
+  display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:48px;
+}
+.af-footer-brand{font-size:13px;color:var(--t3);line-height:1.6;max-width:300px}
+.af-footer-col h4{
+  font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--t2);margin-bottom:14px;
+}
+.af-footer-col a{
+  display:block;font-size:13px;color:var(--t3);
+  padding:5px 0;transition:color .14s;
+}
+.af-footer-col a:hover{color:var(--t1)}
+.af-footer-bottom{
+  max-width:1240px;margin:48px auto 0;padding-top:24px;
+  border-top:1px solid var(--b0);
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:11px;color:var(--t4);
+}
+@media (max-width:840px){
+  .af-footer-wrap{grid-template-columns:1fr 1fr;gap:32px}
+  .af-footer-bottom{flex-direction:column;gap:12px;text-align:center}
+}
+
+/* ── PRIMITIVES: TENANT BANNER (bundled mode) ──────── */
+.af-tenant-banner{
+  background:linear-gradient(90deg,var(--tenant-tint),transparent);
+  border-bottom:1px solid var(--tenant-border);
+  padding:11px 20px;
+  display:flex;align-items:center;gap:12px;
+  position:sticky;top:0;z-index:100;
+  backdrop-filter:blur(12px);
+  font-size:12px;color:var(--t2);
+}
+.af-tenant-banner strong{color:var(--t1);font-weight:700}
+
+/* ── ANIMATIONS ────────────────────────────────────── */
+@keyframes af-pulse{
+  0%,100%{opacity:1;transform:scale(1)}
+  50%{opacity:.5;transform:scale(1.3)}
+}
+@keyframes af-fade-up{
+  from{opacity:0;transform:translateY(14px)}
+  to{opacity:1;transform:none}
+}
+@keyframes af-fade-in{
+  from{opacity:0}
+  to{opacity:1}
+}
+@keyframes af-float{
+  0%,100%{transform:translateY(0)}
+  50%{transform:translateY(-12px)}
+}
+.af-fade-up{animation:af-fade-up .4s ease both}
+.af-fade-in{animation:af-fade-in .3s ease both}
+.af-delay-1{animation-delay:.08s}
+.af-delay-2{animation-delay:.16s}
+.af-delay-3{animation-delay:.24s}
+.af-delay-4{animation-delay:.32s}
+
+/* ── UTILITIES ─────────────────────────────────────── */
+.af-wrap{max-width:1240px;margin:0 auto;padding:0 32px}
+.af-wrap-sm{max-width:680px;margin:0 auto;padding:0 24px}
+.af-section{padding:clamp(72px,9vw,128px) 0}
+.af-section-tight{padding:clamp(48px,6vw,80px) 0}
+.af-divider{height:1px;background:var(--b0);margin:24px 0}
+.af-mono{font-family:var(--fm)}
+.af-fire-text{
+  background:linear-gradient(135deg,var(--fire2),var(--fire3));
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+}
+.af-text-t2{color:var(--t2)}
+.af-text-t3{color:var(--t3)}
+.af-text-fire{color:var(--fire2)}
+.af-text-green{color:var(--green)}
+.af-hidden{display:none !important}
