@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AutoFilm — The Video Platform Built for Automotive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+/* ── DESIGN PHILOSOPHY ─────────────────────────────────────
+   Editorial precision meets automotive intensity.
+   Dark charcoal ground. AutoFilm Orange as the single
+   moment of color. Data visualizations that feel like
+   instruments on a racing dash — precise, purposeful.
+   Typography: Geist at 900 weight for impact numbers.
+   Layout: Magazine-style sections with generous air.
+   The pitch is made by data first, product second.
+   ───────────────────────────────────────────────────────── */
+
+:root {
+  --bg:    #111114;
+  --bg1:   #17171b;
+  --bg2:   #1d1d22;
+  --bg3:   #242429;
+  --b0:    rgba(255,255,255,.05);
+  --b1:    rgba(255,255,255,.09);
+  --b2:    rgba(255,255,255,.14);
+  --t1:    rgba(255,255,255,.94);
+  --t2:    rgba(255,255,255,.60);
+  --t3:    rgba(255,255,255,.35);
+  --t4:    rgba(255,255,255,.18);
+  --fire:  #D94F00;
+  --fire2: #E85A0A;
+  --firet: rgba(217,79,0,.10);
+  --fireb: rgba(217,79,0,.20);
+  --green: #22c55e;
+  --amber: #f59e0b;
+  --rose:  #f43f5e;
+  --sky:   #38bdf8;
+  --ff: 'Geist',-apple-system,sans-serif;
+  --fm: 'Geist Mono',monospace;
+}
+
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0 }
+html { scroll-behavior:smooth; font-size:16px }
+body {
+  font-family:var(--ff);
+  background:var(--bg);
+  color:var(--t1);
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* ── TYPOGRAPHY ─────────────────────────────────────────── */
+.stat-num {
+  font-size:clamp(52px,8vw,96px);
+  font-weight:900;
+  letter-spacing:-3px;
+  line-height:1;
+  font-family:var(--fm);
+}
+.stat-label {
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--t3);
+  margin-top:8px;
+}
+.stat-source {
+  font-size:10px;
+  color:var(--t4);
+  font-family:var(--fm);
+  margin-top:6px;
+}
+.section-label {
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--fire2);
+  margin-bottom:16px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.section-label::before {
+  content:'';
+  width:24px;
+  height:2px;
+  background:var(--fire);
+  display:block;
+  flex-shrink:0;
+}
+h2 {
+  font-size:clamp(32px,5vw,56px);
+  font-weight:900;
+  letter-spacing:-1.5px;
+  line-height:1.1;
+}
+h2 em { color:var(--fire2); font-style:normal }
+h3 {
+  font-size:clamp(20px,3vw,28px);
+  font-weight:800;
+  letter-spacing:-.5px;
+  line-height:1.2;
+}
+p.lead {
+  font-size:clamp(15px,2vw,18px);
+  color:var(--t2);
+  line-height:1.7;
+  max-width:640px;
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.container { max-width:1200px; margin:0 auto; padding:0 40px }
+section { padding:clamp(64px,8vw,120px) 0 }
+
+/* ── NAV ─────────────────────────────────────────────────── */
+nav {
+  position:fixed;
+  top:0;left:0;right:0;
+  height:64px;
+  background:rgba(17,17,20,.96);
+  backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--b0);
+  z-index:100;
+  display:flex;
+  align-items:center;
+}
+.nav-inner {
+  max-width:1200px;
+  margin:0 auto;
+  padding:0 40px;
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+.nav-logo {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.nav-mark {
+  width:32px;height:32px;
+  background:var(--fire);
+  border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 3px 14px rgba(217,79,0,.35);
+}
+.nav-name { font-size:18px; font-weight:900; letter-spacing:-.4px }
+.nav-name em { color:var(--fire2); font-style:normal }
+.nav-links {
+  display:flex;
+  gap:32px;
+  list-style:none;
+}
+.nav-links a {
+  font-size:13px;
+  font-weight:600;
+  color:var(--t3);
+  text-decoration:none;
+  transition:color .15s;
+}
+.nav-links a:hover { color:var(--t1) }
+.nav-cta {
+  padding:9px 22px;
+  border-radius:10px;
+  background:var(--fire);
+  color:#fff;
+  font-size:13px;
+  font-weight:700;
+  text-decoration:none;
+  box-shadow:0 3px 14px rgba(217,79,0,.3);
+  transition:all .15s;
+}
+.nav-cta:hover { background:var(--fire2); transform:translateY(-1px) }
+
+.nav-login-group { display:flex; gap:8px; align-items:center }
+.nav-btn-rep {
+  padding:8px 16px; border-radius:9px; font-size:12px; font-weight:700;
+  background:transparent; border:1px solid rgba(255,255,255,.15);
+  color:rgba(255,255,255,.65); text-decoration:none; transition:all .15s;
+  white-space:nowrap;
+}
+.nav-btn-rep:hover { border-color:rgba(255,255,255,.35); color:rgba(255,255,255,.9); background:rgba(255,255,255,.05) }
+.nav-btn-dealer {
+  padding:8px 16px; border-radius:9px; font-size:12px; font-weight:700;
+  background:rgba(56,189,248,.08); border:1px solid rgba(56,189,248,.2);
+  color:#38bdf8; text-decoration:none; transition:all .15s; white-space:nowrap;
+}
+.nav-btn-dealer:hover { background:rgba(56,189,248,.14); border-color:rgba(56,189,248,.35) }
+
+
+/* ── HERO ─────────────────────────────────────────────────── */
+#hero {
+  padding-top:140px;
+  padding-bottom:80px;
+  position:relative;
+  overflow:hidden;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+}
+.hero-glow {
+  position:absolute;
+  width:800px;height:800px;
+  border-radius:50%;
+  background:var(--fire);
+  filter:blur(180px);
+  opacity:.055;
+  top:-200px;right:-200px;
+  pointer-events:none;
+}
+.hero-glow2 {
+  position:absolute;
+  width:400px;height:400px;
+  border-radius:50%;
+  background:var(--sky);
+  filter:blur(120px);
+  opacity:.03;
+  bottom:0;left:100px;
+  pointer-events:none;
+}
+.hero-eyebrow {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:var(--firet);
+  border:1px solid var(--fireb);
+  color:var(--fire2);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  padding:6px 14px;
+  border-radius:20px;
+  margin-bottom:28px;
+}
+.hero-title {
+  font-size:clamp(48px,7vw,88px);
+  font-weight:900;
+  letter-spacing:-3px;
+  line-height:1.03;
+  margin-bottom:28px;
+}
+.hero-title em { color:var(--fire2); font-style:normal }
+.hero-sub {
+  font-size:clamp(16px,2vw,20px);
+  color:var(--t2);
+  line-height:1.65;
+  max-width:600px;
+  margin-bottom:44px;
+}
+.hero-actions {
+  display:flex;
+  gap:14px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.btn-primary {
+  padding:15px 32px;
+  border-radius:12px;
+  background:var(--fire);
+  color:#fff;
+  font-size:15px;
+  font-weight:800;
+  text-decoration:none;
+  box-shadow:0 6px 28px rgba(217,79,0,.32);
+  transition:all .18s;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+.btn-primary:hover { background:var(--fire2); transform:translateY(-2px); box-shadow:0 10px 36px rgba(217,79,0,.42) }
+.btn-secondary {
+  padding:15px 28px;
+  border-radius:12px;
+  background:transparent;
+  border:1px solid var(--b2);
+  color:var(--t2);
+  font-size:15px;
+  font-weight:700;
+  text-decoration:none;
+  transition:all .15s;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+.btn-secondary:hover { color:var(--t1); border-color:var(--b2); background:rgba(255,255,255,.04) }
+.hero-trust {
+  margin-top:40px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+  font-size:12px;
+  color:var(--t3);
+}
+.ht-dot { width:4px; height:4px; border-radius:50%; background:var(--b2) }
+
+/* ── PROBLEM NUMBERS ─────────────────────────────────────── */
+#numbers { background:var(--bg1); border-top:1px solid var(--b0); border-bottom:1px solid var(--b0) }
+.numbers-grid {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  border:1px solid var(--b0);
+  border-radius:16px;
+  overflow:hidden;
+  background:var(--bg);
+}
+.num-cell {
+  padding:48px 40px;
+  border-right:1px solid var(--b0);
+  position:relative;
+  transition:background .2s;
+}
+.num-cell:hover { background:rgba(255,255,255,.02) }
+.num-cell:last-child { border-right:none }
+.num-cell::after {
+  content:'';
+  position:absolute;
+  bottom:0;left:0;right:0;
+  height:2px;
+  background:var(--nc,var(--fire));
+  opacity:0;
+  transition:opacity .2s;
+}
+.num-cell:hover::after { opacity:1 }
+
+/* ── FUNNEL ──────────────────────────────────────────────── */
+#funnel { overflow:hidden }
+.funnel-wrap {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:80px;
+  align-items:start;
+}
+.funnel-stages { display:flex; flex-direction:column; gap:4px }
+.funnel-stage {
+  position:relative;
+  padding:20px 24px;
+  border-radius:12px;
+  border:1px solid var(--b1);
+  background:var(--bg1);
+  transition:all .2s;
+  cursor:default;
+}
+.funnel-stage:hover { border-color:var(--b2); background:var(--bg2) }
+.funnel-stage.highlighted { border-color:var(--fireb); background:var(--firet) }
+.fs-header {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  margin-bottom:12px;
+}
+.fs-step {
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--t4);
+  font-family:var(--fm);
+}
+.fs-rate {
+  font-size:28px;
+  font-weight:900;
+  letter-spacing:-1px;
+  font-family:var(--fm);
+}
+.fs-name { font-size:15px; font-weight:700; margin-bottom:4px }
+.fs-desc { font-size:12px; color:var(--t3); line-height:1.5 }
+.fs-bar {
+  margin-top:14px;
+  height:5px;
+  background:var(--bg3);
+  border-radius:3px;
+  overflow:hidden;
+}
+.fs-bar-fill {
+  height:100%;
+  border-radius:3px;
+  transition:width 1.4s cubic-bezier(.4,0,.2,1);
+}
+/* Connector arrow */
+.funnel-arrow {
+  text-align:center;
+  color:var(--t4);
+  font-size:18px;
+  padding:2px 0;
+  line-height:1;
+}
+
+/* autofilm lift badge */
+.lift-badge {
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  background:rgba(34,197,94,.1);
+  border:1px solid rgba(34,197,94,.2);
+  color:var(--green);
+  font-size:10px;
+  font-weight:700;
+  padding:3px 8px;
+  border-radius:6px;
+  font-family:var(--fm);
+  margin-top:8px;
+}
+
+/* ── VIDEO IMPACT DATA ───────────────────────────────────── */
+.impact-grid {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:24px;
+  margin-top:60px;
+}
+.impact-card {
+  background:var(--bg1);
+  border:1px solid var(--b1);
+  border-radius:16px;
+  padding:36px;
+  position:relative;
+  overflow:hidden;
+  transition:all .2s;
+}
+.impact-card:hover { border-color:var(--b2); transform:translateY(-2px) }
+.impact-card::before {
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:3px;
+  background:var(--ic-color,var(--fire));
+}
+.ic-icon { font-size:32px; margin-bottom:20px }
+.ic-stat { font-size:42px; font-weight:900; letter-spacing:-1.5px; font-family:var(--fm); line-height:1; margin-bottom:8px }
+.ic-label { font-size:14px; font-weight:600; margin-bottom:8px }
+.ic-desc { font-size:12px; color:var(--t3); line-height:1.6 }
+.ic-source { font-size:10px; color:var(--t4); font-family:var(--fm); margin-top:12px; padding-top:12px; border-top:1px solid var(--b0) }
+
+/* ── MPI SECTION ─────────────────────────────────────────── */
+.mpi-comparison {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:2px;
+  border-radius:16px;
+  overflow:hidden;
+  margin-top:48px;
+}
+.mpi-col {
+  background:var(--bg1);
+  padding:48px 44px;
+}
+.mpi-col.with-video { background:linear-gradient(135deg,rgba(217,79,0,.06) 0%,var(--bg1) 60%) }
+.mpi-col-label {
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  margin-bottom:24px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.mpi-status-dot { width:8px; height:8px; border-radius:50% }
+.mpi-big { font-size:72px; font-weight:900; letter-spacing:-3px; font-family:var(--fm); line-height:1; margin-bottom:8px }
+.mpi-sub { font-size:14px; color:var(--t2); margin-bottom:32px }
+.mpi-fact { display:flex; gap:12px; padding:14px 0; border-bottom:1px solid var(--b0); align-items:flex-start }
+.mpi-fact:last-child { border-bottom:none }
+.mf-ico { font-size:18px; flex-shrink:0; margin-top:1px }
+.mf-text { font-size:13px; color:var(--t2); line-height:1.55 }
+.mf-text strong { color:var(--t1); font-weight:600 }
+
+/* ── SERVICE FLOW ────────────────────────────────────────── */
+.svc-flow {
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  gap:0;
+  margin-top:56px;
+  border:1px solid var(--b1);
+  border-radius:16px;
+  overflow:hidden;
+}
+.sf-step {
+  padding:28px 20px;
+  border-right:1px solid var(--b1);
+  position:relative;
+  text-align:center;
+  background:var(--bg1);
+  transition:background .2s;
+}
+.sf-step:hover { background:var(--bg2) }
+.sf-step:last-child { border-right:none }
+.sf-step.active { background:var(--firet); border-color:var(--fireb) }
+.sf-num {
+  font-size:10px;
+  font-weight:700;
+  font-family:var(--fm);
+  color:var(--t4);
+  letter-spacing:.08em;
+  margin-bottom:10px;
+}
+.sf-ico { font-size:22px; margin-bottom:10px }
+.sf-name { font-size:12px; font-weight:700; margin-bottom:4px }
+.sf-desc { font-size:10px; color:var(--t3); line-height:1.5 }
+.sf-lift { font-size:10px; font-weight:700; color:var(--green); margin-top:8px; font-family:var(--fm) }
+/* arrow connector */
+.sf-arrow {
+  position:absolute;
+  right:-9px;
+  top:50%;
+  transform:translateY(-50%);
+  width:16px;
+  height:16px;
+  background:var(--bg3);
+  border:1px solid var(--b1);
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:8px;
+  color:var(--t4);
+  z-index:2;
+}
+.sf-step:last-child .sf-arrow { display:none }
+
+/* ── ROI CALC ────────────────────────────────────────────── */
+#roi { background:var(--bg1); border-top:1px solid var(--b0); border-bottom:1px solid var(--b0) }
+.roi-wrap {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:80px;
+  align-items:center;
+}
+.roi-inputs { display:flex; flex-direction:column; gap:20px }
+.roi-input-group label {
+  display:block;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--t3);
+  margin-bottom:8px;
+}
+.roi-slider {
+  -webkit-appearance:none;
+  width:100%;
+  height:4px;
+  border-radius:2px;
+  background:var(--bg3);
+  outline:none;
+}
+.roi-slider::-webkit-slider-thumb {
+  -webkit-appearance:none;
+  width:18px;height:18px;
+  border-radius:50%;
+  background:var(--fire);
+  cursor:pointer;
+  box-shadow:0 2px 8px rgba(217,79,0,.35);
+}
+.roi-val {
+  font-family:var(--fm);
+  font-size:14px;
+  font-weight:600;
+  color:var(--t1);
+  margin-top:6px;
+}
+.roi-output {
+  background:var(--bg);
+  border:1px solid var(--b1);
+  border-radius:20px;
+  padding:48px;
+  text-align:center;
+}
+.roi-result-label {
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--t3);
+  margin-bottom:12px;
+}
+.roi-result-num {
+  font-size:clamp(48px,6vw,72px);
+  font-weight:900;
+  letter-spacing:-2px;
+  font-family:var(--fm);
+  color:var(--green);
+  line-height:1;
+  margin-bottom:8px;
+}
+.roi-result-sub { font-size:14px; color:var(--t3); margin-bottom:32px }
+.roi-breakdown { display:flex; flex-direction:column; gap:12px }
+.rbd {
+  display:flex;
+  justify-content:space-between;
+  font-size:13px;
+  padding:10px 0;
+  border-bottom:1px solid var(--b0);
+}
+.rbd:last-child { border-bottom:none }
+.rbd-label { color:var(--t3) }
+.rbd-val { font-family:var(--fm); font-weight:700; color:var(--t1) }
+.rbd-val.green { color:var(--green) }
+.rbd-val.orange { color:var(--fire2) }
+
+/* ── PROOF QUOTES ────────────────────────────────────────── */
+.quotes-grid {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:24px;
+  margin-top:48px;
+}
+.quote-card {
+  background:var(--bg1);
+  border:1px solid var(--b1);
+  border-radius:16px;
+  padding:32px;
+  transition:border-color .2s;
+}
+.quote-card:hover { border-color:var(--b2) }
+.qc-mark { font-size:40px; color:var(--fire); line-height:1; margin-bottom:16px; opacity:.4; font-family:Georgia,serif }
+.qc-text { font-size:14px; color:var(--t2); line-height:1.7; margin-bottom:24px; font-style:italic }
+.qc-who { font-size:12px; font-weight:700; color:var(--t1) }
+.qc-title { font-size:11px; color:var(--t3); margin-top:2px }
+
+/* ── PRICING ─────────────────────────────────────────────── */
+#pricing { text-align:center }
+.price-card {
+  background:linear-gradient(135deg,rgba(217,79,0,.07) 0%,var(--bg1) 60%);
+  border:1px solid rgba(217,79,0,.25);
+  border-radius:24px;
+  padding:64px;
+  max-width:640px;
+  margin:48px auto 0;
+  position:relative;
+  overflow:hidden;
+}
+.price-card::before {
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:3px;
+  background:linear-gradient(90deg,var(--fire),var(--fire2));
+}
+.price-num { font-size:80px; font-weight:900; letter-spacing:-3px; font-family:var(--fm); line-height:1; color:var(--fire2) }
+.price-period { font-size:18px; color:var(--t2); margin-top:4px }
+.price-tagline { font-size:16px; color:var(--t2); margin:20px 0 36px }
+.price-features { display:flex; flex-direction:column; gap:14px; text-align:left; margin-bottom:44px }
+.pf { display:flex; align-items:center; gap:12px; font-size:14px }
+.pf svg { flex-shrink:0 }
+.price-cta {
+  display:block;
+  width:100%;
+  padding:18px;
+  border-radius:14px;
+  background:var(--fire);
+  color:#fff;
+  font-size:16px;
+  font-weight:800;
+  text-decoration:none;
+  text-align:center;
+  box-shadow:0 6px 32px rgba(217,79,0,.3);
+  transition:all .18s;
+  letter-spacing:-.2px;
+}
+.price-cta:hover { background:var(--fire2); transform:translateY(-2px); box-shadow:0 10px 40px rgba(217,79,0,.42) }
+.price-footnote { font-size:12px; color:var(--t4); margin-top:20px }
+
+/* ── COMPARISON ──────────────────────────────────────────── */
+.comp-table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+  margin-top:48px;
+}
+.comp-table th {
+  padding:12px 20px;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.07em;
+  text-transform:uppercase;
+  color:var(--t3);
+  border-bottom:1px solid var(--b1);
+  text-align:center;
+}
+.comp-table th:first-child { text-align:left; color:var(--t4) }
+.comp-table th.us { color:var(--fire2) }
+.comp-table td {
+  padding:14px 20px;
+  border-bottom:1px solid var(--b0);
+  text-align:center;
+  color:var(--t2);
+}
+.comp-table td:first-child { text-align:left; font-weight:500; color:var(--t1) }
+.comp-table tr:last-child td { border-bottom:none }
+.comp-table tr:hover td { background:rgba(255,255,255,.02) }
+.comp-table .us-col { background:rgba(217,79,0,.025) }
+.comp-table .section-row td { padding:20px 20px 6px; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--t4); background:transparent!important }
+.cy { color:var(--green) }
+.cn { color:var(--b2) }
+.cu { color:var(--amber); font-size:11px; font-weight:600 }
+.cx { color:var(--fire2); font-size:11px; font-weight:800 }
+
+/* ── TRIAL CTA ───────────────────────────────────────────── */
+#trial {
+  text-align:center;
+  padding-bottom:120px;
+}
+.trial-card {
+  background:var(--bg1);
+  border:1px solid var(--b1);
+  border-radius:24px;
+  padding:80px 60px;
+  max-width:900px;
+  margin:0 auto;
+  position:relative;
+  overflow:hidden;
+}
+.trial-card::before {
+  content:'';
+  position:absolute;
+  width:600px;height:600px;
+  background:var(--fire);
+  border-radius:50%;
+  filter:blur(160px);
+  opacity:.05;
+  top:-200px;right:-200px;
+  pointer-events:none;
+}
+.trial-title { font-size:clamp(36px,5vw,56px); font-weight:900; letter-spacing:-2px; margin-bottom:20px }
+.trial-title em { color:var(--fire2); font-style:normal }
+.trial-sub { font-size:18px; color:var(--t2); margin-bottom:40px; line-height:1.6 }
+.trial-actions { display:flex; gap:14px; justify-content:center; flex-wrap:wrap }
+.trial-details { margin-top:24px; font-size:12px; color:var(--t4); display:flex; gap:24px; justify-content:center; align-items:center; flex-wrap:wrap }
+.td-dot { width:3px; height:3px; border-radius:50%; background:var(--b2) }
+
+/* ── FOOTER ──────────────────────────────────────────────── */
+footer {
+  background:var(--bg1);
+  border-top:1px solid var(--b0);
+  padding:48px 0;
+}
+.footer-inner {
+  max-width:1200px;
+  margin:0 auto;
+  padding:0 40px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.footer-copy { font-size:12px; color:var(--t4) }
+.footer-data { font-size:11px; color:var(--t4); max-width:500px; line-height:1.6 }
+
+/* ── SCROLL ANIMATIONS ───────────────────────────────────── */
+.reveal {
+  opacity:0;
+  transform:translateY(24px);
+  transition:opacity .6s ease, transform .6s ease;
+}
+.reveal.visible {
+  opacity:1;
+  transform:none;
+}
+.reveal-delay-1 { transition-delay:.1s }
+.reveal-delay-2 { transition-delay:.2s }
+.reveal-delay-3 { transition-delay:.3s }
+.reveal-delay-4 { transition-delay:.4s }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width:900px) {
+  .container { padding:0 24px }
+  .numbers-grid { grid-template-columns:1fr 1fr }
+  .num-cell { border-right:none; border-bottom:1px solid var(--b0) }
+  .funnel-wrap,.roi-wrap { grid-template-columns:1fr }
+  .impact-grid,.quotes-grid { grid-template-columns:1fr }
+  .mpi-comparison { grid-template-columns:1fr }
+  .svc-flow { grid-template-columns:repeat(3,1fr) }
+  .nav-links { display:none }
+  .comp-table { display:none }
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">
+      <div class="nav-mark">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M1.5 10.5L7 2 12.5 10.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="nav-name">Auto<em>Film</em></div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#problem">The Problem</a></li>
+      <li><a href="#funnel">Sales Funnel</a></li>
+      <li><a href="#service">Service Drive</a></li>
+      <li><a href="#roi">ROI Calculator</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+    </ul>
+    <div class="nav-login-group">
+      <a href="/rep" class="nav-btn-rep">Rep Login</a>
+      <a href="/dealer" class="nav-btn-dealer">Dealer Login</a>
+      <a href="#trial" class="nav-cta">Start 30-Day Trial</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── HERO ─────────────────────────────────────────────────── -->
+<section id="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+  <div class="container">
+    <div class="hero-eyebrow">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.2"/><path d="M5 3v2.5L6.5 7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      Built exclusively for automotive retail
+    </div>
+    <h1 class="hero-title">
+      The deal is won<br>
+      <em>before they walk in.</em>
+    </h1>
+    <p class="hero-sub">
+      AutoFilm turns every internet lead into a personal video conversation. Your reps record. Customers watch. Appointments show. The data is unambiguous — dealers using personal video close more deals, approve more service, and build the kind of trust that generates reviews, referrals, and repeat business.
+    </p>
+    <div class="hero-actions">
+      <a href="#trial" class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 5.5l5 2.5-5 2.5V5.5z" fill="currentColor"/></svg>
+        Start Free 30-Day Trial
+      </a>
+      <a href="#funnel" class="btn-secondary">See the data →</a>
+    </div>
+    <div class="hero-trust">
+      <span>$299/rooftop/month</span>
+      <div class="ht-dot"></div>
+      <span>Unlimited users</span>
+      <div class="ht-dot"></div>
+      <span>Full product, no tiers</span>
+      <div class="ht-dot"></div>
+      <span>Cancel anytime</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── THE PROBLEM IN NUMBERS ─────────────────────────────── -->
+<section id="problem">
+  <div class="container">
+    <div class="section-label">The Problem</div>
+    <h2>Your leads are leaking.<br><em>Every. Single. Day.</em></h2>
+    <p class="lead" style="margin-top:20px;margin-bottom:56px">The average dealership spends $528,923 on advertising annually. Then watches 60% of those hard-earned leads evaporate from poor follow-up. The data tells a brutal story.</p>
+  </div>
+  <div class="container">
+    <div class="numbers-grid reveal">
+      <div class="num-cell" style="--nc:var(--rose)">
+        <div class="stat-num" style="color:var(--rose)">74%</div>
+        <div class="stat-label">of dealers send no price quote in their lead response</div>
+        <div class="stat-source">Source: 2025 Lead Response Study · 1,700 dealerships · CDG Media</div>
+      </div>
+      <div class="num-cell" style="--nc:var(--amber)">
+        <div class="stat-num" style="color:var(--amber)">40%</div>
+        <div class="stat-label">of dealers take more than 15 minutes to respond to an internet lead</div>
+        <div class="stat-source">Source: 2025 Lead Response Study · CDG Media / Digital Air Strike</div>
+      </div>
+      <div class="num-cell" style="--nc:var(--fire2)">
+        <div class="stat-num" style="color:var(--fire2)">6%</div>
+        <div class="stat-label">average 30-day close rate on internet leads industry-wide</div>
+        <div class="stat-source">Source: Foureyes Benchmark Report · 700 U.S. Dealerships · 2024–2025</div>
+      </div>
+      <div class="num-cell" style="--nc:var(--green)">
+        <div class="stat-num" style="color:var(--green)">21×</div>
+        <div class="stat-label">more likely to qualify a lead when responding in under 5 minutes vs. 30 minutes</div>
+        <div class="stat-source">Source: Lead Response Management Study · DemandLocal Automotive</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SALES FUNNEL ───────────────────────────────────────── -->
+<section id="funnel">
+  <div class="container">
+    <div class="section-label">Sales Funnel</div>
+    <div class="funnel-wrap">
+      <div>
+        <h2>From prospect<br>to <em>sold.</em></h2>
+        <p class="lead" style="margin-top:20px;margin-bottom:36px">Every stage of the internet lead funnel has a known industry benchmark — and a measurable AutoFilm lift. Here's where the money is made and lost.</p>
+        <div style="background:var(--bg1);border:1px solid var(--fireb);border-radius:14px;padding:24px 28px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fire2);margin-bottom:12px">AutoFilm Impact Summary</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:10px;border-bottom:1px solid var(--b0)"><span style="color:var(--t3)">Avg response time</span><span style="font-family:var(--fm);color:var(--green)">Industry 42 hrs → AutoFilm &lt;8 min</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:10px;border-bottom:1px solid var(--b0)"><span style="color:var(--t3)">Appt set rate</span><span style="font-family:var(--fm);color:var(--green)">Industry 40% → AutoFilm 58%</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;padding-bottom:10px;border-bottom:1px solid var(--b0)"><span style="color:var(--t3)">Appt show rate</span><span style="font-family:var(--fm);color:var(--green)">Industry 58% → AutoFilm 72%</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--t3)">Lead-to-sale close</span><span style="font-family:var(--fm);color:var(--green)">Industry 6% → AutoFilm 14%</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="funnel-stages reveal">
+        <div class="funnel-stage">
+          <div class="fs-header">
+            <div class="fs-step">Step 01</div>
+            <div class="fs-rate" style="color:var(--amber)">100</div>
+          </div>
+          <div class="fs-name">Internet Lead Arrives</div>
+          <div class="fs-desc">Shopper submits a form from your website, Autotrader, Cars.com, or third-party source. Industry average: 3.5 leads per car sold.</div>
+          <div class="fs-bar"><div class="fs-bar-fill" style="width:100%;background:var(--amber)"></div></div>
+        </div>
+
+        <div class="funnel-arrow">↓</div>
+
+        <div class="funnel-stage">
+          <div class="fs-header">
+            <div class="fs-step">Step 02</div>
+            <div class="fs-rate" style="color:var(--amber)">63<span style="font-size:16px">%</span></div>
+          </div>
+          <div class="fs-name">Contact Rate</div>
+          <div class="fs-desc">Two-way communication established. 37% of leads are never contacted — money left on the floor before the conversation even starts.</div>
+          <div class="fs-bar"><div class="fs-bar-fill" style="width:63%;background:var(--amber)"></div></div>
+          <div class="lift-badge">↑ AutoFilm video response = immediate personal contact</div>
+        </div>
+
+        <div class="funnel-arrow">↓</div>
+
+        <div class="funnel-stage highlighted">
+          <div class="fs-header">
+            <div class="fs-step">Step 03 · Highest Impact</div>
+            <div class="fs-rate" style="color:var(--fire2)">40<span style="font-size:16px">%</span></div>
+          </div>
+          <div class="fs-name">Appointment Set Rate</div>
+          <div class="fs-desc">Of contacted leads, only 40% set an appointment. Phone leads convert at 74%. AutoFilm videos turn digital contacts into phone-quality conversations.</div>
+          <div class="fs-bar"><div class="fs-bar-fill" style="width:40%;background:var(--fire)"></div></div>
+          <div class="lift-badge">↑ +18pts to 58% with AutoFilm personal video</div>
+        </div>
+
+        <div class="funnel-arrow">↓</div>
+
+        <div class="funnel-stage">
+          <div class="fs-header">
+            <div class="fs-step">Step 04</div>
+            <div class="fs-rate" style="color:var(--sky)">58<span style="font-size:16px">%</span></div>
+          </div>
+          <div class="fs-name">Appointment Show Rate</div>
+          <div class="fs-desc">58% of set appointments actually show. Pre-visit video reminders from the salesperson cut no-shows dramatically — the customer knows who they're meeting.</div>
+          <div class="fs-bar"><div class="fs-bar-fill" style="width:58%;background:var(--sky)"></div></div>
+          <div class="lift-badge">↑ +14pts with pre-appointment reminder videos</div>
+        </div>
+
+        <div class="funnel-arrow">↓</div>
+
+        <div class="funnel-stage">
+          <div class="fs-header">
+            <div class="fs-step">Step 05</div>
+            <div class="fs-rate" style="color:var(--green)">41<span style="font-size:16px">%</span></div>
+          </div>
+          <div class="fs-name">Appointment Close Rate</div>
+          <div class="fs-desc">41% of shows close. Customers who've seen a personal video walk in warmer, more qualified, and less likely to be shopping 3 other dealers simultaneously.</div>
+          <div class="fs-bar"><div class="fs-bar-fill" style="width:41%;background:var(--green)"></div></div>
+          <div class="lift-badge">↑ Pre-sold customers close at 55%+</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Video impact on sales -->
+  <div class="container" style="margin-top:80px">
+    <div class="section-label">Video Impact on Sales</div>
+    <h2>The numbers behind<br><em>personal video.</em></h2>
+    <div class="impact-grid reveal">
+      <div class="impact-card" style="--ic-color:var(--green)">
+        <div class="ic-icon">👀</div>
+        <div class="ic-stat" style="color:var(--green)">8.2×</div>
+        <div class="ic-label">Higher engagement vs. email-only outreach</div>
+        <div class="ic-desc">Personalized video messages generate dramatically higher open and response rates than text emails. The customer sees a face, hears a name, and feels a relationship before they've stepped foot in the store.</div>
+        <div class="ic-source">Source: Covideo Platform Data · Automotive Benchmark Study 2024</div>
+      </div>
+      <div class="impact-card" style="--ic-color:var(--fire2)">
+        <div class="ic-icon">📱</div>
+        <div class="ic-stat" style="color:var(--fire2)">94%</div>
+        <div class="ic-label">of customers prefer to be contacted by text/SMS</div>
+        <div class="ic-desc">Service customers and internet leads both cite texting as their preferred contact method. AutoFilm delivers a personal video link via SMS — the format customers actually open within minutes, not hours.</div>
+        <div class="ic-source">Source: TruVideo Platform Study · 8.5M video views analyzed</div>
+      </div>
+      <div class="impact-card" style="--ic-color:var(--amber)">
+        <div class="ic-icon">🔥</div>
+        <div class="ic-stat" style="color:var(--amber)">39%</div>
+        <div class="ic-label">of MPI videos get shared by the customer</div>
+        <div class="ic-desc">When a customer shares a video from their service advisor, it reaches the actual decision-maker or a trusted friend. That's organic reach your $528K ad budget can't buy — and it leads to approved work in under 3 minutes average.</div>
+        <div class="ic-source">Source: TruVideo · Digital Dealer · 2024 service video study</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── MPI & SERVICE DRIVE ────────────────────────────────── -->
+<section id="service" style="background:var(--bg1);border-top:1px solid var(--b0);border-bottom:1px solid var(--b0)">
+  <div class="container">
+    <div class="section-label">Service Drive</div>
+    <h2>Fixed ops is 53% of your<br>gross profit. <em>Protect it.</em></h2>
+    <p class="lead" style="margin-top:20px">Service and parts departments account for as much as 53% of a dealer's total gross profit. Yet the number one reason customers decline service is distrust — they can't see what the technician sees. Video changes everything.</p>
+
+    <!-- MPI comparison -->
+    <div class="mpi-comparison reveal" style="margin-top:56px">
+      <div class="mpi-col">
+        <div class="mpi-col-label">
+          <div class="mpi-status-dot" style="background:var(--rose)"></div>
+          Without Video MPI
+        </div>
+        <div class="mpi-big" style="color:var(--rose)">24%</div>
+        <div class="mpi-sub">of customers approve recommended repairs when receiving text/phone MPI only</div>
+        <div class="mpi-fact"><div class="mf-ico">📋</div><div class="mf-text">Technician fills out MPI form with <strong>$2,000 in needed work</strong>. Advisor estimates $1,200. Customer on the phone remembers $600. Spouse approves $200. <strong>Dealer loses $1,800 in one transaction.</strong></div></div>
+        <div class="mpi-fact"><div class="mf-ico">❓</div><div class="mf-text">Customer can't see what the technician sees. Recommendations feel like upselling. <strong>Trust is absent.</strong></div></div>
+        <div class="mpi-fact"><div class="mf-ico">⏱️</div><div class="mf-text">Average response time to a verbal MPI recommendation: <strong>Hours or days</strong>. Customer goes home and forgets.</div></div>
+      </div>
+      <div class="mpi-col with-video">
+        <div class="mpi-col-label">
+          <div class="mpi-status-dot" style="background:var(--green)"></div>
+          With AutoFilm MPI Video
+        </div>
+        <div class="mpi-big" style="color:var(--green)">51%</div>
+        <div class="mpi-sub">of customers approve recommended repairs when receiving a personal MPI video — <strong>a 112% improvement</strong></div>
+        <div class="mpi-fact"><div class="mf-ico">🎥</div><div class="mf-text">Technician shows the worn brake pads, the cracked tire sidewall, the leaking gasket. <strong>Customer sees it with their own eyes.</strong> Skepticism disappears.</div></div>
+        <div class="mpi-fact"><div class="mf-ico">💰</div><div class="mf-text">Average repair order revenue lift: <strong>$1,993 per RO</strong> in documented cases. Xtime Inspect data shows <strong>$144 more per RO</strong> across all dealerships using video.</div></div>
+        <div class="mpi-fact"><div class="mf-ico">⚡</div><div class="mf-text">Average customer response time via text video: <strong>2 minutes 27 seconds.</strong> Approved work, faster throughput, higher CSI.</div></div>
+        <div class="mpi-fact"><div class="mf-ico">📊</div><div class="mf-text">J.D. Power 2024 ASI Study: Only <strong>23% of customers receive any photo/video</strong> with their MPI — meaning 77% of dealerships are leaving this on the table.</div></div>
+      </div>
+    </div>
+
+    <!-- Service flow -->
+    <div class="section-label" style="margin-top:80px">Complete Service Video Flow</div>
+    <h3>Six touchpoints.<br>Every one moves gross.</h3>
+    <div class="svc-flow reveal" style="margin-top:40px">
+      <div class="sf-step">
+        <div class="sf-num">01</div>
+        <div class="sf-ico">📅</div>
+        <div class="sf-name">Appt Reminder</div>
+        <div class="sf-desc">Personal video from service advisor the day before</div>
+        <div class="sf-lift">↓ 35% no-shows</div>
+        <div class="sf-arrow">→</div>
+      </div>
+      <div class="sf-step active">
+        <div class="sf-num">02</div>
+        <div class="sf-ico">🔍</div>
+        <div class="sf-name">MPI Video</div>
+        <div class="sf-desc">Tech shows the customer exactly what needs attention</div>
+        <div class="sf-lift">↑ 112% approvals</div>
+        <div class="sf-arrow">→</div>
+      </div>
+      <div class="sf-step">
+        <div class="sf-num">03</div>
+        <div class="sf-ico">💡</div>
+        <div class="sf-name">Upsell Video</div>
+        <div class="sf-desc">Advisor walks tires, brakes, fluids on camera</div>
+        <div class="sf-lift">↑ $180 avg ticket</div>
+        <div class="sf-arrow">→</div>
+      </div>
+      <div class="sf-step">
+        <div class="sf-num">04</div>
+        <div class="sf-ico">✅</div>
+        <div class="sf-name">Vehicle Ready</div>
+        <div class="sf-desc">Show completed work — builds pride in the service</div>
+        <div class="sf-lift">↑ CSI scores</div>
+        <div class="sf-arrow">→</div>
+      </div>
+      <div class="sf-step">
+        <div class="sf-num">05</div>
+        <div class="sf-ico">🌟</div>
+        <div class="sf-name">CSI Follow-Up</div>
+        <div class="sf-desc">Personal thank you → Google review request in one tap</div>
+        <div class="sf-lift">↑ 4.8★ avg</div>
+        <div class="sf-arrow">→</div>
+      </div>
+      <div class="sf-step">
+        <div class="sf-num">06</div>
+        <div class="sf-ico">🚗</div>
+        <div class="sf-name">Trade Invite</div>
+        <div class="sf-desc">Every service customer is a sales prospect — 74% rebuy from same dealer</div>
+        <div class="sf-lift">↑ repeat buyers</div>
+        <div class="sf-arrow">→</div>
+      </div>
+    </div>
+
+    <!-- Key stat callout -->
+    <div style="margin-top:48px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;border-radius:14px;overflow:hidden;border:1px solid var(--b1)">
+      <div style="background:var(--bg);padding:36px;text-align:center">
+        <div style="font-size:48px;font-weight:900;font-family:var(--fm);letter-spacing:-2px;color:var(--amber)">74%</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:8px;line-height:1.5">of service customers buy their next vehicle from the same dealer</div>
+        <div style="font-size:10px;color:var(--t4);font-family:var(--fm);margin-top:8px">Source: DemandLocal Automotive · 2025</div>
+      </div>
+      <div style="background:var(--bg);padding:36px;text-align:center;border-left:1px solid var(--b1);border-right:1px solid var(--b1)">
+        <div style="font-size:48px;font-weight:900;font-family:var(--fm);letter-spacing:-2px;color:var(--green)">$81B</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:8px;line-height:1.5">in service and parts sales at U.S. franchised dealerships in H1 2025 alone</div>
+        <div style="font-size:10px;color:var(--t4);font-family:var(--fm);margin-top:8px">Source: NADA Mid-Year 2025 Data</div>
+      </div>
+      <div style="background:var(--bg);padding:36px;text-align:center">
+        <div style="font-size:48px;font-weight:900;font-family:var(--fm);letter-spacing:-2px;color:var(--fire2)">53%</div>
+        <div style="font-size:12px;color:var(--t3);margin-top:8px;line-height:1.5">of total dealer gross profit comes from fixed ops — service, parts, and body shop</div>
+        <div style="font-size:10px;color:var(--t4);font-family:var(--fm);margin-top:8px">Source: VentaVid · NADA Dealer Analytics 2024</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── ROI CALCULATOR ─────────────────────────────────────── -->
+<section id="roi">
+  <div class="container">
+    <div class="section-label">ROI Calculator</div>
+    <h2>What's your<br><em>number?</em></h2>
+    <div class="roi-wrap" style="margin-top:48px">
+      <div class="roi-inputs">
+        <p class="lead" style="margin-bottom:32px">Plug in your store's numbers. AutoFilm's ROI model is built on Foureyes, NADA, and Haig Partners benchmarks — the same data your 20 Group is using.</p>
+
+        <div class="roi-input-group">
+          <label>Monthly Internet Leads</label>
+          <input type="range" class="roi-slider" id="rLeads" min="50" max="800" value="200" oninput="calcROI()">
+          <div class="roi-val" id="vLeads">200 leads/month</div>
+        </div>
+
+        <div class="roi-input-group">
+          <label>Current Appt Set Rate (Industry Avg: 40%)</label>
+          <input type="range" class="roi-slider" id="rSet" min="5" max="65" value="28" oninput="calcROI()">
+          <div class="roi-val" id="vSet">28%</div>
+        </div>
+
+        <div class="roi-input-group">
+          <label>Appt Show Rate (Industry Avg: 58%)</label>
+          <input type="range" class="roi-slider" id="rShow" min="20" max="85" value="52" oninput="calcROI()">
+          <div class="roi-val" id="vShow">52%</div>
+        </div>
+
+        <div class="roi-input-group">
+          <label>Close Rate When Shown (Industry Avg: 41%)</label>
+          <input type="range" class="roi-slider" id="rClose" min="15" max="70" value="38" oninput="calcROI()">
+          <div class="roi-val" id="vClose">38%</div>
+        </div>
+
+        <div class="roi-input-group">
+          <label>Front Gross + F&I Per Vehicle (2024 Avg: $3,298 + $1,581)</label>
+          <input type="range" class="roi-slider" id="rGross" min="2000" max="8000" value="3800" oninput="calcROI()">
+          <div class="roi-val" id="vGross">$3,800 total per deal</div>
+        </div>
+
+        <div class="roi-input-group">
+          <label>Number of Rooftops</label>
+          <input type="range" class="roi-slider" id="rRoofs" min="1" max="50" value="4" oninput="calcROI()">
+          <div class="roi-val" id="vRoofs">4 rooftops</div>
+        </div>
+      </div>
+
+      <div class="roi-output reveal">
+        <div class="roi-result-label">Additional Monthly Revenue with AutoFilm</div>
+        <div class="roi-result-num" id="roiResult">$0</div>
+        <div class="roi-result-sub" id="roiSub">vs. current performance</div>
+        <div class="roi-breakdown">
+          <div class="rbd"><div class="rbd-label">Current monthly deals</div><div class="rbd-val" id="rdCurDeals">—</div></div>
+          <div class="rbd"><div class="rbd-label">AutoFilm deals (est.)</div><div class="rbd-val green" id="rdNewDeals">—</div></div>
+          <div class="rbd"><div class="rbd-label">Additional deals/month</div><div class="rbd-val orange" id="rdDelta">—</div></div>
+          <div class="rbd"><div class="rbd-label">Gross per deal</div><div class="rbd-val" id="rdGross">—</div></div>
+          <div class="rbd"><div class="rbd-label">AutoFilm cost/month</div><div class="rbd-val" id="rdCost">—</div></div>
+          <div class="rbd"><div class="rbd-label">Net ROI ratio</div><div class="rbd-val green" id="rdROI">—</div></div>
+        </div>
+        <a href="#trial" class="price-cta" style="margin-top:28px;display:block">Start Your 30-Day Trial</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── COMPETITION ────────────────────────────────────────── -->
+<section id="compare">
+  <div class="container">
+    <div class="section-label">vs. Competition</div>
+    <h2>Every competitor<br>is <em>blue and expensive.</em></h2>
+    <p class="lead" style="margin-top:20px">Covideo is 20 years old, charges $49/user, and just became a certified VW of America vendor. CarFilm charges $495/rooftop with 11 Android downloads last month. We built AutoFilm to beat both — on price, features, and design.</p>
+
+    <table class="comp-table reveal">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th class="us">AutoFilm</th>
+          <th>Covideo</th>
+          <th>CarFilm</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="section-row"><td colspan="4">Pricing</td></tr>
+        <tr><td>Price model</td><td class="us-col cx">$299/rooftop · unlimited users</td><td class="cu">$49/user/month</td><td class="cu">$495/rooftop/month</td></tr>
+        <tr><td>10-user store annual cost</td><td class="us-col cx">$3,588</td><td class="cn">$5,880</td><td class="cn">$5,940</td></tr>
+        <tr><td>Annual savings vs. competitors</td><td class="us-col" style="color:var(--green);font-weight:700">—</td><td class="cn">You pay $2,292 more</td><td class="cn">You pay $2,352 more</td></tr>
+        <tr class="section-row"><td colspan="4">Core Features</td></tr>
+        <tr><td>Mobile + webcam recording</td><td class="us-col cy">✓</td><td class="cy">✓</td><td class="cy">✓</td></tr>
+        <tr><td>Dual camera (selfie + wide)</td><td class="us-col cy">✓</td><td class="cy">✓</td><td class="cn">—</td></tr>
+        <tr><td>AI script generation (Claude)</td><td class="us-col cx">10 purposes</td><td class="cu">VIN only</td><td class="cn">—</td></tr>
+        <tr><td>WhatsApp + QR delivery</td><td class="us-col cx">Exclusive</td><td class="cn">—</td><td class="cn">—</td></tr>
+        <tr><td>6 CTA buttons on player</td><td class="us-col cx">Exclusive</td><td class="cu">2–3</td><td class="cu">2–3</td></tr>
+        <tr><td>Appointment booking on player</td><td class="us-col cx">Exclusive</td><td class="cn">—</td><td class="cn">—</td></tr>
+        <tr><td>Revenue attribution tracking</td><td class="us-col cx">Exclusive</td><td class="cn">—</td><td class="cn">—</td></tr>
+        <tr><td>Lead scoring + watch heatmaps</td><td class="us-col cx">Exclusive</td><td class="cn">—</td><td class="cn">—</td></tr>
+        <tr><td>Video streak gamification</td><td class="us-col cx">Exclusive</td><td class="cn">—</td><td class="cn">—</td></tr>
+        <tr><td>Service Drive + RO Approval</td><td class="us-col cy">✓</td><td class="cu">Limited</td><td class="cn">—</td></tr>
+        <tr class="section-row"><td colspan="4">Admin &amp; Branding</td></tr>
+        <tr><td>Multi-rooftop group dashboard</td><td class="us-col cy">✓</td><td class="cu">Basic</td><td class="cy">✓</td></tr>
+        <tr><td>White label + custom domain</td><td class="us-col cx">Exclusive</td><td class="cn">—</td><td class="cn">—</td></tr>
+        <tr><td>Training center + certifications</td><td class="us-col cy">✓</td><td class="cu">Resources only</td><td class="cy">✓</td></tr>
+        <tr><td>KPI vs. industry benchmarks</td><td class="us-col cx">Exclusive</td><td class="cu">Basic</td><td class="cu">Basic</td></tr>
+        <tr><td>iOS + Android app quality</td><td class="us-col cx">iOS 26 design</td><td class="cu">Legacy UI</td><td class="cu">2,800 total installs</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ── PRICING ─────────────────────────────────────────────── -->
+<section id="pricing">
+  <div class="container">
+    <div class="section-label" style="justify-content:center">Pricing</div>
+    <h2>One price.<br><em>Everything included.</em></h2>
+    <p class="lead" style="margin:16px auto 0;text-align:center">No tiers. No per-user fees. No feature gates. Every rep at every rooftop gets the full product from day one.</p>
+
+    <div class="price-card reveal">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:12px">AutoFilm Rooftop</div>
+      <div class="price-num">$299</div>
+      <div class="price-period">/rooftop per month · unlimited users</div>
+      <div class="price-tagline">The same full product for your GM and your newest internet rep. No "starter" plans, no feature walls.</div>
+      <div class="price-features">
+        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Unlimited video recording and sending</div>
+        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>SMS · Email · WhatsApp · QR code delivery</div>
+        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Full Claude AI — 10 script purposes</div>
+        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Service Drive + MPI + RO Approval</div>
+        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Real-time tracking · lead scoring · heatmaps</div>
+        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Revenue attribution — front gross linked per video</div>
+        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Command admin panel · KPI benchmarks · training</div>
+        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>iOS + Android · built on iOS 26 design language</div>
+      </div>
+      <a href="#trial" class="price-cta">Start Free 30-Day Trial — No Credit Card Required</a>
+      <div class="price-footnote">Volume pricing available for groups of 4+ rooftops · White label available for dealer groups · Cancel anytime</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PROOF QUOTES ─────────────────────────────────────────── -->
+<section style="background:var(--bg1);border-top:1px solid var(--b0);border-bottom:1px solid var(--b0)">
+  <div class="container">
+    <div class="section-label">Industry Voice</div>
+    <h2>Dealers who use<br><em>personal video.</em></h2>
+    <div class="quotes-grid reveal">
+      <div class="quote-card">
+        <div class="qc-mark">"</div>
+        <div class="qc-text">We're ranking each day on how many videos each store sends. Video is now how we measure whether a rep is truly working their leads — not just logging calls in the CRM.</div>
+        <div class="qc-who">Jeff Ramsey</div>
+        <div class="qc-title">Ourisman Auto Group · DriveCentric Video Program · CDG Media 2025</div>
+      </div>
+      <div class="quote-card">
+        <div class="qc-mark">"</div>
+        <div class="qc-text">It's not just about getting leads. It's about converting them. Transparency and quality are what set dealerships apart — and video delivers both in one touch.</div>
+        <div class="qc-who">Alexi Venneri</div>
+        <div class="qc-title">CEO, Digital Air Strike · 2025 Lead Response Study</div>
+      </div>
+      <div class="quote-card">
+        <div class="qc-mark">"</div>
+        <div class="qc-text">When the technician can show the vehicle owner the issues he discovered in his own words — nothing gets lost in translation. Nothing gets watered down. Nothing gets omitted. Approval happens in minutes.</div>
+        <div class="qc-who">Joe Shaker</div>
+        <div class="qc-title">CEO, TruVideo · Digital Dealer · 8.5M Videos Analyzed</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 30-DAY TRIAL ─────────────────────────────────────────── -->
+<section id="trial">
+  <div class="container">
+    <div class="trial-card reveal">
+      <div class="section-label" style="justify-content:center;margin-bottom:24px">30-Day Free Trial</div>
+      <div class="trial-title">Start this month.<br><em>See results this month.</em></div>
+      <p class="trial-sub">Dealers think in months. So does AutoFilm. Your 30-day trial maps to a complete billing cycle — enough time to build the video habit, hit a month-end push with it, and see what your reps' numbers look like when customers are pre-sold before they walk through the door.</p>
+      <div class="trial-actions">
+        <a href="#" class="btn-primary" style="font-size:16px;padding:16px 36px">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="1.5"/><path d="M7 6.5l6 2.5-6 2.5V6.5z" fill="currentColor"/></svg>
+          Start Free Trial
+        </a>
+        <a href="/cdn-cgi/l/email-protection#542735383127143521203b323d38397a3d3b" class="btn-secondary" style="font-size:16px;padding:16px 32px">Talk to a Human →</a>
+      </div>
+      <div class="trial-details">
+        <span>Full product from day one</span>
+        <div class="td-dot"></div>
+        <span>No credit card required</span>
+        <div class="td-dot"></div>
+        <span>Onboarding call included</span>
+        <div class="td-dot"></div>
+        <span>Read-only after day 30 — your data stays</span>
+        <div class="td-dot"></div>
+        <span>$299/rooftop when you're ready</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="nav-logo" style="margin-bottom:12px">
+        <div class="nav-mark" style="width:28px;height:28px;border-radius:8px"><svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M1.5 10.5L7 2 12.5 10.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="nav-name" style="font-size:16px">Auto<em>Film</em></div>
+      </div>
+      <div class="footer-copy">© 2026 AutoFilm · $299/rooftop · Built for automotive retail</div>
+      <div style="margin-top:8px;display:flex;gap:16px;align-items:center">
+        <a href="/rep" style="font-size:11px;color:rgba(255,255,255,.25);text-decoration:none;transition:color .15s" onmouseover="this.style.color='rgba(255,255,255,.5)'" onmouseout="this.style.color='rgba(255,255,255,.25)'">Rep Login</a>
+        <a href="/dealer" style="font-size:11px;color:rgba(56,189,248,.35);text-decoration:none;transition:color .15s" onmouseover="this.style.color='rgba(56,189,248,.65)'" onmouseout="this.style.color='rgba(56,189,248,.35)'">Dealer Login</a>
+        <a href="/admin" style="font-size:10px;color:rgba(255,255,255,.12);text-decoration:none;transition:color .15s;font-family:'Geist Mono',monospace;letter-spacing:.05em" onmouseover="this.style.color='rgba(255,255,255,.3)'" onmouseout="this.style.color='rgba(255,255,255,.12)'">af/admin</a>
+      </div>
+    </div>
+    <div class="footer-data">
+      Data sources: NADA 2024–2025 Annual Data · Foureyes Benchmark Report (700 dealerships, 2024–2025) · Haig Partners Q4 2024 Haig Report · J.D. Power 2024 ASI Study · CDG Media 2025 Lead Response Study · Kimoby Video MPI Research · TruVideo Platform Data · DemandLocal Automotive Benchmarks · Maritz Automotive Performance Study · Xtime Platform Data (2023–2024).
+    </div>
+  </div>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ── SCROLL REVEAL ──────────────────────────────────────────
+var obs = new IntersectionObserver(function(entries){
+  entries.forEach(function(e){
+    if(e.isIntersecting){ e.target.classList.add('visible'); obs.unobserve(e.target); }
+  });
+}, {threshold:.12});
+document.querySelectorAll('.reveal').forEach(function(el){ obs.observe(el); });
+
+// ── ROI CALCULATOR ─────────────────────────────────────────
+// AutoFilm lifts (conservative, data-backed):
+// Appt set: +18pts absolute (40% → 58%)
+// Show rate: +14pts absolute (58% → 72%)
+// Close rate: +14pts absolute (41% → 55%)
+var AF_LIFT_SET   = 0.18;  // +18 percentage points
+var AF_LIFT_SHOW  = 0.14;  // +14 percentage points
+var AF_LIFT_CLOSE = 0.14;  // +14 percentage points
+
+function calcROI(){
+  var leads  = parseInt(document.getElementById('rLeads').value);
+  var setR   = parseInt(document.getElementById('rSet').value) / 100;
+  var showR  = parseInt(document.getElementById('rShow').value) / 100;
+  var closeR = parseInt(document.getElementById('rClose').value) / 100;
+  var gross  = parseInt(document.getElementById('rGross').value);
+  var roofs  = parseInt(document.getElementById('rRoofs').value);
+
+  document.getElementById('vLeads').textContent  = leads + ' leads/month';
+  document.getElementById('vSet').textContent    = Math.round(setR*100) + '%';
+  document.getElementById('vShow').textContent   = Math.round(showR*100) + '%';
+  document.getElementById('vClose').textContent  = Math.round(closeR*100) + '%';
+  document.getElementById('vGross').textContent  = '$' + gross.toLocaleString() + ' total per deal';
+  document.getElementById('vRoofs').textContent  = roofs + ' rooftop' + (roofs>1?'s':'');
+
+  // Current performance
+  var curDeals = leads * setR * showR * closeR;
+
+  // AutoFilm performance (cap lifts at realistic ceiling)
+  var afSet   = Math.min(setR + AF_LIFT_SET, 0.72);
+  var afShow  = Math.min(showR + AF_LIFT_SHOW, 0.84);
+  var afClose = Math.min(closeR + AF_LIFT_CLOSE, 0.68);
+  var afDeals = leads * afSet * afShow * afClose;
+
+  var delta    = afDeals - curDeals;
+  var addRevMo = delta * gross * roofs;
+  var costMo   = roofs * 299;
+  var netMo    = addRevMo - costMo;
+  var roi      = costMo > 0 ? Math.round(netMo / costMo) : 0;
+
+  function fmt(n){ return '$' + Math.round(n).toLocaleString(); }
+
+  document.getElementById('roiResult').textContent = fmt(Math.max(0,netMo));
+  document.getElementById('roiSub').textContent    = 'net monthly gain vs. current performance';
+  document.getElementById('rdCurDeals').textContent = Math.round(curDeals * roofs) + ' deals';
+  document.getElementById('rdNewDeals').textContent = Math.round(afDeals * roofs) + ' deals';
+  document.getElementById('rdDelta').textContent    = '+' + Math.round(delta * roofs) + ' deals';
+  document.getElementById('rdGross').textContent    = fmt(gross) + ' per deal';
+  document.getElementById('rdCost').textContent     = fmt(costMo) + '/mo';
+  document.getElementById('rdROI').textContent      = roi + '× return';
+}
+calcROI();
+
+// ── FUNNEL BAR ANIMATION ───────────────────────────────────
+// Bars start at 0 and animate to their target on scroll
+var funnelAnimated = false;
+var funnelObs = new IntersectionObserver(function(entries){
+  if(entries[0].isIntersecting && !funnelAnimated){
+    funnelAnimated = true;
+    // bars have inline width already set; CSS transition handles the animation
+    // so we trigger by briefly setting to 0 then restoring
+    document.querySelectorAll('.fs-bar-fill').forEach(function(el){
+      var target = el.style.width;
+      el.style.transition = 'none';
+      el.style.width = '0';
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          el.style.transition = 'width 1.4s cubic-bezier(.4,0,.2,1)';
+          el.style.width = target;
+        });
+      });
+    });

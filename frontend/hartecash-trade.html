@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Get Your Trade-In Value — Harte Auto Group</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#0a0a0d;
+  --bg1:#111116;
+  --bg2:#18181e;
+  --bg3:#202028;
+  --b0:rgba(255,255,255,.05);
+  --b1:rgba(255,255,255,.09);
+  --b2:rgba(255,255,255,.16);
+  --t1:rgba(255,255,255,.95);
+  --t2:rgba(255,255,255,.65);
+  --t3:rgba(255,255,255,.38);
+  --t4:rgba(255,255,255,.18);
+  /* Harte blue */
+  --blue:#1d4ed8;
+  --blue2:#2563eb;
+  --blue3:#3b82f6;
+  --bluet:rgba(29,78,216,.12);
+  --blueb:rgba(29,78,216,.28);
+  /* AutoFilm orange signal */
+  --fire:#D94F00;
+  --fire2:#E85A0A;
+  --firet:rgba(217,79,0,.1);
+  --fireb:rgba(217,79,0,.22);
+  --green:#22c55e;
+  --amber:#f59e0b;
+  --ff:'Geist',-apple-system,sans-serif;
+  --fm:'Geist Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;scroll-behavior:smooth}
+body{
+  font-family:var(--ff);
+  background:var(--bg);
+  color:var(--t1);
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+
+/* ── AUTOFILM ATTRIBUTION BANNER ─────────────────── */
+#afBanner{
+  background:linear-gradient(90deg,rgba(217,79,0,.12),rgba(217,79,0,.06));
+  border-bottom:1px solid var(--fireb);
+  padding:11px 20px;
+  display:flex;align-items:center;gap:12px;
+  position:sticky;top:0;z-index:100;
+  backdrop-filter:blur(12px);
+}
+.af-logo{
+  display:flex;align-items:center;gap:7px;flex-shrink:0;
+}
+.af-mark{
+  width:24px;height:24px;background:var(--fire);border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 8px rgba(217,79,0,.35);
+}
+.af-wordmark{font-size:13px;font-weight:900;letter-spacing:-.2px}
+.af-wordmark em{color:var(--fire2);font-style:normal}
+.af-sep{width:1px;height:20px;background:var(--fireb);flex-shrink:0}
+.af-msg{font-size:12px;color:var(--t2);line-height:1.4;flex:1}
+.af-msg strong{color:var(--t1);font-weight:700}
+.af-badge{
+  font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  padding:3px 8px;border-radius:20px;
+  background:var(--firet);border:1px solid var(--fireb);color:var(--fire2);
+  flex-shrink:0;
+}
+#afBanner.hidden{display:none}
+
+/* ── HERO ────────────────────────────────────────── */
+.hero{
+  padding:48px 20px 32px;
+  max-width:540px;margin:0 auto;
+  text-align:center;
+}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--blue3);margin-bottom:16px;
+  background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.18);
+  padding:4px 12px;border-radius:20px;
+}
+.hero h1{
+  font-size:clamp(26px,7vw,36px);font-weight:900;
+  letter-spacing:-.8px;line-height:1.15;margin-bottom:12px;
+}
+.hero h1 em{
+  color:var(--blue3);font-style:normal;
+  background:linear-gradient(135deg,var(--blue2),var(--blue3));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero-sub{
+  font-size:15px;color:var(--t2);line-height:1.6;margin-bottom:24px;
+  max-width:400px;margin-left:auto;margin-right:auto;
+}
+
+/* Vehicle confirm card */
+.veh-card{
+  background:var(--bg2);border:1px solid var(--b1);border-radius:14px;
+  padding:14px 18px;display:flex;align-items:center;gap:12px;
+  margin-bottom:28px;text-align:left;
+}
+.veh-ico{
+  width:40px;height:40px;background:rgba(59,130,246,.1);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
+}
+.veh-name{font-size:15px;font-weight:700}
+.veh-sub{font-size:11px;color:var(--t3);margin-top:2px;font-family:var(--fm)}
+
+/* ── FORM ────────────────────────────────────────── */
+.form-wrap{
+  max-width:540px;margin:0 auto;padding:0 20px 60px;
+}
+.form-card{
+  background:var(--bg1);border:1px solid var(--b1);border-radius:20px;
+  overflow:hidden;
+}
+.form-section{
+  padding:20px 22px;border-bottom:1px solid var(--b0);
+}
+.form-section:last-child{border-bottom:none}
+.fs-hdr{
+  display:flex;align-items:center;gap:9px;margin-bottom:16px;
+}
+.fs-num{
+  width:22px;height:22px;border-radius:50%;
+  background:var(--blue);display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;color:#fff;flex-shrink:0;
+}
+.fs-title{font-size:13px;font-weight:700}
+.fs-sub{font-size:11px;color:var(--t3);margin-top:1px}
+
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field-label{
+  font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  color:var(--t3);margin-bottom:6px;display:block;
+}
+.field-inp{
+  width:100%;padding:11px 14px;
+  background:var(--bg2);border:1px solid var(--b1);border-radius:10px;
+  color:var(--t1);font-size:14px;font-family:var(--ff);
+  outline:none;transition:border-color .15s;
+  -webkit-appearance:none;
+}
+.field-inp:focus{border-color:var(--blue2)}
+.field-inp::placeholder{color:var(--t4)}
+.field-inp.prefilled{
+  background:rgba(59,130,246,.06);border-color:rgba(59,130,246,.2);
+  color:var(--t1);
+}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Condition selector */
+.cond-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.cond-opt{
+  padding:10px 6px;border-radius:10px;text-align:center;cursor:pointer;
+  background:var(--bg2);border:1px solid var(--b1);
+  transition:all .14s;
+}
+.cond-opt:hover{border-color:var(--b2)}
+.cond-opt.on{background:rgba(29,78,216,.1);border-color:rgba(29,78,216,.3)}
+.cond-ico{font-size:18px;margin-bottom:4px}
+.cond-lbl{font-size:10px;font-weight:700;color:var(--t3)}
+.cond-opt.on .cond-lbl{color:var(--blue3)}
+
+/* Features checklist */
+.feat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.feat-opt{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 11px;border-radius:10px;cursor:pointer;
+  background:var(--bg2);border:1px solid var(--b1);
+  transition:all .14s;font-size:12px;font-weight:500;
+}
+.feat-opt:hover{border-color:var(--b2)}
+.feat-opt.on{background:rgba(29,78,216,.08);border-color:rgba(29,78,216,.25)}
+.feat-check{
+  width:16px;height:16px;border-radius:5px;flex-shrink:0;
+  border:1.5px solid var(--b2);display:flex;align-items:center;justify-content:center;
+  transition:all .14s;
+}
+.feat-opt.on .feat-check{background:var(--blue2);border-color:var(--blue2)}
+.feat-ico-sm{font-size:13px}
+
+/* Mileage slider */
+.mileage-display{
+  font-size:24px;font-weight:800;font-family:var(--fm);
+  color:var(--blue3);text-align:center;margin-bottom:10px;letter-spacing:-1px;
+}
+.slider-wrap input[type=range]{
+  width:100%;-webkit-appearance:none;
+  height:4px;border-radius:2px;background:var(--bg3);outline:none;
+}
+.slider-wrap input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+  background:var(--blue2);border:3px solid var(--bg1);cursor:pointer;
+  box-shadow:0 2px 8px rgba(29,78,216,.4);
+}
+.slider-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--t4);margin-top:6px;font-family:var(--fm)}
+
+/* Textarea */
+.field-ta{
+  width:100%;padding:11px 14px;
+  background:var(--bg2);border:1px solid var(--b1);border-radius:10px;
+  color:var(--t1);font-size:13px;font-family:var(--ff);
+  outline:none;transition:border-color .15s;resize:none;line-height:1.5;
+}
+.field-ta:focus{border-color:var(--blue2)}
+.field-ta::placeholder{color:var(--t4)}
+
+/* Trust badges */
+.trust-row{
+  display:flex;align-items:center;justify-content:center;gap:16px;
+  padding:16px 22px;flex-wrap:wrap;
+}
+.trust-item{
+  display:flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:600;color:var(--t3);
+}
+.trust-item svg{width:12px;height:12px;color:var(--green);flex-shrink:0}
+
+/* Submit */
+.submit-section{padding:20px 22px}
+.submit-btn{
+  width:100%;padding:16px;border-radius:14px;border:none;
+  background:linear-gradient(135deg,var(--blue),var(--blue2));
+  color:#fff;font-size:16px;font-weight:800;font-family:var(--ff);
+  cursor:pointer;letter-spacing:-.2px;
+  box-shadow:0 4px 20px rgba(29,78,216,.35);
+  transition:all .16s;
+}
+.submit-btn:hover{transform:translateY(-1px);box-shadow:0 8px 28px rgba(29,78,216,.45)}
+.submit-sub{text-align:center;font-size:11px;color:var(--t3);margin-top:10px;line-height:1.5}
+.submit-sub strong{color:var(--t2)}
+
+/* ── SUCCESS STATE ───────────────────────────────── */
+#successState{display:none;padding:48px 20px;text-align:center;max-width:540px;margin:0 auto}
+.succ-ring{
+  width:72px;height:72px;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue),var(--blue2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:32px;margin:0 auto 20px;
+  box-shadow:0 8px 32px rgba(29,78,216,.4);
+}
+.succ-title{font-size:26px;font-weight:900;letter-spacing:-.5px;margin-bottom:8px}
+.succ-sub{font-size:15px;color:var(--t2);line-height:1.6;max-width:360px;margin:0 auto 28px}
+.succ-card{
+  background:var(--bg1);border:1px solid var(--b1);border-radius:16px;
+  padding:20px;text-align:left;margin-bottom:20px;
+}
+.succ-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid var(--b0);font-size:13px;
+}
+.succ-row:last-child{border-bottom:none}
+.succ-label{color:var(--t3)}
+.succ-val{font-weight:700;color:var(--t1)}
+/* AutoFilm attribution on success */
+.af-attrib{
+  display:flex;align-items:center;gap:10px;
+  background:var(--firet);border:1px solid var(--fireb);
+  border-radius:12px;padding:12px 16px;margin-bottom:20px;text-align:left;
+}
+.af-attrib-ico{font-size:20px;flex-shrink:0}
+.af-attrib-txt{font-size:12px;color:var(--t2);line-height:1.5}
+.af-attrib-txt strong{color:var(--fire2)}
+
+/* What's next */
+.next-steps{display:flex;flex-direction:column;gap:10px;text-align:left;margin-bottom:28px}
+.next-step{
+  display:flex;align-items:flex-start;gap:12px;
+  background:var(--bg1);border:1px solid var(--b0);border-radius:12px;
+  padding:14px 16px;
+}
+.next-step-num{
+  width:22px;height:22px;border-radius:50%;background:var(--blue);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;
+}
+.next-step-txt{font-size:13px;color:var(--t2);line-height:1.5}
+.next-step-txt strong{color:var(--t1)}
+
+/* ── FOOTER ──────────────────────────────────────── */
+footer{
+  border-top:1px solid var(--b0);padding:20px;
+  text-align:center;font-size:11px;color:var(--t4);
+  max-width:540px;margin:0 auto;
+}
+footer a{color:var(--t3);text-decoration:none}
+
+/* Animations */
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.fade-up{animation:fadeUp .3s ease both}
+</style>
+</head>
+<body>
+
+<!-- ── AUTOFILM ATTRIBUTION BANNER ────────────────── -->
+<div id="afBanner">
+  <div class="af-logo">
+    <div class="af-mark">
+      <svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M1.5 10.5L7 2 12.5 10.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="af-wordmark">Auto<em>Film</em></div>
+  </div>
+  <div class="af-sep"></div>
+  <div class="af-msg">
+    <span id="afRepMsg">Sent to you personally via video</span>
+  </div>
+  <div class="af-badge" id="afSourceBadge">via AutoFilm</div>
+</div>
+
+<!-- ── HERO ────────────────────────────────────────── -->
+<div class="hero fade-up">
+  <div class="hero-eyebrow">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1l1.5 3 3.3.5-2.4 2.3.6 3.3L6 8.6 3 10.1l.6-3.3L1.2 4.5l3.3-.5z" fill="currentColor"/></svg>
+    Harte Auto Group · Instant Trade Value
+  </div>
+  <h1 id="heroTitle">What's Your <em>Trade Worth?</em></h1>
+  <p class="hero-sub" id="heroSub">Get a real number from Harte's buying team — not a generic estimate. Typically responds within the hour.</p>
+
+  <!-- Vehicle pre-fill card (shown when VIN/vehicle known) -->
+  <div class="veh-card" id="vehCard" style="display:none">
+    <div class="veh-ico">🚗</div>
+    <div>
+      <div class="veh-name" id="vehCardName">Your Vehicle</div>
+      <div class="veh-sub" id="vehCardSub">Pre-filled from your rep's video · confirm or update below</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN FORM ────────────────────────────────────── -->
+<div class="form-wrap" id="formState">
+  <div class="form-card fade-up">
+
+    <!-- Section 1: Your Info -->
+    <div class="form-section">
+      <div class="fs-hdr">
+        <div class="fs-num">1</div>
+        <div>
+          <div class="fs-title">Your Information</div>
+          <div class="fs-sub">Pre-filled from your rep where available</div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">Your Name</label>
+        <input class="field-inp" id="fName" type="text" placeholder="First & Last Name" autocomplete="name">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label class="field-label">Cell Phone</label>
+          <input class="field-inp" id="fPhone" type="tel" placeholder="(203) 555-1234" autocomplete="tel">
+        </div>
+        <div class="field">
+          <label class="field-label">Email</label>
+          <input class="field-inp" id="fEmail" type="email" placeholder="you@email.com" autocomplete="email">
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Trade Vehicle -->
+    <div class="form-section">
+      <div class="fs-hdr">
+        <div class="fs-num">2</div>
+        <div>
+          <div class="fs-title">Your Trade-In Vehicle</div>
+          <div class="fs-sub">The car you're trading or selling</div>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label class="field-label">Year</label>
+          <input class="field-inp" id="fYear" type="number" placeholder="2019" min="1990" max="2026">
+        </div>
+        <div class="field">
+          <label class="field-label">Make</label>
+          <input class="field-inp" id="fMake" placeholder="Toyota">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label class="field-label">Model</label>
+          <input class="field-inp" id="fModel" placeholder="Camry">
+        </div>
+        <div class="field">
+          <label class="field-label">Trim (optional)</label>
+          <input class="field-inp" id="fTrim" placeholder="XSE V6">
+        </div>
+      </div>
+      <div class="field">
+        <label class="field-label">VIN (optional — speeds up your offer)</label>
+        <input class="field-inp" id="fVin" placeholder="1HGBH41JXMN109186" maxlength="17" style="font-family:var(--fm);font-size:12px;letter-spacing:.05em" oninput="decodeVin(this.value)">
+        <div id="vinResult" style="margin-top:6px;font-size:11px;color:var(--green);font-family:var(--fm)"></div>
+      </div>
+    </div>
+
+    <!-- Section 3: Mileage -->
+    <div class="form-section">
+      <div class="fs-hdr">
+        <div class="fs-num">3</div>
+        <div>
+          <div class="fs-title">Current Mileage</div>
+        </div>
+      </div>
+      <div class="mileage-display" id="mileageDisplay">45,000 miles</div>
+      <div class="slider-wrap">
+        <input type="range" id="mileageSlider" min="0" max="200000" step="1000" value="45000" oninput="updateMileage(this.value)">
+        <div class="slider-labels"><span>0</span><span>50k</span><span>100k</span><span>150k</span><span>200k+</span></div>
+      </div>
+    </div>
+
+    <!-- Section 4: Condition -->
+    <div class="form-section">
+      <div class="fs-hdr">
+        <div class="fs-num">4</div>
+        <div>
+          <div class="fs-title">Overall Condition</div>
+          <div class="fs-sub">Be honest — we inspect every vehicle</div>
+        </div>
+      </div>
+      <div class="cond-grid">
+        <div class="cond-opt" onclick="setCond(this,'excellent')">
+          <div class="cond-ico">✨</div>
+          <div class="cond-lbl">Excellent</div>
+        </div>
+        <div class="cond-opt on" onclick="setCond(this,'good')">
+          <div class="cond-ico">👍</div>
+          <div class="cond-lbl">Good</div>
+        </div>
+        <div class="cond-opt" onclick="setCond(this,'fair')">
+          <div class="cond-ico">🔧</div>
+          <div class="cond-lbl">Fair</div>
+        </div>
+        <div class="cond-opt" onclick="setCond(this,'rough')">
+          <div class="cond-ico">⚠️</div>
+          <div class="cond-lbl">Rough</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5: Features -->
+    <div class="form-section">
+      <div class="fs-hdr">
+        <div class="fs-num">5</div>
+        <div>
+          <div class="fs-title">Key Features</div>
+          <div class="fs-sub">Select all that apply — affects your offer</div>
+        </div>
+      </div>
+      <div class="feat-grid">
+        <div class="feat-opt" onclick="toggleFeat(this)">
+          <div class="feat-check"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="feat-ico-sm">🏠</span>One Owner
+        </div>
+        <div class="feat-opt" onclick="toggleFeat(this)">
+          <div class="feat-check"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="feat-ico-sm">📋</span>Service Records
+        </div>
+        <div class="feat-opt" onclick="toggleFeat(this)">
+          <div class="feat-check"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="feat-ico-sm">🔑</span>2 Keys
+        </div>
+        <div class="feat-opt" onclick="toggleFeat(this)">
+          <div class="feat-check"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="feat-ico-sm">🛡️</span>No Accidents
+        </div>
+        <div class="feat-opt" onclick="toggleFeat(this)">
+          <div class="feat-check"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="feat-ico-sm">🌞</span>Sunroof
+        </div>
+        <div class="feat-opt" onclick="toggleFeat(this)">
+          <div class="feat-check"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="feat-ico-sm">🔋</span>Hybrid/EV
+        </div>
+        <div class="feat-opt" onclick="toggleFeat(this)">
+          <div class="feat-check"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="feat-ico-sm">❄️</span>4WD / AWD
+        </div>
+        <div class="feat-opt" onclick="toggleFeat(this)">
+          <div class="feat-check"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5l2 2 4-4" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <span class="feat-ico-sm">🎵</span>Nav / Premium Audio
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 6: What you want -->
+    <div class="form-section">
+      <div class="fs-hdr">
+        <div class="fs-num">6</div>
+        <div>
+          <div class="fs-title">What Are You Looking For?</div>
+          <div class="fs-sub">Helps us bring the right offer</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+        <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--bg2);border:1px solid var(--b1);border-radius:10px;cursor:pointer;font-size:13px;" id="wantTrade">
+          <input type="radio" name="want" value="trade" onchange="setWant(this)" style="accent-color:var(--blue2)"> Use as a trade-in toward a new vehicle
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--bg2);border:1px solid var(--b1);border-radius:10px;cursor:pointer;font-size:13px;" id="wantSell">
+          <input type="radio" name="want" value="sell" onchange="setWant(this)" style="accent-color:var(--blue2)"> Just sell it — I want cash
+        </label>
+        <label style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--bg2);border:1px solid var(--b1);border-radius:10px;cursor:pointer;font-size:13px;">
+          <input type="radio" name="want" value="both" onchange="setWant(this)" style="accent-color:var(--blue2)"> Not sure yet — show me my options
+        </label>
+      </div>
+      <div class="field" id="vehicleInterestWrap" style="display:none">
+        <label class="field-label">Vehicle You're Interested In (if trading)</label>
+        <input class="field-inp" id="fInterest" placeholder="e.g. 2025 Honda Accord" autocomplete="off">
+      </div>
+      <div class="field">
+        <label class="field-label">Anything else we should know?</label>
+        <textarea class="field-ta" id="fNotes" rows="3" placeholder="Recent repairs, modifications, title situation, timing..."></textarea>
+      </div>
+    </div>
+
+    <!-- Trust badges -->
+    <div class="trust-row">
+      <div class="trust-item">
+        <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M4 6l1.5 1.5L8 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        No obligation
+      </div>
+      <div class="trust-item">
+        <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M4 6l1.5 1.5L8 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Same-day response
+      </div>
+      <div class="trust-item">
+        <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.3"/><path d="M4 6l1.5 1.5L8 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        7-day price lock
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="submit-section">
+      <button class="submit-btn" onclick="submitForm()">
+        Get My Trade Value →
+      </button>
+      <div class="submit-sub">
+        By submitting, you agree to be contacted by Harte Auto Group.<br>
+        <strong>Your info stays with us — never sold to third parties.</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SUCCESS STATE ────────────────────────────────── -->
+<div id="successState">
+  <div class="succ-ring">🎉</div>
+  <div class="succ-title">You're All Set!</div>
+  <div class="succ-sub" id="succSub">Your trade information has been submitted. Harte's buying team will review and reach out shortly.</div>
+
+  <!-- AutoFilm attribution on success -->
+  <div class="af-attrib" id="succAfAttrib" style="display:none">
+    <div class="af-attrib-ico">🎬</div>
+    <div class="af-attrib-txt">
+      Lead received via <strong>AutoFilm video</strong> —
+      tagged <strong>source: AutoFilm</strong> in HarteCash CRM.
+      Rep attribution logged automatically.
+    </div>
+  </div>
+
+  <div class="succ-card" id="succCard"></div>
+
+  <div class="next-steps">
+    <div class="next-step">
+      <div class="next-step-num">1</div>
+      <div class="next-step-txt"><strong>Within the hour</strong> — Harte's team reviews your submission and researches current market comps.</div>
+    </div>
+    <div class="next-step">
+      <div class="next-step-num">2</div>
+      <div class="next-step-txt"><strong>Text or call</strong> — Your rep reaches out with a real number, not a range.</div>
+    </div>
+    <div class="next-step">
+      <div class="next-step-num">3</div>
+      <div class="next-step-txt"><strong>7-day price lock</strong> — Your offer is good for a full week. No pressure to decide today.</div>
+    </div>
+  </div>
+
+  <button onclick="window.close()" style="
+    width:100%;max-width:360px;padding:14px;border-radius:12px;border:none;
+    background:var(--bg2);color:var(--t2);font-size:14px;font-weight:700;
+    cursor:pointer;font-family:var(--ff);
+  ">Close Window</button>
+</div>
+
+<footer>
+  <a href="https://harteautogroup.com">Harte Auto Group</a> · Connecticut's Trusted Dealer Since 1929 ·
+  <a href="https://hartecash.com">hartecash.com</a>
+  <div style="margin-top:6px">Powered by <span style="color:var(--fire2);font-weight:700;">AutoFilm</span> video platform</div>
+</footer>
+
+<script>
+// ── READ URL PARAMS ─────────────────────────────────────
+var params = new URLSearchParams(window.location.search);
+var source   = params.get('source') || '';
+var rep      = params.get('rep') || '';
+var dealer   = params.get('dealer') || 'Harte Auto Group';
+var customer = params.get('customer') || '';
+var phone    = params.get('phone') || '';
+var vehicle  = params.get('vehicle') || '';
+var stock    = params.get('stock') || '';
+var utmSrc   = params.get('utm_source') || source;
+
+// ── ATTRIBUTION BANNER ──────────────────────────────────
+var isFromAutoFilm = (source === 'autofilm' || utmSrc === 'autofilm');
+if(!isFromAutoFilm){
+  document.getElementById('afBanner').classList.add('hidden');
+}
+if(rep){
+  var repFirst = rep.split(' ')[0];
+  document.getElementById('afRepMsg').innerHTML =
+    '<strong>' + escHtml(rep) + '</strong> from ' + escHtml(dealer) + ' sent you this personally via AutoFilm video';
+}
+
+// ── PRE-FILL FORM ───────────────────────────────────────
+if(customer){
+  document.getElementById('fName').value = customer;
+  document.getElementById('fName').classList.add('prefilled');
+}
+if(phone){
+  document.getElementById('fPhone').value = phone;
+  document.getElementById('fPhone').classList.add('prefilled');
+}
+
+// Vehicle of interest → hero customization
+if(vehicle){
+  document.getElementById('heroTitle').innerHTML =
+    'What\'s Your <em>Trade Worth?</em>';
+  document.getElementById('heroSub').textContent =
+    'You\'re looking at the ' + vehicle + '. Before we talk numbers, let\'s get your trade locked in — that changes everything.';
+  document.getElementById('fInterest').value = vehicle;
+  document.getElementById('vehCard').style.display = 'flex';
+  document.getElementById('vehCardName').textContent = vehicle;
+  document.getElementById('vehCardSub').textContent =
+    stock ? 'Stock #' + stock + ' · Pre-filled from your rep\'s video' :
+            'Pre-filled from your rep\'s video — confirm or update below';
+}
+
+if(customer){
+  var first = customer.split(' ')[0];
+  document.getElementById('heroTitle').innerHTML =
+    first + ', What\'s Your <em>Trade Worth?</em>';
+}
+
+// ── MILEAGE SLIDER ──────────────────────────────────────
+function updateMileage(val){
+  var n = parseInt(val);
+  var s = n >= 200000 ? '200,000+ miles' : n.toLocaleString() + ' miles';
+  document.getElementById('mileageDisplay').textContent = s;
+}
+
+// ── CONDITION SELECTOR ──────────────────────────────────
+var condition = 'good';
+function setCond(el, val){
+  condition = val;
+  document.querySelectorAll('.cond-opt').forEach(function(o){ o.classList.remove('on'); });
+  el.classList.add('on');
+}
+
+// ── FEATURES ────────────────────────────────────────────
+function toggleFeat(el){
+  el.classList.toggle('on');
+}
+
+// ── WHAT DO YOU WANT ────────────────────────────────────
+function setWant(radio){
+  var wrap = document.getElementById('vehicleInterestWrap');
+  if(radio.value === 'trade') wrap.style.display = 'block';
+  else wrap.style.display = 'none';
+}
+
+// ── VIN DECODE ──────────────────────────────────────────
+var vinTimer;
+function decodeVin(val){
+  var r = document.getElementById('vinResult');
+  r.textContent = '';
+  if(val.length !== 17){ return; }
+  clearTimeout(vinTimer);
+  r.textContent = 'Looking up VIN...';
+  vinTimer = setTimeout(async function(){
+    try{
+      var res = await fetch('https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvaluesextended/'+val+'?format=json');
+      var data = await res.json();
+      var result = data.Results && data.Results[0];
+      if(result && result.Make && result.ModelYear){
+        var yr = result.ModelYear, mk = result.Make, mo = result.Model;
+        r.textContent = '✓ ' + yr + ' ' + mk + ' ' + mo;
+        r.style.color = 'var(--green)';
+        if(!document.getElementById('fYear').value) document.getElementById('fYear').value = yr;
+        if(!document.getElementById('fMake').value)  document.getElementById('fMake').value = mk;
+        if(!document.getElementById('fModel').value) document.getElementById('fModel').value = mo;
+      } else {
+        r.textContent = 'VIN not found — fill in manually';
+        r.style.color = 'var(--amber)';
+      }
+    } catch(e){
+      r.textContent = '';
+    }
+  }, 400);
+}
+
+// ── SUBMIT ──────────────────────────────────────────────
+function submitForm(){
+  var name  = document.getElementById('fName').value.trim();
+  var phone = document.getElementById('fPhone').value.trim();
+  var year  = document.getElementById('fYear').value.trim();
+  var make  = document.getElementById('fMake').value.trim();
+  var model = document.getElementById('fModel').value.trim();
+
+  if(!name){ alert('Please enter your name.'); document.getElementById('fName').focus(); return; }
+  if(!phone){ alert('Please enter your phone number.'); document.getElementById('fPhone').focus(); return; }
+  if(!year || !make || !model){
+    alert('Please enter your trade vehicle year, make, and model.');
+    document.getElementById('fYear').focus(); return;
+  }
+
+  var mileage = document.getElementById('mileageSlider').value;
+  var vin     = document.getElementById('fVin').value.trim();
+  var trim    = document.getElementById('fTrim').value.trim();
+  var notes   = document.getElementById('fNotes').value.trim();
+  var interest= document.getElementById('fInterest').value.trim();
+  var want    = document.querySelector('input[name="want"]:checked');
+  var wantVal = want ? want.value : 'not_specified';
+  var feats   = Array.from(document.querySelectorAll('.feat-opt.on')).map(function(f){
+    return f.textContent.trim();
+  });
+
+  // Build lead payload (in production: POST to /api/hartecash/leads)
+  var lead = {
+    source: isFromAutoFilm ? 'autofilm' : 'hartecash_direct',
+    utm_source: utmSrc || 'direct',
+    rep: rep || null,
+    dealer: dealer,
+    submitted_at: new Date().toISOString(),
+    customer: { name: name, phone: phone, email: document.getElementById('fEmail').value.trim() },
+    trade: {
+      year: year, make: make, model: model, trim: trim,
+      mileage: parseInt(mileage), condition: condition,
+      vin: vin || null, features: feats, notes: notes
+    },
+    interest: { vehicle: interest || vehicle || null, intent: wantVal },
+    attribution: {
+      source: isFromAutoFilm ? 'AutoFilm' : 'Direct',
+      rep_name: rep || null,
+      dealer_name: dealer,
+      stock: stock || null,
+      campaign: 'trade_cta_video'
+    }
+  };
+  console.log('[HarteCash Lead]', JSON.stringify(lead, null, 2));
+
+  // Show success state
+  document.getElementById('formState').style.display = 'none';
+  var ss = document.getElementById('successState');
+  ss.style.display = 'block';
+
+  // Update sub message
+  var first = name.split(' ')[0];
+  document.getElementById('succSub').textContent =
+    first + ', your trade info is in. ' + (rep ? rep.split(' ')[0] + ' from ' + dealer : dealer) + ' will reach out shortly with your number.';
+
+  // AutoFilm attribution card
+  if(isFromAutoFilm){
+    document.getElementById('succAfAttrib').style.display = 'flex';
+  }
+
+  // Summary card
+  var card = document.getElementById('succCard');
+  card.innerHTML = [
+    row('Vehicle', year + ' ' + make + ' ' + model + (trim ? ' ' + trim : '')),
+    row('Mileage', parseInt(mileage).toLocaleString() + ' miles'),
+    row('Condition', condition.charAt(0).toUpperCase() + condition.slice(1)),
+    vin ? row('VIN', vin) : '',
+    row('Looking to', wantVal === 'trade' ? 'Trade in' : wantVal === 'sell' ? 'Sell for cash' : 'Explore options'),
+    isFromAutoFilm ? row('Lead source', '🎬 AutoFilm · ' + (rep || dealer)) : '',
+  ].join('');
+
+  ss.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function row(label, val){
+  return '<div class="succ-row"><span class="succ-label">'+escHtml(label)+'</span><span class="succ-val">'+escHtml(val)+'</span></div>';
+}
+
+function escHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

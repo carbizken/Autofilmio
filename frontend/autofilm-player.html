@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>A Personal Video for You</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   AutoFilm Customer Video Player  ·  v2
+   Design direction: Luxury editorial — the feel of a Porsche
+   brochure or an Audi configurator. Light and airy. Heavy on
+   white space. Typography-led. The rep's face is the hero.
+   Brand color bleeds in as a single warm accent throughout.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --canvas:    #FAFAF8;
+  --canvas2:   #F2F1EE;
+  --canvas3:   #E8E7E3;
+  --ink:       #1A1916;
+  --ink2:      #2E2D2A;
+  --ink3:      #4A4844;
+  --muted:     #8A8782;
+  --faint:     #C4C2BE;
+  --hairline:  rgba(26,25,22,.08);
+  --hairline2: rgba(26,25,22,.14);
+
+  /* Brand — set via JS from ?color= param */
+  --brand:     #B85C00;
+  --brand-lt:  rgba(184,92,0,.08);
+  --brand-md:  rgba(184,92,0,.18);
+  --brand-glow:rgba(184,92,0,.22);
+
+  --green:     #1A7A4A;
+  --green-lt:  rgba(26,122,74,.08);
+
+  --ff:  'DM Sans', -apple-system, sans-serif;
+  --fd:  'Playfair Display', Georgia, serif;
+  --fm:  'DM Mono', monospace;
+
+  --r:   12px;
+  --r2:  18px;
+  --r3:  24px;
+
+  --ease-out: cubic-bezier(.22,1,.36,1);
+  --ease-spring: cubic-bezier(.34,1.56,.64,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; height: 100%; scroll-behavior: smooth; }
+
+body {
+  font-family: var(--ff);
+  background: var(--canvas);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* ── PAGE LOAD ANIMATION ───────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: fadeUp .55s var(--ease-out) forwards;
+}
+.reveal-2 { animation-delay: .08s; }
+.reveal-3 { animation-delay: .16s; }
+.reveal-4 { animation-delay: .24s; }
+.reveal-5 { animation-delay: .32s; }
+.reveal-6 { animation-delay: .40s; }
+
+@keyframes fadeUp {
+  to { opacity: 1; transform: none; }
+}
+
+/* ── AMBIENT TOP GLOW ──────────────────────────── */
+.ambient-glow {
+  position: fixed;
+  top: -120px; left: 50%;
+  transform: translateX(-50%);
+  width: 480px; height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, var(--brand-md) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  opacity: .6;
+}
+
+/* ── HEADER / REP BAR ──────────────────────────── */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(250,250,248,.92);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-bottom: 1px solid var(--hairline);
+  padding: 0 20px;
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 62px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* Rep avatar — the face that builds trust */
+.rep-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--brand);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; color: #fff;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2.5px var(--canvas), 0 0 0 4px var(--brand-md);
+  transition: box-shadow .2s;
+}
+.rep-avatar img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: none;
+  transform-origin: center;
+}
+
+.rep-details { flex: 1; min-width: 0; }
+.rep-name {
+  font-size: 13px; font-weight: 600;
+  letter-spacing: -.15px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.rep-title {
+  font-size: 11px; color: var(--muted);
+  margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.dealer-badge {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .04em; text-transform: uppercase;
+  color: var(--brand);
+  flex-shrink: 0;
+  border: 1px solid var(--brand-md);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+/* ── MAIN LAYOUT ───────────────────────────────── */
+.page-wrap {
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── GREETING HERO ─────────────────────────────── */
+.greeting-section {
+  padding: 32px 24px 0;
+  text-align: center;
+}
+
+.greeting-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.greeting-heading {
+  font-family: var(--fd);
+  font-size: clamp(26px, 7vw, 34px);
+  font-weight: 500;
+  letter-spacing: -.5px;
+  line-height: 1.18;
+  color: var(--ink);
+}
+
+.greeting-heading em {
+  color: var(--brand);
+  font-style: italic;
+}
+
+.vehicle-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 14px;
+  padding: 6px 14px 6px 10px;
+  background: var(--canvas2);
+  border: 1px solid var(--hairline2);
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink3);
+  letter-spacing: -.1px;
+}
+
+.vehicle-tag-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+  flex-shrink: 0;
+}
+
+/* ── VIDEO SECTION ─────────────────────────────── */
+.video-section {
+  padding: 20px 16px 0;
+  position: relative;
+}
+
+.video-frame {
+  position: relative;
+  border-radius: var(--r2);
+  overflow: hidden;
+  background: var(--ink);
+  aspect-ratio: 9 / 16;
+  max-height: 440px;
+  box-shadow:
+    0 1px 2px rgba(0,0,0,.06),
+    0 8px 32px rgba(0,0,0,.12),
+    0 32px 64px rgba(0,0,0,.10);
+}
+
+.video-frame video {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Rep info overlay — bottom of video */
+.vid-overlay {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  padding: 40px 16px 16px;
+  background: linear-gradient(to top,
+    rgba(0,0,0,.75) 0%,
+    rgba(0,0,0,.3) 50%,
+    transparent 100%);
+  display: flex; align-items: flex-end; gap: 10px;
+}
+
+.vid-overlay-av {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--brand);
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff;
+  border: 1.5px solid rgba(255,255,255,.3);
+}
+.vid-overlay-av img {
+  width: 100%; height: 100%; object-fit: cover; display: none;
+  transform-origin: center;
+}
+
+.vid-overlay-bar {
+  width: 3px; height: 38px;
+  border-radius: 2px;
+  background: var(--brand);
+  flex-shrink: 0;
+}
+
+.vid-overlay-info { flex: 1; min-width: 0; }
+.vid-overlay-name {
+  font-size: 13px; font-weight: 700;
+  color: #fff; letter-spacing: -.2px;
+}
+.vid-overlay-sub {
+  font-size: 10px; color: rgba(255,255,255,.6);
+  margin-top: 2px;
+}
+.vid-overlay-web {
+  font-size: 9px;
+  font-family: var(--fm);
+  color: var(--brand);
+  margin-top: 2px;
+  opacity: .9;
+}
+
+/* Play button overlay — shown when no video URL */
+.video-placeholder {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px;
+  background: linear-gradient(160deg, #1A1916 0%, #2E2D2A 100%);
+}
+
+.play-circle {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  border: 1.5px solid rgba(255,255,255,.15);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s;
+  cursor: pointer;
+}
+
+.play-circle:hover {
+  background: var(--brand-md);
+  border-color: var(--brand);
+  transform: scale(1.04);
+}
+
+.ph-label {
+  font-size: 13px; color: rgba(255,255,255,.5);
+  font-weight: 400; text-align: center;
+  line-height: 1.5;
+}
+
+.ph-rep { color: rgba(255,255,255,.8); font-weight: 600; }
+
+/* Progress bar */
+.progress-track {
+  height: 2px;
+  background: var(--hairline2);
+  margin: 0 16px;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--brand);
+  width: 0;
+  border-radius: 2px;
+  transition: width .5s linear;
+}
+
+/* ── DIVIDER ───────────────────────────────────── */
+.section-divider {
+  display: flex; align-items: center; gap: 12px;
+  padding: 28px 24px 0;
+}
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--hairline);
+}
+.divider-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+/* ── ACTION SECTION ────────────────────────────── */
+.action-section {
+  padding: 16px 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* PRIMARY CTA — Book / Schedule */
+.cta-primary {
+  position: relative;
+  overflow: hidden;
+  background: var(--brand);
+  border: none;
+  border-radius: var(--r2);
+  padding: 18px 20px;
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer; width: 100%; text-align: left;
+  font-family: var(--ff);
+  transition: transform .15s var(--ease-out), box-shadow .15s;
+  box-shadow: 0 4px 16px var(--brand-glow), 0 1px 3px rgba(0,0,0,.1);
+}
+.cta-primary::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.12) 0%, transparent 50%);
+  pointer-events: none;
+}
+.cta-primary:active { transform: scale(.98); box-shadow: 0 2px 8px var(--brand-glow); }
+
+.cta-icon-wrap {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.15);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.cta-icon-wrap svg { display: block; }
+
+.cta-text-wrap { flex: 1; }
+.cta-label {
+  font-size: 16px; font-weight: 700;
+  color: #fff; letter-spacing: -.25px;
+}
+.cta-sublabel {
+  font-size: 11px; color: rgba(255,255,255,.72);
+  margin-top: 3px; line-height: 1.4;
+}
+
+.cta-arrow {
+  display: flex; align-items: center;
+  flex-shrink: 0;
+}
+.cta-sec-arr {
+  display: flex; align-items: center;
+  flex-shrink: 0;
+}
+
+/* SECONDARY CTA — Trade Value */
+.cta-secondary {
+  background: var(--canvas);
+  border: 1.5px solid var(--hairline2);
+  border-radius: var(--r2);
+  padding: 16px 18px;
+  display: flex; align-items: center; gap: 12px;
+  cursor: pointer; width: 100%; text-align: left;
+  font-family: var(--ff);
+  transition: all .15s var(--ease-out);
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+}
+.cta-secondary:hover {
+  border-color: var(--brand-md);
+  background: var(--canvas2);
+}
+.cta-secondary:active { transform: scale(.99); }
+
+.cta-sec-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: var(--brand-lt);
+  border: 1px solid var(--brand-md);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.cta-sec-label {
+  font-size: 14px; font-weight: 700;
+  color: var(--ink); letter-spacing: -.2px;
+}
+.cta-sec-sub {
+  font-size: 11px; color: var(--muted);
+  margin-top: 3px; line-height: 1.4;
+}
+
+/* Soft trade link for no-vehicle mode */
+.trade-soft {
+  display: none;
+  text-align: center;
+  padding: 4px 0 2px;
+}
+.trade-soft a {
+  font-size: 12px;
+  color: var(--muted);
+  text-decoration: none;
+  border-bottom: 1px solid var(--hairline2);
+  padding-bottom: 2px;
+  transition: color .14s;
+  cursor: pointer;
+}
+.trade-soft a:hover { color: var(--brand); }
+
+/* ── WHY TRADE EXPLAINER ───────────────────────── */
+.why-section {
+  margin: 0 16px;
+  background: var(--canvas2);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r2);
+  overflow: hidden;
+}
+
+.why-toggle {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  font-size: 12px; font-weight: 600;
+  color: var(--ink3);
+  transition: color .14s;
+  user-select: none;
+  border: none; background: transparent;
+  width: 100%; text-align: left;
+  font-family: var(--ff);
+}
+.why-toggle:hover { color: var(--ink); }
+
+.why-toggle-ico {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  background: var(--brand-lt);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.why-toggle-text { flex: 1; }
+.why-chevron {
+  color: var(--faint);
+  transition: transform .2s var(--ease-out);
+  flex-shrink: 0;
+}
+.why-chevron.open { transform: rotate(180deg); }
+
+.why-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .35s var(--ease-out);
+}
+.why-body.open { max-height: 400px; }
+
+.why-inner { padding: 4px 16px 16px; }
+
+.why-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 12px; line-height: 1.6;
+  color: var(--ink3);
+}
+.why-item:last-of-type { border-bottom: none; padding-bottom: 0; }
+
+.why-bullet {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+.why-item strong { color: var(--ink); font-weight: 600; }
+
+.why-cta-row {
+  margin-top: 12px;
+}
+.why-cta-btn {
+  width: 100%; padding: 11px 16px;
+  border: 1.5px solid var(--brand-md);
+  border-radius: 10px;
+  background: var(--brand-lt);
+  color: var(--brand);
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: var(--ff);
+  transition: all .14s;
+  letter-spacing: -.15px;
+}
+.why-cta-btn:hover { background: var(--brand-md); }
+
+/* ── TRUST STRIP ───────────────────────────────── */
+.trust-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 20px 24px 0;
+}
+.trust-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: .03em;
+  color: var(--faint);
+}
+.trust-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--faint);
+  flex-shrink: 0;
+}
+
+/* ── FOOTER ────────────────────────────────────── */
+.page-footer {
+  padding: 28px 24px calc(28px + env(safe-area-inset-bottom));
+  text-align: center;
+  border-top: 1px solid var(--hairline);
+  margin-top: 32px;
+}
+
+.footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  text-decoration: none;
+}
+
+.footer-mark {
+  width: 16px; height: 16px;
+  background: var(--ink);
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── APPOINTMENT MODAL ─────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(26,25,22,.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 500;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.modal-backdrop.open { display: flex; }
+
+.modal-sheet {
+  background: var(--canvas);
+  border: 1px solid var(--hairline2);
+  border-radius: 24px 24px 0 0;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: sheetUp .3s var(--ease-spring) both;
+}
+@keyframes sheetUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+.sheet-handle {
+  width: 36px; height: 4px;
+  background: var(--hairline2);
+  border-radius: 2px;
+  margin: 14px auto 0;
+}
+
+.sheet-hdr {
+  padding: 16px 24px 14px;
+  border-bottom: 1px solid var(--hairline);
+}
+.sheet-title {
+  font-family: var(--fd);
+  font-size: 20px; font-weight: 600;
+  letter-spacing: -.3px;
+  color: var(--ink);
+}
+.sheet-sub {
+  font-size: 12px; color: var(--muted);
+  margin-top: 4px; line-height: 1.5;
+}
+
+.sheet-body { padding: 20px 24px; }
+
+.slot-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px; display: block;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.slot {
+  padding: 13px 10px;
+  border-radius: 12px;
+  border: 1.5px solid var(--hairline2);
+  background: var(--canvas);
+  cursor: pointer;
+  transition: all .14s var(--ease-out);
+  text-align: left;
+}
+.slot:hover { border-color: var(--brand-md); background: var(--canvas2); }
+.slot.selected {
+  border-color: var(--brand);
+  background: var(--brand-lt);
+}
+
+.slot-day {
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 3px;
+}
+.slot.selected .slot-day { color: var(--brand); }
+
+.slot-time {
+  font-size: 14px; font-weight: 700;
+  color: var(--ink); letter-spacing: -.2px;
+}
+.slot.selected .slot-time { color: var(--brand); }
+
+.slot-dealer {
+  font-size: 10px; color: var(--muted);
+  margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.confirm-btn-wrap { margin-bottom: 14px; }
+
+.confirm-btn {
+  width: 100%; padding: 16px;
+  border: none; border-radius: var(--r2);
+  background: var(--brand);
+  color: #fff; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: var(--ff);
+  letter-spacing: -.2px;
+  transition: all .15s;
+  box-shadow: 0 4px 16px var(--brand-glow);
+}
+.confirm-btn:disabled {
+  opacity: .35; cursor: not-allowed;
+  box-shadow: none;
+}
+.confirm-btn:not(:disabled):active { transform: scale(.99); }
+
+.sheet-fine {
+  font-size: 11px; color: var(--muted);
+  text-align: center; line-height: 1.6;
+}
+.sheet-fine strong { color: var(--ink3); font-weight: 600; }
+
+/* ── CONFIRMATION VIEW ─────────────────────────── */
+#apptConfirm { display: none; }
+
+.confirm-icon-ring {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  border: 2px solid var(--green);
+  background: var(--green-lt);
+  display: flex; align-items: center; justify-content: center;
+  margin: 8px auto 18px;
+  animation: popIn .4s var(--ease-spring) both;
+}
+@keyframes popIn {
+  from { transform: scale(.3); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+
+.confirm-check {
+  width: 22px; height: 22px;
+  stroke: var(--green);
+}
+
+.confirm-heading {
+  font-family: var(--fd);
+  font-size: 22px; font-weight: 600;
+  text-align: center; margin-bottom: 6px;
+  letter-spacing: -.3px; color: var(--ink);
+}
+
+.confirm-message {
+  font-size: 13px; color: var(--muted);
+  text-align: center; margin-bottom: 20px;
+  line-height: 1.6; max-width: 280px;
+  margin-left: auto; margin-right: auto;
+}
+
+.booked-card {
+  background: var(--canvas2);
+  border: 1px solid var(--hairline2);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+
+.booked-card-lbl {
+  font-size: 9px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 6px;
+}
+
+.booked-card-slot {
+  font-size: 16px; font-weight: 700;
+  color: var(--ink); letter-spacing: -.25px;
+}
+
+.cal-section-label {
+  font-size: 11px; font-weight: 600;
+  color: var(--muted); margin-bottom: 10px;
+  text-align: center;
+}
+
+.cal-btn-group { display: flex; flex-direction: column; gap: 8px; }
+
+.cal-btn {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--hairline2);
+  border-radius: 14px;
+  background: var(--canvas);
+  cursor: pointer; font-family: var(--ff);
+  transition: all .14s;
+  text-align: left; width: 100%;
+}
+.cal-btn:hover { border-color: var(--hairline2); background: var(--canvas2); }
+
+.cal-btn-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.cal-btn-icon.apple { background: #F5F5F7; }
+.cal-btn-icon.google { background: #FFF8F0; }
+
+.cal-btn-text { flex: 1; }
+.cal-btn-lbl {
+  font-size: 13px; font-weight: 700;
+  color: var(--ink); letter-spacing: -.15px;
+}
+.cal-btn-sub {
+  font-size: 10px; color: var(--muted); margin-top: 2px;
+}
+.cal-btn-arr { color: var(--faint); }
+
+.done-btn {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1.5px solid var(--hairline2);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: var(--ff);
+  margin-top: 8px;
+  transition: all .14s;
+}
+.done-btn:hover { color: var(--ink); border-color: var(--hairline2); }
+
+/* ── TOAST ─────────────────────────────────────── */
+.toast {
+  position: fixed; top: 20px; left: 50%;
+  transform: translateX(-50%) translateY(-60px);
+  background: var(--ink);
+  color: #fff;
+  padding: 11px 20px;
+  border-radius: 100px;
+  font-size: 13px; font-weight: 600;
+  box-shadow: 0 8px 28px rgba(0,0,0,.2);
+  opacity: 0;
+  transition: all .3s var(--ease-spring);
+  pointer-events: none; z-index: 9999;
+  white-space: nowrap;
+  letter-spacing: -.1px;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── UTILITIES ─────────────────────────────────── */
+.hide { display: none !important; }
+
+@media (min-width: 481px) {
+  .page-wrap { padding-top: 8px; }
+  .ambient-glow { width: 600px; height: 380px; }
+}
+</style>
+</head>
+<body>
+
+<div class="ambient-glow" id="ambientGlow"></div>
+
+<!-- ═══ HEADER ══════════════════════════════════ -->
+<header class="header reveal">
+  <div class="header-inner">
+    <div class="rep-avatar" id="repAvatar">
+      <span id="repAvatarInitial">K</span>
+      <img id="repAvatarPhoto" alt="">
+    </div>
+    <div class="rep-details">
+      <div class="rep-name" id="repNameEl">Ken Criscione</div>
+      <div class="rep-title" id="repTitleEl">Sales Consultant · Harte Auto Group</div>
+    </div>
+    <div class="dealer-badge" id="dealerBadge">Harte Auto</div>
+  </div>
+</header>
+
+<!-- ═══ MAIN CONTENT ════════════════════════════ -->
+<div class="page-wrap">
+
+  <!-- GREETING -->
+  <section class="greeting-section reveal reveal-2">
+    <div class="greeting-label" id="greetLabel">A personal message for you</div>
+    <h1 class="greeting-heading" id="greetHeading">
+      Hey <em id="greetName">there</em> —<br>watch this.
+    </h1>
+    <div id="vehicleTag" class="vehicle-tag hide">
+      <div class="vehicle-tag-dot"></div>
+      <span id="vehicleTagText"></span>
+    </div>
+  </section>
+
+  <!-- VIDEO -->
+  <section class="video-section reveal reveal-3">
+    <div class="video-frame" id="videoFrame">
+
+      <!-- Real video -->
+      <video id="playerVid" playsinline preload="metadata"
+        controlsList="nodownload" style="display:none"
+        onclick="this.paused ? this.play() : this.pause()">
+      </video>
+
+      <!-- Overlay (shown during/after play) -->
+      <div class="vid-overlay" id="vidOverlay">
+        <div class="vid-overlay-bar"></div>
+        <div class="vid-overlay-av" id="ovAv">
+          <span id="ovAvInit">K</span>
+          <img id="ovAvPhoto" alt="">
+        </div>
+        <div class="vid-overlay-info">
+          <div class="vid-overlay-name" id="ovName">Ken Criscione</div>
+          <div class="vid-overlay-sub" id="ovSub">Sales Consultant · Harte Auto Group</div>
+          <div class="vid-overlay-web" id="ovWeb">harteautogroup.com</div>
+        </div>
+      </div>
+
+      <!-- Placeholder before play -->
+      <div class="video-placeholder" id="videoPlaceholder">
+        <div class="play-circle" onclick="playVideo()" id="playBtn">
+          <!-- Play icon — SVG, consistent with icon system -->
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style="margin-left:3px">
+            <path d="M7 4.5l12 6.5-12 6.5V4.5z" fill="rgba(255,255,255,.9)" stroke="rgba(255,255,255,.9)" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="ph-label">
+          Your personal video from<br>
+          <span class="ph-rep" id="phRepName">Ken</span>
+        </div>
+      </div>
+
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </section>
+
+  <!-- SECTION DIVIDER -->
+  <div class="section-divider reveal reveal-4">
+    <div class="divider-line"></div>
+    <div class="divider-label" id="dividerLabel">Next Steps</div>
+    <div class="divider-line"></div>
+  </div>
+
+  <!-- ACTIONS -->
+  <section class="action-section reveal reveal-5">
+
+    <!-- Primary: Schedule -->
+    <button class="cta-primary" id="apptBtn" onclick="openModal()">
+      <div class="cta-icon-wrap">
+        <!-- Calendar icon -->
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <rect x="2.5" y="4" width="15" height="14" rx="3" stroke="white" stroke-width="1.6"/>
+          <path d="M2.5 8h15" stroke="white" stroke-width="1.6"/>
+          <path d="M7 2v3M13 2v3" stroke="white" stroke-width="1.6" stroke-linecap="round"/>
+          <circle cx="7" cy="12" r="1" fill="white"/>
+          <circle cx="10" cy="12" r="1" fill="white"/>
+          <circle cx="13" cy="12" r="1" fill="white"/>
+        </svg>
+      </div>
+      <div class="cta-text-wrap">
+        <div class="cta-label" id="apptLabel">Schedule Your Visit</div>
+        <div class="cta-sublabel" id="apptSub">Pick a time · adds to your calendar automatically</div>
+      </div>
+      <div class="cta-arrow">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M6 3.5l4.5 4.5L6 12.5" stroke="rgba(255,255,255,.55)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </button>
+
+    <!-- Secondary: Trade Value (vehicle mode only) -->
+    <button class="cta-secondary hide" id="tradeBtn" onclick="goTrade()">
+      <div class="cta-sec-icon">
+        <!-- Dollar icon -->
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M9 2v14M12.5 5.5C12.5 4.12 10.88 3 9 3S5.5 4.12 5.5 5.5c0 1.55 1.56 2.3 3.5 2.5s3.5.95 3.5 2.5C12.5 11.88 10.88 13 9 13s-3.5-1.12-3.5-2.5" stroke="var(--brand)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="cta-text-wrap">
+        <div class="cta-sec-label">Get My Trade-In Value</div>
+        <div class="cta-sec-sub">3 minutes · 7-day price lock · your info's already filled in</div>
+      </div>
+      <div class="cta-sec-arr">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M6 3.5l4.5 4.5L6 12.5" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </button>
+
+    <!-- Why trade expandable (vehicle mode only) -->
+    <div class="why-section hide" id="whySection">
+      <button class="why-toggle" onclick="toggleWhy()">
+        <div class="why-toggle-ico">
+          <!-- Question / info icon -->
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6.5" stroke="var(--brand)" stroke-width="1.5"/>
+            <path d="M8 7v5" stroke="var(--brand)" stroke-width="1.6" stroke-linecap="round"/>
+            <circle cx="8" cy="5" r=".85" fill="var(--brand)"/>
+          </svg>
+        </div>
+        <span class="why-toggle-text">Why value your trade before coming in?</span>
+        <svg class="why-chevron" id="whyChevron" width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M3 5l4 4 4-4" stroke="var(--muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="why-body" id="whyBody">
+        <div class="why-inner">
+          <div class="why-item">
+            <div class="why-bullet"></div>
+            <span>We know your number before you walk in — <strong>no waiting, no "let me check with my manager."</strong> Real numbers, on the spot.</span>
+          </div>
+          <div class="why-item">
+            <div class="why-bullet"></div>
+            <span>Your trade value gives you <strong>real leverage</strong> in the deal. You walk in informed.</span>
+          </div>
+          <div class="why-item">
+            <div class="why-bullet"></div>
+            <span>3 minutes now saves <strong>45 minutes</strong> of back-and-forth at the dealership.</span>
+          </div>
+          <div class="why-item">
+            <div class="why-bullet"></div>
+            <span>Your offer is <strong>locked for 7 days.</strong> No obligation, no pressure.</span>
+          </div>
+          <div class="why-cta-row">
+            <button class="why-cta-btn" onclick="goTrade()">Get My Trade-In Value →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Soft trade link (no-vehicle mode) -->
+    <div class="trade-soft" id="tradeSoftLink">
+      <a onclick="goTrade()">Have a trade-in? Get a value →</a>
+    </div>
+
+  </section>
+
+  <!-- TRUST STRIP -->
+  <div class="trust-strip reveal reveal-6">
+    <div class="trust-item">
+      <!-- Shield check — no obligation -->
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
+        <path d="M8 2L3 4v4c0 3 2.33 5.4 5 6 2.67-.6 5-3 5-6V4L8 2z" stroke="var(--faint)" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M5.5 8l2 2 3-3" stroke="var(--faint)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      No obligation
+    </div>
+    <div class="trust-item">
+      <!-- Slash circle — no spam -->
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
+        <circle cx="8" cy="8" r="5.5" stroke="var(--faint)" stroke-width="1.5"/>
+        <path d="M4.5 11.5l7-7" stroke="var(--faint)" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      No spam
+    </div>
+    <div class="trust-item">
+      <!-- Lock — private -->
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style="flex-shrink:0">
+        <rect x="3.5" y="7" width="9" height="7.5" rx="2" stroke="var(--faint)" stroke-width="1.5"/>
+        <path d="M5.5 7V5.5a2.5 2.5 0 0 1 5 0V7" stroke="var(--faint)" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="8" cy="10.5" r=".85" fill="var(--faint)"/>
+      </svg>
+      Your info stays private
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="page-footer">
+    <a class="footer-brand" href="https://autofilm.io" target="_blank" rel="noopener">
+      <div class="footer-mark">
+        <svg width="8" height="8" viewBox="0 0 10 12" fill="none">
+          <path d="M1 11L5 1L9 11" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      Delivered by AutoFilm
+    </a>
+  </footer>
+
+</div><!-- /page-wrap -->
+
+<!-- ═══ APPOINTMENT MODAL ════════════════════════ -->
+<div class="modal-backdrop" id="apptModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+
+    <!-- BOOKING VIEW -->
+    <div id="bookView">
+      <div class="sheet-hdr">
+        <div class="sheet-title" id="sheetTitle">Schedule Your Visit</div>
+        <div class="sheet-sub" id="sheetSub">with Ken Criscione · Harte Auto Group</div>
+      </div>
+      <div class="sheet-body">
+        <span class="slot-label">Available times</span>
+        <div class="slot-grid" id="slotGrid"></div>
+        <div class="confirm-btn-wrap">
+          <button class="confirm-btn" id="confirmBtn" onclick="confirmAppt()" disabled>
+            Confirm Appointment
+          </button>
+        </div>
+        <div class="sheet-fine">
+          You'll receive a calendar invite for Apple or Google.<br>
+          <strong id="repNameInline">Ken</strong> gets an instant notification the moment you book.
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIRMED VIEW -->
+    <div id="apptConfirm" style="display:none">
+      <div class="sheet-body" style="padding-top:28px">
+        <div class="confirm-icon-ring">
+          <svg class="confirm-check" viewBox="0 0 22 22" fill="none">
+            <path d="M5 11l4.5 4.5L17 7" stroke="var(--green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="confirm-heading">You're booked.</div>
+        <div class="confirm-message" id="confirmMsg">
+          See you soon! Ken will be expecting you.
+        </div>
+        <div class="booked-card">
+          <div class="booked-card-lbl">Your appointment</div>
+          <div class="booked-card-slot" id="confirmedSlotDisplay">—</div>
+        </div>
+        <div class="cal-section-label">Add to your calendar</div>
+        <div class="cal-btn-group">
+          <button class="cal-btn" onclick="downloadIcs()">
+            <div class="cal-btn-icon apple">
+              <!-- Download / calendar icon — neutral, universal -->
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                <rect x="2.5" y="4.5" width="15" height="13" rx="2.5" stroke="#1D1D1F" stroke-width="1.5"/>
+                <path d="M2.5 8.5h15" stroke="#1D1D1F" stroke-width="1.5"/>
+                <path d="M7 2.5v3M13 2.5v3" stroke="#1D1D1F" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M10 11.5v3M8.5 13l1.5 1.5 1.5-1.5" stroke="#1D1D1F" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="cal-btn-text">
+              <div class="cal-btn-lbl">Add to Apple Calendar</div>
+              <div class="cal-btn-sub">Downloads a .ics file — works on iPhone &amp; Mac</div>
+            </div>
+            <div class="cal-btn-arr">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M6 3.5l4.5 4.5L6 12.5" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </button>
+          <button class="cal-btn" onclick="openGcal()">
+            <div class="cal-btn-icon google">
+              <!-- External link + calendar — clear intent, no branded mark -->
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                <rect x="2.5" y="4.5" width="15" height="13" rx="2.5" stroke="#B85C00" stroke-width="1.5"/>
+                <path d="M2.5 8.5h15" stroke="#B85C00" stroke-width="1.5"/>
+                <path d="M7 2.5v3M13 2.5v3" stroke="#B85C00" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M7 12h2M7 14.5h4" stroke="#B85C00" stroke-width="1.4" stroke-linecap="round"/>
+                <path d="M15.5 5.5l-2 2m2-2H12m3.5 0v3.5" stroke="#B85C00" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="cal-btn-text">
+              <div class="cal-btn-lbl">Add to Google Calendar</div>
+              <div class="cal-btn-sub">Opens in a new tab</div>
+            </div>
+            <div class="cal-btn-arr">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M6 3.5l4.5 4.5L6 12.5" stroke="var(--faint)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </button>
+        </div>
+        <button class="done-btn" onclick="closeModal()">Done</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toastEl"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  URL PARAMS
+// ═══════════════════════════════════════════════════════════════
+var P = new URLSearchParams(window.location.search);
+
+var repName    = P.get('rep')         || 'Ken Criscione';
+var repDisplay = P.get('rep_display') || repName.split(' ')[0];  // nickname
+var repTitle   = P.get('title')       || 'Sales Consultant';
+var repDealer  = P.get('dealer')      || 'Harte Auto Group';
+var repWeb     = P.get('web')         || 'harteautogroup.com';
+var repColor   = P.get('color')       || '#B85C00';
+var repPhoto   = P.get('photo')       || '';
+var repPhotoZ  = parseFloat(P.get('photo_zoom') || '1');
+var repPhotoX  = parseFloat(P.get('photo_ox')   || '0');
+var repPhotoY  = parseFloat(P.get('photo_oy')   || '0');
+
+var custName   = P.get('customer')    || '';
+var custFirst  = custName ? custName.split(' ')[0] : '';
+var custPhone  = P.get('phone')       || '';
+var custEmail  = P.get('email')       || '';
+var custVeh    = (P.get('vehicle')    || '').trim();
+var tradeBase  = P.get('trade_url')   || 'https://hartecash.com/trade';
+var videoUrl   = P.get('video_url')   || '';
+var vidCode    = P.get('code')        || '';
+
+var hasVehicle = custVeh.length > 0;
+
+// ═══════════════════════════════════════════════════════════════
+//  BRAND COLOR
+// ═══════════════════════════════════════════════════════════════
+(function applyBrand(){
+  var hex = repColor.replace(/[^0-9a-f]/gi,'');
+  if(hex.length !== 6) hex = 'B85C00';
+  var r = parseInt(hex.slice(0,2),16);
+  var g = parseInt(hex.slice(2,4),16);
+  var b = parseInt(hex.slice(4,6),16);
+  var root = document.documentElement.style;
+  root.setProperty('--brand',    '#'+hex);
+  root.setProperty('--brand-lt', 'rgba('+r+','+g+','+b+',.08)');
+  root.setProperty('--brand-md', 'rgba('+r+','+g+','+b+',.18)');
+  root.setProperty('--brand-glow','rgba('+r+','+g+','+b+',.22)');
+})();
+
+// ═══════════════════════════════════════════════════════════════
+//  POPULATE UI
+// ═══════════════════════════════════════════════════════════════
+function applyRepPhoto(ids, zoom, ox, oy){
+  if(!repPhoto) return;
+  var transform = 'scale('+zoom+') translate('+ox+'%,'+oy+'%)';
+  ids.forEach(function(id){
+    var img = document.getElementById(id);
+    if(!img) return;
+    img.src = repPhoto;
+    img.style.transform = transform;
+    img.style.display = 'block';
+    var init = img.previousElementSibling;
+    if(init && init.tagName === 'SPAN') init.style.display = 'none';
+  });
+}
+
+// Header avatar
+document.getElementById('repAvatarInitial').textContent = repName.charAt(0).toUpperCase();
+document.getElementById('repNameEl').textContent         = repName;
+document.getElementById('repTitleEl').textContent        = repTitle + ' · ' + repDealer;
+document.getElementById('dealerBadge').textContent       = repDealer.split(' ').slice(0,2).join(' ');
+applyRepPhoto(['repAvatarPhoto'], repPhotoZ, repPhotoX, repPhotoY);
+
+// Video overlay
+document.getElementById('ovAvInit').textContent = repName.charAt(0).toUpperCase();
+document.getElementById('ovName').textContent   = repName;
+document.getElementById('ovSub').textContent    = repTitle + ' · ' + repDealer;
+document.getElementById('ovWeb').textContent    = repWeb;
+applyRepPhoto(['ovAvPhoto'], repPhotoZ, repPhotoX, repPhotoY);
+
+// Placeholder
+document.getElementById('phRepName').textContent = repDisplay;
+
+// Modal
+document.getElementById('repNameInline').textContent = repDisplay;
+document.getElementById('sheetSub').textContent      = 'with ' + repName + ' · ' + repDealer;
+
+// Page title
+document.title = custFirst
+  ? 'A message for ' + custFirst + ' from ' + repDisplay
+  : 'A personal message from ' + repDisplay + ' · ' + repDealer;
+
+// ─── GREETING ─────────────────────────────────────────────────
+if(hasVehicle){
+  // Vehicle mode — specific car, warm and direct
+  document.getElementById('greetLabel').textContent = 'A personal video for you';
+  if(custFirst){
+    document.getElementById('greetHeading').innerHTML =
+      'Hey <em>'+custFirst+'</em> —<br>watch this.';
+  } else {
+    document.getElementById('greetHeading').innerHTML =
+      'A message from<br><em>'+repDisplay+'</em>.';
+  }
+  var tag = document.getElementById('vehicleTag');
+  tag.classList.remove('hide');
+  document.getElementById('vehicleTagText').textContent = custVeh;
+
+} else {
+  // No-vehicle — intro mode
+  document.getElementById('greetLabel').textContent = 'A personal introduction';
+  if(custFirst){
+    document.getElementById('greetHeading').innerHTML =
+      'Hey <em>'+custFirst+'</em>,<br>good to meet you.';
+  } else {
+    document.getElementById('greetHeading').innerHTML =
+      'Meet your<br><em>personal advisor.</em>';
+  }
+}
+
+// ─── APPOINTMENT CTA ──────────────────────────────────────────
+if(hasVehicle){
+  document.getElementById('apptLabel').textContent = 'Schedule Your Test Drive';
+  document.getElementById('apptSub').textContent   = 'Pick a time · calendar invite sent instantly';
+  document.getElementById('sheetTitle').textContent = 'Schedule Your Test Drive';
+  document.getElementById('dividerLabel').textContent = 'Your next step';
+} else {
+  document.getElementById('apptLabel').textContent = 'Come In and Meet the Team';
+  document.getElementById('apptSub').textContent   = 'Pick a time · '+repDisplay+' will be expecting you';
+  document.getElementById('sheetTitle').textContent = 'Schedule a Visit';
+  document.getElementById('dividerLabel').textContent = 'Your next step';
+}
+
+// ─── TRADE CTA ────────────────────────────────────────────────
+if(hasVehicle){
+  document.getElementById('tradeBtn').classList.remove('hide');
+  document.getElementById('whySection').classList.remove('hide');
+  document.getElementById('tradeSoftLink').style.display = 'none';
+} else {
+  document.getElementById('tradeBtn').classList.add('hide');
+  document.getElementById('whySection').classList.add('hide');
+  document.getElementById('tradeSoftLink').style.display = '';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  VIDEO
+// ═══════════════════════════════════════════════════════════════
+var watchedPct = 0;
+var watchTimer = null;
+var vidEl = document.getElementById('playerVid');
+var placeholder = document.getElementById('videoPlaceholder');
+var overlay = document.getElementById('vidOverlay');
+
+if(videoUrl){
+  vidEl.src = videoUrl;
+  vidEl.style.display = 'block';
+  placeholder.style.display = 'none';
+  overlay.style.display = 'flex';
+
+  vidEl.addEventListener('play', function(){
+    pingEvent('play');
+    watchTimer = setInterval(function(){
+      if(!vidEl.duration) return;
+      watchedPct = Math.round((vidEl.currentTime / vidEl.duration) * 100);
+      document.getElementById('progressFill').style.width = watchedPct + '%';
+    }, 500);
+  });
+  vidEl.addEventListener('pause', function(){ clearInterval(watchTimer); });
+  vidEl.addEventListener('ended', function(){
+    clearInterval(watchTimer);
+    watchedPct = 100;
+    document.getElementById('progressFill').style.width = '100%';
+    pingEvent('complete');
+  });
+} else {
+  // Demo: animate progress bar to suggest video
+  placeholder.style.display = 'flex';
+  overlay.style.display = 'none';
+  setTimeout(function(){
+    var fill = document.getElementById('progressFill');
+    var p = 0;
+    var t = setInterval(function(){
+      p = Math.min(p + 0.4, 72);
+      fill.style.width = p + '%';
+      if(p >= 72) clearInterval(t);
+    }, 100);
+  }, 1800);
+}
+
+function playVideo(){
+  if(videoUrl){
+    vidEl.play();
+    placeholder.style.display = 'none';
+  }
+}
+
+function pingEvent(type){
+  if(!vidCode) return;
+  fetch('https://autofilm.io/api/event', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ code:vidCode, type:type, pct:watchedPct, ts:Date.now() })
+  }).catch(function(){});
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TRADE
+// ═══════════════════════════════════════════════════════════════
+function goTrade(){
+  pingEvent('trade_tap');
+  var p = new URLSearchParams({
+    source:'autofilm', utm_source:'autofilm', utm_medium:'player',
+    rep:repName, dealer:repDealer
+  });
+  if(custName)  p.set('customer', custName);
+  if(custPhone) p.set('phone',    custPhone);
+  if(custEmail) p.set('email',    custEmail);
+  if(custVeh)   p.set('vehicle',  custVeh);
+  window.location.href = tradeBase + '?' + p.toString();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  WHY TOGGLE
+// ═══════════════════════════════════════════════════════════════
+function toggleWhy(){
+  var body = document.getElementById('whyBody');
+  var chev = document.getElementById('whyChevron');
+  var isOpen = body.classList.toggle('open');
+  chev.classList.toggle('open', isOpen);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  APPOINTMENT MODAL
+// ═══════════════════════════════════════════════════════════════
+var selectedSlot = null;
+var confirmedSlotStr = '';
+
+function buildSlots(){
+  var slots = [];
+  var days  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var times = ['9:00 AM','10:30 AM','1:00 PM','2:30 PM','4:00 PM'];
+  var d = new Date(); d.setDate(d.getDate()+1);
+  while(slots.length < 6){
+    var dow = d.getDay();
+    if(dow > 0 && dow < 6){
+      slots.push({
+        day:   days[dow],
+        date:  (d.getMonth()+1)+'/'+d.getDate(),
+        time:  times[slots.length % times.length],
+        month: d.getMonth(), dayNum: d.getDate(),
+        dow:   dow
+      });
+    }
+    d.setDate(d.getDate()+1);
+  }
+  // Two Saturday slots
+  while(d.getDay() !== 6) d.setDate(d.getDate()+1);
+  slots.push({ day:'Sat', date:(d.getMonth()+1)+'/'+d.getDate(), time:'10:00 AM', month:d.getMonth(), dayNum:d.getDate(), dow:6 });
+  slots.push({ day:'Sat', date:(d.getMonth()+1)+'/'+d.getDate(), time:'12:00 PM', month:d.getMonth(), dayNum:d.getDate(), dow:6 });
+  return slots;
+}
+
+function openModal(){
+  document.getElementById('bookView').style.display    = 'block';
+  document.getElementById('apptConfirm').style.display = 'none';
+  selectedSlot = null;
+  document.getElementById('confirmBtn').disabled = true;
+
+  var slots = buildSlots();
+  document.getElementById('slotGrid').innerHTML = slots.map(function(s,i){
+    var full = s.day+', '+s.date+' at '+s.time+' · '+repDealer;
+    return '<div class="slot" data-idx="'+i+'" data-full="'+full+
+      '" data-month="'+s.month+'" data-day="'+s.dayNum+'" data-time="'+s.time+
+      '" onclick="pickSlot(this)">'+
+      '<div class="slot-day">'+s.day+' '+s.date+'</div>'+
+      '<div class="slot-time">'+s.time+'</div>'+
+      '<div class="slot-dealer">'+repDealer+'</div>'+
+      '</div>';
+  }).join('');
+
+  document.getElementById('apptModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(){
+  document.getElementById('apptModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function pickSlot(el){
+  document.querySelectorAll('.slot').forEach(function(s){ s.classList.remove('selected'); });
+  el.classList.add('selected');
+  selectedSlot = el.getAttribute('data-full');
+  document.getElementById('confirmBtn').disabled = false;
+}
+
+function confirmAppt(){
+  if(!selectedSlot) return;
+  confirmedSlotStr = selectedSlot;
+
+  pingEvent('appt_booked');
+
+  document.getElementById('bookView').style.display    = 'none';
+  document.getElementById('apptConfirm').style.display = 'block';
+
+  document.getElementById('confirmedSlotDisplay').textContent = confirmedSlotStr;
+
+  var msg = custFirst
+    ? 'You\'re all set, '+custFirst+'. '+repDisplay+' will be ready for you.'
+    : repDisplay+' is looking forward to meeting you.';
+  document.getElementById('confirmMsg').textContent = msg;
+
+  document.getElementById('apptSub').textContent = '✓ Booked · ' + confirmedSlotStr.split(' · ')[0];
+  showToast('Appointment confirmed');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CALENDAR  (.ics + Google)
+// ═══════════════════════════════════════════════════════════════
+function parseConfirmedDate(){
+  // "Mon, 3/24 at 2:30 PM · Harte Auto Group"
+  var m = confirmedSlotStr.match(/(\d+)\/(\d+) at (\d+):(\d+) (AM|PM)/i);
+  if(!m) return null;
+  var hour = parseInt(m[3]);
+  var min  = parseInt(m[4]);
+  var ampm = m[5].toUpperCase();
+  if(ampm === 'PM' && hour !== 12) hour += 12;
+  if(ampm === 'AM' && hour === 12) hour = 0;
+  var year = new Date().getFullYear();
+  var month = parseInt(m[1]) - 1;
+  var day   = parseInt(m[2]);
+  // If the date appears to be in the past, bump to next year
+  var start = new Date(year, month, day, hour, min, 0);
+  if(start < new Date()) start = new Date(year+1, month, day, hour, min, 0);
+  var end = new Date(start.getTime() + 60*60*1000);
+  return { start, end };
+}
+
+function toIso(d){ return d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z'; }
+
+function downloadIcs(){
+  var dt = parseConfirmedDate();
+  if(!dt){ showToast('Could not generate calendar file'); return; }
+
+  var title = hasVehicle
+    ? 'Test Drive — ' + custVeh + ' · ' + repDealer
+    : 'Visit with ' + repDisplay + ' · ' + repDealer;
+
+  var ics = [
+    'BEGIN:VCALENDAR','VERSION:2.0',
+    'PRODID:-//AutoFilm//Player//EN',
+    'CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    'UID:af-'+Date.now()+'@autofilm.io',
+    'DTSTART:'+toIso(dt.start),
+    'DTEND:'+toIso(dt.end),
+    'SUMMARY:'+title,
+    'DESCRIPTION:Appointment with '+repName+' at '+repDealer+'.\\n'+repWeb,
+    'LOCATION:'+repDealer,
+    'ORGANIZER;CN='+repName+':mailto:no-reply@autofilm.io',
+    'STATUS:CONFIRMED',
+    'END:VEVENT','END:VCALENDAR'
+  ].join('\r\n');
+
+  var blob = new Blob([ics], { type:'text/calendar;charset=utf-8' });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href = url; a.download = 'appointment.ics';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Calendar file downloaded');
+}
+
+function openGcal(){
+  var dt = parseConfirmedDate();
+  if(!dt){ showToast('Could not generate calendar link'); return; }
+  var title = hasVehicle
+    ? 'Test Drive — ' + custVeh + ' at ' + repDealer
+    : 'Visit with ' + repDisplay + ' at ' + repDealer;
+  var url = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+    + '&text='    + encodeURIComponent(title)
+    + '&dates='   + toIso(dt.start)+'/'+toIso(dt.end)
+    + '&details=' + encodeURIComponent('Appointment with '+repName+'. '+repWeb)
+    + '&location='+ encodeURIComponent(repDealer);
+  window.open(url, '_blank');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════════════
+var toastTimer;
+function showToast(msg){
+  var el = document.getElementById('toastEl');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 3200);
+}
+</script>
+</body>
+</html>
