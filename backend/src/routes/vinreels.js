@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase.js';
 import { video } from '../lib/mux.js';
 import { getThumbnails } from '../lib/thumbnail.js';
 import { syncVideoEvent } from '../lib/crm.js';
+import { renderVinReel, uploadToMux, cleanupRender } from '../lib/vinreel-render.js';
 
 const router = express.Router();
 
@@ -247,5 +248,222 @@ function getTemplateScript(vehicle, style) {
   const name = `${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''}`.trim();
   return `Introducing the ${name}. ${vehicle.engine ? `Powered by a ${vehicle.engine}, ` : ''}this ${vehicle.body_style || 'vehicle'} delivers the perfect combination of style, performance, and value. ${vehicle.features?.length ? `Equipped with ${vehicle.features.slice(0, 3).join(', ')}.` : ''} Come see it in person — schedule your test drive today.`;
 }
+
+/**
+ * POST /api/vin-reels/render
+ * Full server-side render: photos → Ken Burns video + TTS voiceover + music.
+ * No recording needed from the rep — completely automated.
+ *
+ * Body: {
+ *   vin: string,
+ *   rooftop_id: string,
+ *   rep_id: string,
+ *   style?: 'cinematic' | 'quick' | 'detailed'
+ * }
+ */
+router.post('/render', async (req, res) => {
+  try {
+    const { vin, rooftop_id, rep_id, style = 'cinematic' } = req.body;
+
+    if (!vin) return res.status(400).json({ error: 'vin required' });
+    if (!rooftop_id) return res.status(400).json({ error: 'rooftop_id required' });
+
+    // 1. Get vehicle data + photos
+    let vehicle = null;
+    const { data: invItem } = await supabase
+      .from('inventory')
+      .select('*')
+      .eq('rooftop_id', rooftop_id)
+      .eq('vin', vin)
+      .single();
+
+    if (invItem) {
+      vehicle = invItem;
+    } else {
+      const nhtsaRes = await fetch(
+        `https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvaluesextended/${vin}?format=json`
+      );
+      const nhtsaData = await nhtsaRes.json();
+      const r = nhtsaData.Results?.[0];
+      if (r?.Make) {
+        vehicle = {
+          vin, year: parseInt(r.ModelYear) || null, make: r.Make,
+          model: r.Model, trim: r.Trim, body_style: r.BodyClass,
+          engine: `${r.DisplacementL || ''}L ${r.EngineConfiguration || ''}`.trim(),
+          drivetrain: r.DriveType, photos: [], features: [],
+        };
+      }
+    }
+
+    if (!vehicle) return res.status(404).json({ error: 'Vehicle not found' });
+
+    const photos = vehicle.photos || [];
+    if (photos.length === 0) {
+      return res.status(400).json({ error: 'No photos available for this vehicle. Add photos to inventory first.' });
+    }
+
+    const vehicleName = `${vehicle.year || ''} ${vehicle.make || ''} ${vehicle.model || ''} ${vehicle.trim || ''}`.trim();
+
+    // 2. Get dealer info
+    const { data: rooftop } = await supabase
+      .from('rooftops')
+      .select('name, brand_color')
+      .eq('id', rooftop_id)
+      .single();
+
+    // 3. Generate AI script
+    const script = await generateVinReelScript(vehicle, style);
+
+    // 4. Render the video server-side
+    console.log(`[vin-reels] Starting server-side render for ${vehicleName}...`);
+
+    const outputPath = await renderVinReel({
+      photos,
+      script,
+      vehicleName,
+      dealerName: rooftop?.name || '',
+      price: vehicle.sale_price ? `$${vehicle.sale_price.toLocaleString()}` : '',
+      brandColor: rooftop?.brand_color || '#D94F00',
+      style,
+    });
+
+    // 5. Upload to Mux
+    const { uploadId, assetId } = await uploadToMux(video, outputPath);
+
+    // 6. Create video record
+    const shortCode = nanoid(8);
+    const { data: videoRow, error: insertErr } = await supabase
+      .from('videos')
+      .insert({
+        rep_id: rep_id || null,
+        rooftop_id,
+        mux_asset_id: assetId,
+        short_code: shortCode,
+        type: 'vin_reel',
+        vin,
+        vehicle: vehicleName,
+        stock_number: vehicle.stock_number || null,
+      })
+      .select()
+      .single();
+
+    if (insertErr) throw insertErr;
+
+    // 7. Cleanup temp files
+    cleanupRender(outputPath.replace(/\/[^/]+$/, '')).catch(() => {});
+
+    // 8. CRM sync
+    syncVideoEvent(rooftop_id, {
+      action: 'video_sent',
+      video_id: videoRow.id,
+      short_code: shortCode,
+    }).catch(err => console.error('[vin-reels] CRM sync error:', err.message));
+
+    console.log(`[vin-reels] Server render complete: ${shortCode} for ${vehicleName}`);
+
+    res.json({
+      success: true,
+      video_id: videoRow.id,
+      short_code: shortCode,
+      vehicle: vehicleName,
+      script,
+      rendered: true,
+    });
+
+  } catch (err) {
+    console.error('[vin-reels] Render error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/vin-reels/bulk-render
+ * Render VIN Reels for all vehicles in a rooftop's inventory.
+ * Returns immediately with a job ID; renders in background.
+ *
+ * Body: { rooftop_id, rep_id?, style?, limit? }
+ */
+router.post('/bulk-render', async (req, res) => {
+  try {
+    const { rooftop_id, rep_id, style = 'cinematic', limit = 50 } = req.body;
+    if (!rooftop_id) return res.status(400).json({ error: 'rooftop_id required' });
+
+    // Get vehicles with photos that don't already have a vin_reel
+    const { data: vehicles, error } = await supabase
+      .from('inventory')
+      .select('vin, year, make, model, trim, photos')
+      .eq('rooftop_id', rooftop_id)
+      .eq('status', 'available')
+      .not('photos', 'eq', '[]')
+      .limit(parseInt(limit));
+
+    if (error) throw error;
+
+    // Filter out vehicles that already have vin_reels
+    const { data: existingReels } = await supabase
+      .from('videos')
+      .select('vin')
+      .eq('rooftop_id', rooftop_id)
+      .eq('type', 'vin_reel');
+
+    const existingVins = new Set((existingReels || []).map(r => r.vin));
+    const toRender = (vehicles || []).filter(v => v.photos?.length > 0 && !existingVins.has(v.vin));
+
+    console.log(`[vin-reels] Bulk render: ${toRender.length} vehicles queued for ${rooftop_id}`);
+
+    // Start rendering in background (non-blocking)
+    const jobId = randomUUID().slice(0, 8);
+
+    // Process sequentially in background to avoid overloading FFmpeg
+    (async () => {
+      let rendered = 0;
+      for (const v of toRender) {
+        try {
+          const vehicleName = `${v.year || ''} ${v.make || ''} ${v.model || ''} ${v.trim || ''}`.trim();
+          const script = await generateVinReelScript(v, style);
+
+          const outputPath = await renderVinReel({
+            photos: v.photos,
+            script,
+            vehicleName,
+            style,
+          });
+
+          const { assetId } = await uploadToMux(video, outputPath);
+          const shortCode = nanoid(8);
+
+          await supabase.from('videos').insert({
+            rep_id: rep_id || null,
+            rooftop_id,
+            mux_asset_id: assetId,
+            short_code: shortCode,
+            type: 'vin_reel',
+            vin: v.vin,
+            vehicle: vehicleName,
+          });
+
+          cleanupRender(outputPath.replace(/\/[^/]+$/, '')).catch(() => {});
+          rendered++;
+          console.log(`[vin-reels] Bulk ${jobId}: ${rendered}/${toRender.length} — ${vehicleName}`);
+        } catch (e) {
+          console.error(`[vin-reels] Bulk ${jobId}: Failed ${v.vin} — ${e.message}`);
+        }
+      }
+      console.log(`[vin-reels] Bulk ${jobId}: Complete — ${rendered}/${toRender.length} rendered`);
+    })();
+
+    res.json({
+      success: true,
+      job_id: jobId,
+      queued: toRender.length,
+      skipped: (vehicles || []).length - toRender.length,
+      message: `Rendering ${toRender.length} VIN Reels in background`,
+    });
+
+  } catch (err) {
+    console.error('[vin-reels] Bulk render error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 export default router;

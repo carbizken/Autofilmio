@@ -12,6 +12,7 @@ import vinReelsRoute from './routes/vinreels.js';
 import mpiRoute from './routes/mpi.js';
 import replyRoute from './routes/reply.js';
 import onboardRoute from './routes/onboard.js';
+import callRoute from './routes/call.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -61,6 +62,7 @@ app.use('/api/vin-reels', vinReelsRoute);
 app.use('/api/mpi', mpiRoute);
 app.use('/api/reply', replyRoute);
 app.use('/api/onboard', onboardRoute);
+app.use('/api/call', callRoute);
 
 // 404
 app.use((req, res) => {

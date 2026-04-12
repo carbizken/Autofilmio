@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>AutoFilm — 360 Vehicle Spin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#0a0a0d;--bg1:#111116;--bg2:#18181e;--bg3:#202028;--b0:rgba(255,255,255,.05);--b1:rgba(255,255,255,.09);--b2:rgba(255,255,255,.16);--t1:rgba(255,255,255,.96);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.40);--t4:rgba(255,255,255,.20);--fire:#D94F00;--fire2:#E85A0A;--firet:rgba(217,79,0,.10);--fireb:rgba(217,79,0,.22);--green:#22c55e;--ff:'Geist',-apple-system,sans-serif;--fm:'Geist Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+
+/* Header */
+.hdr{display:flex;align-items:center;gap:10px;padding:14px 20px;background:var(--bg1);border-bottom:1px solid var(--b0)}
+.hdr-mark{width:26px;height:26px;background:var(--fire);border-radius:7px;display:flex;align-items:center;justify-content:center}
+.hdr-word{font-size:15px;font-weight:900;letter-spacing:-.3px}
+.hdr-word em{color:var(--fire2);font-style:normal}
+.hdr-sep{width:1px;height:18px;background:var(--b1);margin:0 6px}
+.hdr-badge{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:12px;background:var(--firet);border:1px solid var(--fireb);color:var(--fire2)}
+.hdr-veh{margin-left:auto;font-size:13px;font-weight:700;color:var(--t2)}
+
+/* Spin viewport */
+.spin-wrap{flex:1;position:relative;overflow:hidden;background:#060609;display:flex;align-items:center;justify-content:center;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none}
+.spin-wrap.grabbing{cursor:grabbing}
+.spin-wrap img{max-width:100%;max-height:100%;object-fit:contain;pointer-events:none;display:block;transition:none}
+.spin-hint{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:10px;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);font-size:12px;font-weight:600;color:rgba(255,255,255,.7);pointer-events:none;animation:hintFade 3s ease 2s both}
+@keyframes hintFade{to{opacity:0}}
+.spin-hint svg{width:18px;height:18px;opacity:.6}
+
+/* Controls */
+.controls{display:flex;align-items:center;gap:8px;padding:14px 20px;background:var(--bg1);border-top:1px solid var(--b0)}
+.ctrl-btn{width:36px;height:36px;border-radius:9px;background:var(--bg2);border:1px solid var(--b1);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:var(--t2);transition:all .14s}
+.ctrl-btn:hover{border-color:var(--b2);color:var(--t1);background:var(--bg3)}
+.ctrl-btn.on{background:var(--firet);border-color:var(--fireb);color:var(--fire2)}
+.ctrl-sep{flex:1}
+.frame-indicator{font-family:var(--fm);font-size:11px;font-weight:600;color:var(--t3);min-width:60px;text-align:center}
+.ctrl-slider{-webkit-appearance:none;flex:1;height:3px;border-radius:2px;background:var(--bg3);outline:none;margin:0 8px;max-width:200px}
+.ctrl-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--fire);cursor:pointer;box-shadow:0 2px 6px rgba(217,79,0,.35)}
+
+/* Hotspots */
+.hotspot{position:absolute;width:32px;height:32px;border-radius:50%;background:rgba(217,79,0,.2);border:2px solid rgba(217,79,0,.5);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;animation:hotPulse 2s ease infinite;font-size:12px}
+@keyframes hotPulse{0%,100%{box-shadow:0 0 0 0 rgba(217,79,0,.3)}70%{box-shadow:0 0 0 10px rgba(217,79,0,0)}}
+.hotspot:hover{background:rgba(217,79,0,.4);transform:scale(1.15)}
+.hotspot-popup{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);background:var(--bg1);border:1px solid var(--b1);border-radius:12px;padding:12px 16px;width:220px;box-shadow:0 12px 40px rgba(0,0,0,.6);display:none;z-index:10;text-align:left}
+.hotspot:hover .hotspot-popup{display:block}
+.hotspot-popup::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--b1)}
+.hp-title{font-size:12px;font-weight:800;margin-bottom:4px}
+.hp-desc{font-size:11px;color:var(--t2);line-height:1.5}
+
+/* Vehicle info bar */
+.info-bar{padding:16px 20px;background:var(--bg1);border-top:1px solid var(--b0)}
+.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.info-item{text-align:center}
+.info-val{font-size:14px;font-weight:800;font-family:var(--fm);letter-spacing:-.3px}
+.info-lbl{font-size:9px;color:var(--t4);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+
+/* Loading */
+.loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);z-index:20}
+.loading.hidden{display:none}
+.load-ring{width:48px;height:48px;border:3px solid var(--b1);border-top-color:var(--fire);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-text{font-size:12px;color:var(--t3)}
+.load-pct{font-family:var(--fm);font-size:18px;font-weight:800;color:var(--fire2);margin-top:6px}
+
+/* Fullscreen */
+.spin-wrap.fullscreen{position:fixed;inset:0;z-index:100}
+
+@media(max-width:480px){
+  .info-grid{grid-template-columns:1fr 1fr}
+  .hdr-veh{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-mark"><svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M1.5 10.5L7 2 12.5 10.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <div class="hdr-word">Auto<em>Film</em></div>
+  <div class="hdr-sep"></div>
+  <div class="hdr-badge">360 Spin</div>
+  <div class="hdr-veh" id="vehicleName">Loading...</div>
+</div>
+
+<div class="spin-wrap" id="spinWrap">
+  <div class="loading" id="loader">
+    <div class="load-ring"></div>
+    <div class="load-text">Loading 360 view...</div>
+    <div class="load-pct" id="loadPct">0%</div>
+  </div>
+  <img id="spinImg" alt="360 Vehicle Spin" draggable="false">
+  <div class="spin-hint" id="spinHint">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M13.8 12H3"/></svg>
+    Drag to spin &middot; Scroll to zoom
+  </div>
+  <div id="hotspotsContainer"></div>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn" id="btnPlay" onclick="toggleAutoplay()" title="Auto-rotate">▶</button>
+  <button class="ctrl-btn" onclick="prevFrame()" title="Previous">◀</button>
+  <input type="range" class="ctrl-slider" id="frameSlider" min="0" max="35" value="0" oninput="goToFrame(parseInt(this.value))">
+  <button class="ctrl-btn" onclick="nextFrame()" title="Next">▶</button>
+  <div class="frame-indicator" id="frameInfo">1 / 36</div>
+  <div class="ctrl-sep"></div>
+  <button class="ctrl-btn" onclick="toggleZoom()" title="Zoom">🔍</button>
+  <button class="ctrl-btn" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
+</div>
+
+<div class="info-bar" id="infoBar">
+  <div class="info-grid">
+    <div class="info-item"><div class="info-val" id="infoYear">--</div><div class="info-lbl">Year</div></div>
+    <div class="info-item"><div class="info-val" id="infoMake">--</div><div class="info-lbl">Make</div></div>
+    <div class="info-item"><div class="info-val" id="infoMSRP">--</div><div class="info-lbl">MSRP</div></div>
+    <div class="info-item"><div class="info-val" id="infoMiles">--</div><div class="info-lbl">Mileage</div></div>
+  </div>
+</div>
+
+<script>
+const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:3001' : 'https://api.autofilm.io';
+
+const params = new URLSearchParams(location.search);
+const vin = params.get('vin') || '';
+const rooftopId = params.get('rooftop_id') || '';
+
+// 360 spin state
+let frames = [];
+let currentFrame = 0;
+let totalFrames = 36;
+let autoplayInterval = null;
+let autoplaySpeed = 120; // ms per frame
+let isDragging = false;
+let dragStartX = 0;
+let dragFrame = 0;
+let zoomed = false;
+
+// ── LOAD VEHICLE DATA ─────────────────────────────────────
+
+async function loadVehicle() {
+  if (!vin) {
+    // Use demo/placeholder frames
+    loadDemoFrames();
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/api/vin-reels/decode/${vin}?rooftop_id=${rooftopId}`);
+    const data = await res.json();
+    const v = data.vehicle;
+
+    if (v) {
+      const name = `${v.year || ''} ${v.make || ''} ${v.model || ''} ${v.trim || ''}`.trim();
+      document.getElementById('vehicleName').textContent = name;
+      document.getElementById('infoYear').textContent = v.year || '--';
+      document.getElementById('infoMake').textContent = `${v.make || ''} ${v.model || ''}`.trim() || '--';
+      document.getElementById('infoMSRP').textContent = v.msrp ? '$' + v.msrp.toLocaleString() : '--';
+      document.getElementById('infoMiles').textContent = v.mileage ? v.mileage.toLocaleString() : '--';
+
+      // Use inventory photos as spin frames
+      if (v.photos && v.photos.length > 0) {
+        frames = v.photos;
+        totalFrames = frames.length;
+      } else {
+        loadDemoFrames();
+      }
+    } else {
+      loadDemoFrames();
+    }
+  } catch (e) {
+    console.error('[spin] Load error:', e);
+    loadDemoFrames();
+  }
+
+  preloadFrames();
+}
+
+function loadDemoFrames() {
+  // Generate placeholder frames with rotation angle indicators
+  // In production these come from dealer's photo set or automated capture
+  totalFrames = 36;
+  frames = [];
+  for (let i = 0; i < totalFrames; i++) {
+    // Use a colored SVG as placeholder
+    const angle = Math.round((i / totalFrames) * 360);
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+      <rect width="800" height="500" fill="#111116"/>
+      <rect x="100" y="80" width="600" height="340" rx="20" fill="#18181e" stroke="rgba(255,255,255,.09)" stroke-width="1"/>
+      <text x="400" y="220" text-anchor="middle" fill="rgba(255,255,255,.3)" font-family="sans-serif" font-size="48" font-weight="900">${angle}°</text>
+      <text x="400" y="280" text-anchor="middle" fill="rgba(255,255,255,.15)" font-family="sans-serif" font-size="16">Upload ${totalFrames} photos to create your 360 spin</text>
+      <circle cx="400" cy="350" r="60" fill="none" stroke="rgba(217,79,0,.3)" stroke-width="2"/>
+      <circle cx="${400 + 60 * Math.cos((angle - 90) * Math.PI / 180)}" cy="${350 + 60 * Math.sin((angle - 90) * Math.PI / 180)}" r="6" fill="#D94F00"/>
+    </svg>`;
+    frames.push('data:image/svg+xml,' + encodeURIComponent(svg));
+  }
+
+  document.getElementById('vehicleName').textContent = 'Demo — Upload photos to enable 360 spin';
+}
+
+// ── PRELOAD ───────────────────────────────────────────────
+
+function preloadFrames() {
+  let loaded = 0;
+  const promises = frames.map((src, i) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        loaded++;
+        document.getElementById('loadPct').textContent = Math.round((loaded / totalFrames) * 100) + '%';
+        resolve();
+      };
+      img.onerror = resolve;
+      img.src = src;
+    });
+  });
+
+  Promise.all(promises).then(() => {
+    document.getElementById('loader').classList.add('hidden');
+    document.getElementById('frameSlider').max = totalFrames - 1;
+    goToFrame(0);
+  });
+}
+
+// ── FRAME NAVIGATION ──────────────────────────────────────
+
+function goToFrame(idx) {
+  currentFrame = ((idx % totalFrames) + totalFrames) % totalFrames;
+  document.getElementById('spinImg').src = frames[currentFrame];
+  document.getElementById('frameSlider').value = currentFrame;
+  document.getElementById('frameInfo').textContent = `${currentFrame + 1} / ${totalFrames}`;
+}
+
+function nextFrame() { goToFrame(currentFrame + 1); }
+function prevFrame() { goToFrame(currentFrame - 1); }
+
+// ── AUTOPLAY ──────────────────────────────────────────────
+
+function toggleAutoplay() {
+  const btn = document.getElementById('btnPlay');
+  if (autoplayInterval) {
+    clearInterval(autoplayInterval);
+    autoplayInterval = null;
+    btn.classList.remove('on');
+    btn.textContent = '▶';
+  } else {
+    autoplayInterval = setInterval(nextFrame, autoplaySpeed);
+    btn.classList.add('on');
+    btn.textContent = '⏸';
+  }
+}
+
+// ── DRAG TO SPIN ──────────────────────────────────────────
+
+const wrap = document.getElementById('spinWrap');
+
+wrap.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('.hotspot')) return;
+  isDragging = true;
+  dragStartX = e.clientX;
+  dragFrame = currentFrame;
+  wrap.classList.add('grabbing');
+  wrap.setPointerCapture(e.pointerId);
+  if (autoplayInterval) toggleAutoplay();
+});
+
+wrap.addEventListener('pointermove', (e) => {
+  if (!isDragging) return;
+  const dx = e.clientX - dragStartX;
+  const frameDelta = Math.round(dx / (wrap.offsetWidth / totalFrames));
+  goToFrame(dragFrame + frameDelta);
+});
+
+wrap.addEventListener('pointerup', () => {
+  isDragging = false;
+  wrap.classList.remove('grabbing');
+});
+
+// ── ZOOM ──────────────────────────────────────────────────
+
+function toggleZoom() {
+  zoomed = !zoomed;
+  const img = document.getElementById('spinImg');
+  img.style.transform = zoomed ? 'scale(1.8)' : '';
+  img.style.transition = 'transform .3s ease';
+}
+
+// Scroll to zoom
+wrap.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  const img = document.getElementById('spinImg');
+  const current = parseFloat(img.style.transform.replace(/[^0-9.]/g, '')) || 1;
+  const next = Math.max(1, Math.min(3, current + (e.deltaY > 0 ? -0.15 : 0.15)));
+  img.style.transform = `scale(${next})`;
+  zoomed = next > 1;
+}, { passive: false });
+
+// ── FULLSCREEN ────────────────────────────────────────────
+
+function toggleFullscreen() {
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  } else {
+    wrap.requestFullscreen().catch(() => {});
+  }
+}
+
+// ── KEYBOARD ──────────────────────────────────────────────
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') prevFrame();
+  else if (e.key === 'ArrowRight') nextFrame();
+  else if (e.key === ' ') { e.preventDefault(); toggleAutoplay(); }
+  else if (e.key === 'f') toggleFullscreen();
+  else if (e.key === 'Escape' && document.fullscreenElement) document.exitFullscreen();
+});
+
+// ── INIT ──────────────────────────────────────────────────
+loadVehicle();
+</script>
+</body>
+</html>

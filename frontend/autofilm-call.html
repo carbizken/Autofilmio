@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>AutoFilm — Live Video Call</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#0a0a0d;--bg1:#111116;--bg2:#18181e;--b1:rgba(255,255,255,.09);--t1:rgba(255,255,255,.96);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.40);--fire:#D94F00;--green:#22c55e;--rose:#f43f5e;--ff:'Geist',-apple-system,sans-serif;--fm:'Geist Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--ff);background:#000;color:var(--t1);-webkit-font-smoothing:antialiased}
+
+/* Call viewport */
+.call-wrap{position:fixed;inset:0;background:#000;display:flex;flex-direction:column}
+
+/* Remote video (full screen) */
+#remoteVideo{width:100%;flex:1;object-fit:cover;background:#111}
+
+/* Local video (picture-in-picture) */
+#localVideo{position:fixed;top:16px;right:16px;width:120px;height:160px;border-radius:14px;object-fit:cover;border:2px solid rgba(255,255,255,.15);z-index:10;background:#222;box-shadow:0 8px 24px rgba(0,0,0,.6)}
+
+/* Top info bar */
+.top-info{position:fixed;top:0;left:0;right:0;padding:16px;display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,rgba(0,0,0,.7),transparent);z-index:5;pointer-events:none}
+.call-status{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.call-status .dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.call-timer{font-family:var(--fm);font-size:13px;font-weight:600;color:rgba(255,255,255,.7)}
+.call-name{margin-left:auto;font-size:13px;font-weight:700;color:rgba(255,255,255,.8)}
+
+/* Bottom controls */
+.call-controls{position:fixed;bottom:0;left:0;right:0;padding:24px 20px 40px;display:flex;align-items:center;justify-content:center;gap:16px;background:linear-gradient(0deg,rgba(0,0,0,.7),transparent);z-index:5}
+.call-btn{width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;transition:all .14s}
+.call-btn:hover{transform:scale(1.1)}
+.btn-mute{background:rgba(255,255,255,.15);color:#fff}
+.btn-mute.on{background:rgba(244,63,94,.25);color:var(--rose)}
+.btn-cam{background:rgba(255,255,255,.15);color:#fff}
+.btn-cam.on{background:rgba(244,63,94,.25);color:var(--rose)}
+.btn-flip{background:rgba(255,255,255,.15);color:#fff}
+.btn-end{width:68px;height:56px;border-radius:28px;background:var(--rose);color:#fff;box-shadow:0 4px 20px rgba(244,63,94,.4)}
+.btn-end:hover{background:#ef4444}
+
+/* Ringing state */
+.ringing{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:50;text-align:center;padding:32px}
+.ringing.hidden{display:none}
+.ring-avatar{width:96px;height:96px;border-radius:50%;background:var(--bg2);border:3px solid var(--fire);display:flex;align-items:center;justify-content:center;font-size:36px;margin-bottom:20px;animation:ringPulse 2s ease infinite}
+@keyframes ringPulse{0%,100%{box-shadow:0 0 0 0 rgba(217,79,0,.3)}70%{box-shadow:0 0 0 20px rgba(217,79,0,0)}}
+.ring-title{font-size:20px;font-weight:800;margin-bottom:6px}
+.ring-sub{font-size:13px;color:var(--t3);margin-bottom:32px}
+.ring-status{font-size:12px;color:var(--t2);font-family:var(--fm);margin-bottom:24px}
+.ring-actions{display:flex;gap:20px}
+.ring-btn{width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;transition:transform .14s}
+.ring-btn:hover{transform:scale(1.1)}
+.ring-accept{background:var(--green);color:#fff;box-shadow:0 4px 20px rgba(34,197,94,.4)}
+.ring-decline{background:var(--rose);color:#fff;box-shadow:0 4px 20px rgba(244,63,94,.4)}
+
+/* Ended state */
+.ended{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:60;text-align:center;padding:32px}
+.ended.on{display:flex}
+.ended-ico{font-size:48px;margin-bottom:16px}
+.ended-title{font-size:20px;font-weight:800;margin-bottom:6px}
+.ended-sub{font-size:13px;color:var(--t3)}
+.ended-dur{font-family:var(--fm);font-size:16px;font-weight:700;margin-top:16px;color:var(--t2)}
+</style>
+</head>
+<body>
+
+<!-- Ringing / waiting state -->
+<div class="ringing" id="ringingState">
+  <div class="ring-avatar" id="ringAvatar">📞</div>
+  <div class="ring-title" id="ringName">Connecting...</div>
+  <div class="ring-sub" id="ringSub">AutoFilm Live Video Call</div>
+  <div class="ring-status" id="ringStatus">Waiting for connection...</div>
+  <div class="ring-actions" id="ringActions">
+    <button class="ring-btn ring-decline" onclick="endCall()">✕</button>
+    <button class="ring-btn ring-accept" id="btnAccept" onclick="acceptCall()" style="display:none">📞</button>
+  </div>
+</div>
+
+<!-- Active call view -->
+<div class="call-wrap" id="callWrap" style="display:none">
+  <div class="top-info">
+    <div class="call-status"><div class="dot"></div> Live</div>
+    <div class="call-timer" id="callTimer">00:00</div>
+    <div class="call-name" id="callName"></div>
+  </div>
+
+  <video id="remoteVideo" autoplay playsinline></video>
+  <video id="localVideo" autoplay playsinline muted></video>
+
+  <div class="call-controls">
+    <button class="call-btn btn-mute" id="btnMute" onclick="toggleMute()">🎤</button>
+    <button class="call-btn btn-cam" id="btnCam" onclick="toggleCam()">📹</button>
+    <button class="call-btn btn-end" onclick="endCall()">✕</button>
+    <button class="call-btn btn-flip" onclick="flipCam()">🔄</button>
+  </div>
+</div>
+
+<!-- Call ended -->
+<div class="ended" id="endedState">
+  <div class="ended-ico">✅</div>
+  <div class="ended-title">Call Ended</div>
+  <div class="ended-sub">Thanks for connecting with AutoFilm</div>
+  <div class="ended-dur" id="endedDur"></div>
+</div>
+
+<script>
+const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:3001' : 'https://api.autofilm.io';
+
+const params = new URLSearchParams(location.search);
+const repId = params.get('rep_id') || '';
+const rooftopId = params.get('rooftop_id') || '';
+const callerSource = params.get('caller') || 'direct';
+const callId = params.get('call_id') || '';
+const role = callId ? 'rep' : 'caller';
+
+let pc = null;
+let localStream = null;
+let currentCallId = callId || null;
+let callStartTime = 0;
+let timerInterval = null;
+let pollInterval = null;
+let candidateIndex = 0;
+let muted = false;
+let camOff = false;
+let facingMode = 'user';
+
+const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+];
+
+// ── INIT ──────────────────────────────────────────────────
+
+async function init() {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode, width: { ideal: 640 }, height: { ideal: 480 } },
+      audio: true,
+    });
+    document.getElementById('localVideo').srcObject = localStream;
+  } catch (e) {
+    console.error('[call] Camera error:', e);
+    document.getElementById('ringStatus').textContent = 'Camera access required for video calls';
+    return;
+  }
+
+  if (role === 'caller') {
+    await initiateCall();
+  } else {
+    await joinCall();
+  }
+}
+
+// ── CALLER FLOW ───────────────────────────────────────────
+
+async function initiateCall() {
+  document.getElementById('ringStatus').textContent = 'Calling rep...';
+
+  const res = await fetch(`${API}/api/call/initiate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      rep_id: repId,
+      rooftop_id: rooftopId,
+      caller_name: params.get('name') || 'Website Visitor',
+      source: callerSource,
+    }),
+  });
+
+  const data = await res.json();
+  if (!data.call_id) {
+    document.getElementById('ringStatus').textContent = 'Could not connect. Try again.';
+    return;
+  }
+
+  currentCallId = data.call_id;
+  document.getElementById('ringName').textContent = `Calling ${data.rep_name}...`;
+  document.getElementById('ringSub').textContent = data.dealer_name || 'AutoFilm Live Video Call';
+
+  // Create peer connection and offer
+  createPeerConnection();
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  await fetch(`${API}/api/call/${currentCallId}/signal`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role: 'caller', type: 'offer', data: offer }),
+  });
+
+  // Poll for answer
+  startPolling();
+}
+
+// ── REP FLOW ──────────────────────────────────────────────
+
+async function joinCall() {
+  document.getElementById('ringName').textContent = 'Incoming Call';
+  document.getElementById('ringStatus').textContent = 'Customer is calling...';
+  document.getElementById('btnAccept').style.display = '';
+
+  // Fetch call info
+  const res = await fetch(`${API}/api/call/${currentCallId}/status`);
+  const data = await res.json();
+  if (data.caller_name) {
+    document.getElementById('ringName').textContent = data.caller_name;
+    document.getElementById('ringStatus').textContent = 'Incoming video call';
+  }
+}
+
+async function acceptCall() {
+  document.getElementById('ringStatus').textContent = 'Connecting...';
+  document.getElementById('btnAccept').style.display = 'none';
+
+  await fetch(`${API}/api/call/${currentCallId}/accept`, { method: 'POST' });
+
+  createPeerConnection();
+
+  // Get the caller's offer
+  const sigRes = await fetch(`${API}/api/call/${currentCallId}/signal?role=rep`);
+  const sigData = await sigRes.json();
+
+  if (sigData.offer) {
+    await pc.setRemoteDescription(new RTCSessionDescription(sigData.offer));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    await fetch(`${API}/api/call/${currentCallId}/signal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'rep', type: 'answer', data: answer }),
+    });
+
+    // Add any existing ICE candidates
+    for (const c of sigData.candidates || []) {
+      await pc.addIceCandidate(new RTCIceCandidate(c));
+    }
+    candidateIndex = sigData.candidateIndex || 0;
+  }
+
+  startPolling();
+}
+
+// ── WEBRTC ────────────────────────────────────────────────
+
+function createPeerConnection() {
+  pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+
+  // Add local tracks
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  // Handle remote stream
+  pc.ontrack = (e) => {
+    document.getElementById('remoteVideo').srcObject = e.streams[0];
+    showCallUI();
+  };
+
+  // ICE candidates → send to signaling server
+  pc.onicecandidate = (e) => {
+    if (e.candidate && currentCallId) {
+      fetch(`${API}/api/call/${currentCallId}/signal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, type: 'candidate', data: e.candidate }),
+      }).catch(() => {});
+    }
+  };
+
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'connected') showCallUI();
+    if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') endCall();
+  };
+}
+
+// ── POLLING ───────────────────────────────────────────────
+
+function startPolling() {
+  pollInterval = setInterval(async () => {
+    if (!currentCallId) return;
+    try {
+      const res = await fetch(`${API}/api/call/${currentCallId}/signal?role=${role}&since=${candidateIndex}`);
+      const data = await res.json();
+
+      // Handle answer (caller waiting for rep's answer)
+      if (role === 'caller' && data.answer && pc && !pc.remoteDescription) {
+        await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+      }
+
+      // Handle offer (rep waiting for caller's offer — already handled in acceptCall)
+
+      // Handle ICE candidates from the other side
+      for (const c of data.candidates || []) {
+        if (pc) await pc.addIceCandidate(new RTCIceCandidate(c));
+      }
+      candidateIndex = data.candidateIndex || candidateIndex;
+
+      // Check if call ended
+      if (data.status === 'ended' || data.status === 'missed') {
+        endCall();
+      }
+    } catch (e) { /* ignore poll errors */ }
+  }, 1000);
+}
+
+// ── UI ────────────────────────────────────────────────────
+
+function showCallUI() {
+  document.getElementById('ringingState').classList.add('hidden');
+  document.getElementById('callWrap').style.display = 'flex';
+  callStartTime = Date.now();
+  timerInterval = setInterval(updateTimer, 1000);
+  document.getElementById('callName').textContent =
+    role === 'caller' ? 'Connected' : (params.get('name') || 'Customer');
+}
+
+function updateTimer() {
+  const s = Math.floor((Date.now() - callStartTime) / 1000);
+  const m = Math.floor(s / 60);
+  document.getElementById('callTimer').textContent =
+    String(m).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+}
+
+function toggleMute() {
+  muted = !muted;
+  localStream.getAudioTracks().forEach(t => t.enabled = !muted);
+  document.getElementById('btnMute').classList.toggle('on', muted);
+  document.getElementById('btnMute').textContent = muted ? '🔇' : '🎤';
+}
+
+function toggleCam() {
+  camOff = !camOff;
+  localStream.getVideoTracks().forEach(t => t.enabled = !camOff);
+  document.getElementById('btnCam').classList.toggle('on', camOff);
+  document.getElementById('btnCam').textContent = camOff ? '📵' : '📹';
+}
+
+async function flipCam() {
+  facingMode = facingMode === 'user' ? 'environment' : 'user';
+  localStream.getVideoTracks().forEach(t => t.stop());
+  const newStream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode },
+    audio: false,
+  });
+  const newTrack = newStream.getVideoTracks()[0];
+  localStream.getVideoTracks().forEach(t => localStream.removeTrack(t));
+  localStream.addTrack(newTrack);
+  document.getElementById('localVideo').srcObject = localStream;
+  // Replace track in peer connection
+  const sender = pc?.getSenders().find(s => s.track?.kind === 'video');
+  if (sender) sender.replaceTrack(newTrack);
+}
+
+async function endCall() {
+  clearInterval(pollInterval);
+  clearInterval(timerInterval);
+
+  if (currentCallId) {
+    fetch(`${API}/api/call/${currentCallId}/end`, { method: 'POST' }).catch(() => {});
+  }
+
+  if (pc) { pc.close(); pc = null; }
+  if (localStream) localStream.getTracks().forEach(t => t.stop());
+
+  const duration = callStartTime ? Math.floor((Date.now() - callStartTime) / 1000) : 0;
+  const m = Math.floor(duration / 60);
+  const s = duration % 60;
+
+  document.getElementById('ringingState').classList.add('hidden');
+  document.getElementById('callWrap').style.display = 'none';
+  document.getElementById('endedState').classList.add('on');
+  document.getElementById('endedDur').textContent = duration > 0
+    ? `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}` : '';
+}
+
+init();
+</script>
+</body>
+</html>
