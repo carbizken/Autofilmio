@@ -1,0 +1,53 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/**",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/frontend/autofilm-landing.html"
+    },
+    {
+      "src": "/app",
+      "dest": "/frontend/autofilm-app.html"
+    },
+    {
+      "src": "/player",
+      "dest": "/frontend/autofilm-player.html"
+    },
+    {
+      "src": "/command",
+      "dest": "/frontend/autofilm-command.html"
+    },
+    {
+      "src": "/admin",
+      "dest": "/frontend/autofilm-admin.html"
+    },
+    {
+      "src": "/pitch",
+      "dest": "/frontend/autofilm-pitch.html"
+    },
+    {
+      "src": "/trade",
+      "dest": "/frontend/hartecash-trade.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/$1"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AutoFilm — Set Up Your Dealership</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0a0a0d;--bg1:#111116;--bg2:#18181e;--bg3:#202028;--b0:rgba(255,255,255,.05);--b1:rgba(255,255,255,.09);--b2:rgba(255,255,255,.16);--t1:rgba(255,255,255,.96);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.40);--t4:rgba(255,255,255,.20);--fire:#D94F00;--fire2:#E85A0A;--firet:rgba(217,79,0,.10);--fireb:rgba(217,79,0,.22);--green:#22c55e;--amber:#f59e0b;--ff:'Geist',-apple-system,sans-serif;--fm:'Geist Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;align-items:center}
+
+/* Progress */
+.progress{display:flex;align-items:center;gap:8px;padding:32px 24px 0;width:100%;max-width:580px}
+.prog-step{display:flex;align-items:center;gap:8px;flex:1}
+.prog-dot{width:28px;height:28px;border-radius:50%;background:var(--bg2);border:2px solid var(--b1);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--t4);transition:all .3s;flex-shrink:0}
+.prog-dot.on{background:var(--fire);border-color:var(--fire);color:#fff;box-shadow:0 2px 10px rgba(217,79,0,.4)}
+.prog-dot.done{background:var(--green);border-color:var(--green);color:#fff}
+.prog-line{flex:1;height:2px;background:var(--b1);border-radius:1px}
+.prog-line.on{background:var(--fire)}.prog-line.done{background:var(--green)}
+
+/* Card */
+.card{max-width:580px;width:100%;margin:24px auto;padding:0 20px}
+.card-inner{background:var(--bg1);border:1px solid var(--b1);border-radius:20px;padding:32px 28px;animation:fadeUp .3s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+.step-eyebrow{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--fire2);margin-bottom:8px}
+.step-title{font-size:22px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px}
+.step-sub{font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:24px}
+
+/* Fields */
+.field{margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+.field-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin-bottom:6px;display:block}
+.field-inp{width:100%;padding:12px 14px;background:var(--bg2);border:1px solid var(--b1);border-radius:10px;color:var(--t1);font-size:14px;font-family:var(--ff);outline:none;transition:border-color .15s}
+.field-inp:focus{border-color:var(--fire)}
+.field-inp::placeholder{color:var(--t4)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* Buttons */
+.btn-primary{width:100%;padding:14px;border-radius:12px;background:var(--fire);color:#fff;font-size:14px;font-weight:800;border:none;cursor:pointer;font-family:var(--ff);box-shadow:0 4px 20px rgba(217,79,0,.3);transition:all .14s;margin-top:8px}
+.btn-primary:hover{background:var(--fire2);transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-secondary{width:100%;padding:12px;border-radius:10px;background:transparent;border:1px solid var(--b2);color:var(--t2);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--ff);margin-top:8px}
+
+/* Scanning animation */
+.scanning{display:none;text-align:center;padding:32px 0}
+.scanning.on{display:block}
+.scan-ring{width:60px;height:60px;border:3px solid var(--b1);border-top-color:var(--fire);border-radius:50%;margin:0 auto 16px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.scan-text{font-size:13px;color:var(--t2)}
+
+/* Scraped preview */
+.preview{background:var(--bg2);border:1px solid var(--b1);border-radius:12px;padding:16px;margin:16px 0}
+.prev-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--b0);font-size:12px}
+.prev-row:last-child{border-bottom:none}
+.prev-label{color:var(--t3);min-width:80px;font-weight:600}
+.prev-val{color:var(--t1);font-weight:700;flex:1}
+.prev-logo{width:40px;height:40px;border-radius:8px;background:var(--bg3);object-fit:contain}
+.color-swatch{width:24px;height:24px;border-radius:6px;border:2px solid var(--b2)}
+
+/* Team invite */
+.invite-row{display:flex;gap:8px;align-items:end;margin-bottom:10px}
+.invite-row .field{flex:1;margin-bottom:0}
+.invite-row .field-inp{font-size:12px;padding:10px}
+.btn-add{padding:8px 14px;border-radius:8px;background:var(--firet);border:1px solid var(--fireb);color:var(--fire2);font-size:11px;font-weight:700;cursor:pointer;font-family:var(--ff);white-space:nowrap}
+.invited-list{display:flex;flex-direction:column;gap:6px;margin:12px 0}
+.invited{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border-radius:8px;font-size:12px}
+.invited-av{width:26px;height:26px;border-radius:50%;background:var(--fire);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0}
+.invited-info{flex:1}.invited-name{font-weight:700}.invited-email{color:var(--t3);font-size:10px}
+.invited-dept{font-size:9px;font-weight:700;padding:2px 7px;border-radius:12px;background:var(--bg3);color:var(--t3)}
+
+/* Success confetti */
+.success-card{text-align:center}
+.succ-ring{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--fire),var(--fire2));display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px;box-shadow:0 8px 32px rgba(217,79,0,.4)}
+.succ-title{font-size:26px;font-weight:900;letter-spacing:-.5px;margin-bottom:8px}
+.succ-sub{font-size:14px;color:var(--t2);line-height:1.6;margin-bottom:28px}
+.succ-links{display:flex;flex-direction:column;gap:10px}
+.succ-link{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg2);border:1px solid var(--b1);border-radius:12px;cursor:pointer;transition:border-color .14s;text-align:left;text-decoration:none;color:var(--t1)}
+.succ-link:hover{border-color:var(--b2)}
+.succ-link-ico{font-size:20px;flex-shrink:0}
+.succ-link-txt{font-size:13px;font-weight:700}
+.succ-link-sub{font-size:11px;color:var(--t3);margin-top:2px}
+
+footer{padding:24px;font-size:11px;color:var(--t4);text-align:center}
+footer span{color:var(--fire2);font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- Progress -->
+<div class="progress" id="progress">
+  <div class="prog-step"><div class="prog-dot on" id="pd1">1</div><div class="prog-line" id="pl1"></div></div>
+  <div class="prog-step"><div class="prog-dot" id="pd2">2</div><div class="prog-line" id="pl2"></div></div>
+  <div class="prog-step"><div class="prog-dot" id="pd3">3</div><div class="prog-line" id="pl3"></div></div>
+  <div class="prog-step"><div class="prog-dot" id="pd4">4</div><div class="prog-line" id="pl4"></div></div>
+  <div class="prog-step"><div class="prog-dot" id="pd5">5</div></div>
+</div>
+
+<!-- Steps container -->
+<div class="card" id="stepCard"></div>
+
+<footer>Powered by <span>AutoFilm</span> &middot; Video selling for automotive</footer>
+
+<script>
+const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:3001' : 'https://api.autofilm.io';
+
+let step = 1;
+let rooftopId = null;
+let repId = null;
+let scraped = {};
+let invitedReps = [];
+
+function render() {
+  const card = document.getElementById('stepCard');
+  // Update progress dots
+  for (let i = 1; i <= 5; i++) {
+    const dot = document.getElementById('pd' + i);
+    const line = document.getElementById('pl' + i);
+    dot.className = 'prog-dot' + (i < step ? ' done' : i === step ? ' on' : '');
+    dot.innerHTML = i < step ? '&#10003;' : i;
+    if (line) line.className = 'prog-line' + (i < step ? ' done' : i === step ? ' on' : '');
+  }
+
+  if (step === 1) renderStep1(card);
+  else if (step === 2) renderStep2(card);
+  else if (step === 3) renderStep3(card);
+  else if (step === 4) renderStep4(card);
+  else renderStep5(card);
+}
+
+function renderStep1(card) {
+  card.innerHTML = `<div class="card-inner">
+    <div class="step-eyebrow">Step 1 of 5</div>
+    <div class="step-title">Enter Your Dealership Website</div>
+    <div class="step-sub">We'll automatically detect your dealership name, logo, brand colors, and contact info.</div>
+    <div class="field"><label class="field-label">Dealership Website URL</label><input class="field-inp" id="fUrl" placeholder="www.yourdealership.com" autofocus></div>
+    <button class="btn-primary" id="btnScan" onclick="scanWebsite()">Scan My Dealership</button>
+    <div class="scanning" id="scanning"><div class="scan-ring"></div><div class="scan-text">Scanning your website...</div></div>
+  </div>`;
+}
+
+function renderStep2(card) {
+  card.innerHTML = `<div class="card-inner">
+    <div class="step-eyebrow">Step 2 of 5</div>
+    <div class="step-title">Confirm Your Details</div>
+    <div class="step-sub">We scraped these from your website. Fix anything that's off.</div>
+    <div class="preview">
+      ${scraped.logo ? `<div class="prev-row"><span class="prev-label">Logo</span><img class="prev-logo" src="${esc(scraped.logo)}" alt="Logo"></div>` : ''}
+      <div class="prev-row"><span class="prev-label">Color</span><div class="color-swatch" style="background:${esc(scraped.brand_color || '#D94F00')}"></div></div>
+    </div>
+    <div class="field"><label class="field-label">Dealership Name</label><input class="field-inp" id="fName" value="${esc(scraped.name || '')}"></div>
+    <div class="row2">
+      <div class="field"><label class="field-label">Phone</label><input class="field-inp" id="fPhone" value="${esc(scraped.phone || '')}"></div>
+      <div class="field"><label class="field-label">Brand Color</label><input class="field-inp" id="fColor" type="color" value="${scraped.brand_color || '#D94F00'}" style="height:42px;padding:4px"></div>
+    </div>
+    <div class="field"><label class="field-label">Address</label><input class="field-inp" id="fAddr" value="${esc(scraped.address || '')}"></div>
+    <div class="row2">
+      <div class="field"><label class="field-label">City</label><input class="field-inp" id="fCity" value="${esc(scraped.city || '')}"></div>
+      <div class="field"><label class="field-label">State</label><input class="field-inp" id="fState" value="${esc(scraped.state || '')}"></div>
+    </div>
+    <button class="btn-primary" onclick="confirmDetails()">Confirm &amp; Continue</button>
+  </div>`;
+}
+
+function renderStep3(card) {
+  card.innerHTML = `<div class="card-inner">
+    <div class="step-eyebrow">Step 3 of 5</div>
+    <div class="step-title">Create Your Account</div>
+    <div class="step-sub">You'll be the admin for ${esc(scraped.name || 'your dealership')}. Your team can be added next.</div>
+    <div class="field"><label class="field-label">Your Full Name</label><input class="field-inp" id="fAdminName" placeholder="Ken Criscione" autofocus></div>
+    <div class="field"><label class="field-label">Email</label><input class="field-inp" id="fAdminEmail" type="email" placeholder="ken@dealership.com"></div>
+    <button class="btn-primary" onclick="createAccount()">Create Account</button>
+  </div>`;
+}
+
+function renderStep4(card) {
+  const repHtml = invitedReps.map(r => {
+    const init = r.name.split(' ').map(w => w[0]).join('').slice(0, 2);
+    return `<div class="invited"><div class="invited-av">${esc(init)}</div><div class="invited-info"><div class="invited-name">${esc(r.name)}</div><div class="invited-email">${esc(r.email)}</div></div><div class="invited-dept">${esc(r.department)}</div></div>`;
+  }).join('');
+
+  card.innerHTML = `<div class="card-inner">
+    <div class="step-eyebrow">Step 4 of 5</div>
+    <div class="step-title">Invite Your Team</div>
+    <div class="step-sub">Add sales reps, service advisors, and BDC staff. They'll get an email invite.</div>
+    <div class="invite-row">
+      <div class="field"><label class="field-label">Name</label><input class="field-inp" id="fRepName" placeholder="Jane Doe"></div>
+      <div class="field"><label class="field-label">Email</label><input class="field-inp" id="fRepEmail" placeholder="jane@dealer.com"></div>
+      <div class="field"><label class="field-label">Dept</label><select class="field-inp" id="fRepDept" style="font-size:12px"><option>sales</option><option>service</option><option>bdc</option></select></div>
+      <button class="btn-add" onclick="addRep()">+ Add</button>
+    </div>
+    <div class="invited-list" id="invitedList">${repHtml}</div>
+    <button class="btn-primary" onclick="finishInvites()">Continue</button>
+    <button class="btn-secondary" onclick="step=5;render()">Skip for Now</button>
+  </div>`;
+}
+
+function renderStep5(card) {
+  card.innerHTML = `<div class="card-inner success-card">
+    <div class="succ-ring">🎬</div>
+    <div class="succ-title">You're Live!</div>
+    <div class="succ-sub">AutoFilm is set up for ${esc(scraped.name || 'your dealership')}. Start sending personal videos to your customers today.</div>
+    <div class="succ-links">
+      <a class="succ-link" href="autofilm-dashboard.html?rooftop_id=${rooftopId}"><div class="succ-link-ico">📊</div><div><div class="succ-link-txt">Open Dashboard</div><div class="succ-link-sub">See team stats and manage your dealership</div></div></a>
+      <a class="succ-link" href="autofilm-record.html?rep_id=${repId}&rooftop_id=${rooftopId}"><div class="succ-link-ico">📹</div><div><div class="succ-link-txt">Record Your First Video</div><div class="succ-link-sub">Try the teleprompter with AI script assist</div></div></a>
+      <a class="succ-link" href="autofilm-service.html?rep_id=${repId}&rooftop_id=${rooftopId}"><div class="succ-link-ico">🔧</div><div><div class="succ-link-txt">Service MPI Video</div><div class="succ-link-sub">Send video inspections to service customers</div></div></a>
+    </div>
+  </div>`;
+}
+
+async function scanWebsite() {
+  const url = document.getElementById('fUrl').value.trim();
+  if (!url) { alert('Please enter your website URL'); return; }
+  document.getElementById('btnScan').disabled = true;
+  document.getElementById('scanning').classList.add('on');
+  try {
+    const res = await fetch(`${API}/api/onboard`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ website_url: url, admin_email: 'pending@autofilm.io', admin_name: 'Pending' }),
+    });
+    const data = await res.json();
+    if (data.error && data.error !== 'Email already registered') throw new Error(data.error);
+    rooftopId = data.rooftop_id;
+    repId = data.rep_id;
+    scraped = data.scraped || {};
+    step = 2;
+    render();
+  } catch (e) {
+    alert('Error scanning: ' + e.message);
+    document.getElementById('btnScan').disabled = false;
+    document.getElementById('scanning').classList.remove('on');
+  }
+}
+
+async function confirmDetails() {
+  try {
+    await fetch(`${API}/api/onboard/${rooftopId}/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: document.getElementById('fName').value.trim(),
+        phone: document.getElementById('fPhone').value.trim(),
+        brand_color: document.getElementById('fColor').value,
+        address: document.getElementById('fAddr').value.trim(),
+        city: document.getElementById('fCity').value.trim(),
+        state: document.getElementById('fState').value.trim(),
+      }),
+    });
+    scraped.name = document.getElementById('fName').value.trim();
+    step = 3;
+    render();
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function createAccount() {
+  const name = document.getElementById('fAdminName').value.trim();
+  const email = document.getElementById('fAdminEmail').value.trim();
+  if (!name || !email) { alert('Please fill in both fields'); return; }
+  try {
+    // Update the pending rep with real info
+    await fetch(`${API}/api/onboard/${rooftopId}/invite`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, role: 'admin', department: 'sales' }),
+    });
+    localStorage.setItem('af_rooftop_id', rooftopId);
+    step = 4;
+    render();
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function addRep() {
+  const name = document.getElementById('fRepName').value.trim();
+  const email = document.getElementById('fRepEmail').value.trim();
+  const dept = document.getElementById('fRepDept').value;
+  if (!name || !email) { alert('Name and email required'); return; }
+  try {
+    await fetch(`${API}/api/onboard/${rooftopId}/invite`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, department: dept }),
+    });
+    invitedReps.push({ name, email, department: dept });
+    render();
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+function finishInvites() { step = 5; render(); }
+
+function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+render();
+</script>
+</body>
+</html>

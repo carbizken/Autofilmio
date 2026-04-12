@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "AutoFilm — Video Messaging for Automotive",
+  "version": "1.0.0",
+  "description": "Record and send personal video messages directly from your CRM, Gmail, or any webpage. Powered by AutoFilm.",
+  "permissions": ["activeTab", "storage", "notifications"],
+  "host_permissions": ["https://api.autofilm.io/*", "http://localhost:3001/*"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.eleadcrm.com/*",
+        "*://*.vinsolutions.com/*",
+        "*://*.dealersocket.com/*",
+        "*://mail.google.com/*",
+        "*://outlook.live.com/*",
+        "*://outlook.office.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}

@@ -1,0 +1,67 @@
+name: AutoFilm CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-backend:
+    name: Lint & validate backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm install
+
+      - name: Check syntax
+        working-directory: backend
+        run: node --check src/index.js src/routes/*.js src/lib/*.js
+
+  validate-frontend:
+    name: Validate frontend files
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check all HTML files exist
+        run: |
+          files=(
+            "frontend/autofilm-app.html"
+            "frontend/autofilm-player.html"
+            "frontend/autofilm-landing.html"
+            "frontend/autofilm-command.html"
+            "frontend/autofilm-admin.html"
+            "frontend/autofilm-pitch.html"
+            "frontend/autofilm-worker.js"
+            "frontend/hartecash-trade.html"
+          )
+          for f in "${files[@]}"; do
+            if [ ! -f "$f" ]; then
+              echo "MISSING: $f"
+              exit 1
+            fi
+            size=$(wc -c < "$f")
+            echo "OK: $f ($size bytes)"
+          done
+
+      - name: Check file sizes (warn if > 300KB)
+        run: |
+          for f in frontend/*.html; do
+            size=$(wc -c < "$f")
+            if [ $size -gt 307200 ]; then
+              echo "WARNING: $f is ${size} bytes (>300KB)"
+            fi
+          done
