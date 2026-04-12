@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>AutoFilm — Record Video</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0a0a0d;--bg1:#111116;--bg2:#18181e;--bg3:#202028;--b0:rgba(255,255,255,.05);--b1:rgba(255,255,255,.09);--b2:rgba(255,255,255,.16);--t1:rgba(255,255,255,.96);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.40);--t4:rgba(255,255,255,.20);--fire:#D94F00;--fire2:#E85A0A;--firet:rgba(217,79,0,.10);--fireb:rgba(217,79,0,.22);--green:#22c55e;--amber:#f59e0b;--rose:#f43f5e;--ff:'Geist',-apple-system,sans-serif;--fm:'Geist Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--ff);background:#000;color:var(--t1);-webkit-font-smoothing:antialiased}
+
+/* Camera viewport */
+.cam-wrap{position:fixed;inset:0;background:#000}
+#camVideo{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.cam-overlay{position:fixed;inset:0;pointer-events:none;display:flex;flex-direction:column}
+
+/* Top bar */
+.top-bar{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;pointer-events:auto;background:linear-gradient(180deg,rgba(0,0,0,.6),transparent);padding-bottom:32px}
+.top-left{display:flex;align-items:center;gap:8px}
+.af-sm{width:24px;height:24px;background:var(--fire);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.top-timer{font-family:var(--fm);font-size:14px;font-weight:700;color:#fff;background:rgba(220,38,38,.85);padding:4px 10px;border-radius:6px;display:none}
+.top-timer.on{display:block}
+.top-close{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:#fff;border:none}
+
+/* Teleprompter */
+.teleprompter{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0 24px}
+.tele-scroll{max-width:400px;text-align:center;font-size:22px;font-weight:600;line-height:1.55;color:rgba(255,255,255,.88);text-shadow:0 2px 8px rgba(0,0,0,.8);transition:transform .1s linear;display:none}
+.tele-scroll.on{display:block}
+
+/* Countdown */
+.countdown{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.5);z-index:100}
+.countdown.on{display:flex}
+.countdown-num{font-size:120px;font-weight:900;font-family:var(--fm);color:#fff;animation:countPop .4s ease}
+@keyframes countPop{from{transform:scale(1.4);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* Bottom controls */
+.bottom{padding:24px 16px 40px;pointer-events:auto;background:linear-gradient(0deg,rgba(0,0,0,.7),transparent);padding-top:48px}
+.controls{display:flex;align-items:center;justify-content:center;gap:28px;margin-bottom:16px}
+.btn-flip{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.btn-rec{width:72px;height:72px;border-radius:50%;border:4px solid rgba(255,255,255,.6);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.rec-dot{width:52px;height:52px;border-radius:50%;background:var(--rose);transition:all .2s}
+.btn-rec.recording .rec-dot{border-radius:8px;width:28px;height:28px;background:var(--rose)}
+.btn-stop{display:none}
+
+/* Speed slider */
+.speed-row{display:flex;align-items:center;gap:10px;justify-content:center}
+.speed-label{font-size:10px;color:rgba(255,255,255,.5);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.speed-slider{width:120px;-webkit-appearance:none;height:3px;border-radius:2px;background:rgba(255,255,255,.2);outline:none}
+.speed-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;cursor:pointer}
+
+/* Pre-record panel */
+.pre-panel{position:fixed;bottom:0;left:0;right:0;background:var(--bg1);border-top:1px solid var(--b1);border-radius:20px 20px 0 0;padding:24px 20px 40px;z-index:50;transform:translateY(0);transition:transform .3s ease}
+.pre-panel.hidden{transform:translateY(100%)}
+.pre-hdr{font-size:15px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.pre-hdr svg{color:var(--fire2)}
+.field{margin-bottom:12px}
+.field-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin-bottom:5px;display:block}
+.field-inp{width:100%;padding:10px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--t1);font-size:13px;font-family:var(--ff);outline:none}
+.field-inp:focus{border-color:var(--fire)}
+.field-inp::placeholder{color:var(--t4)}
+.field-ta{width:100%;padding:10px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--t1);font-size:13px;font-family:var(--ff);outline:none;resize:none;line-height:1.5;min-height:100px}
+.field-ta:focus{border-color:var(--fire)}
+.btn-gen{width:100%;padding:12px;border-radius:10px;background:var(--fire);color:#fff;font-size:13px;font-weight:800;border:none;cursor:pointer;font-family:var(--ff);box-shadow:0 4px 16px rgba(217,79,0,.3);margin-bottom:10px}
+.btn-gen:hover{background:var(--fire2)}
+.btn-gen:disabled{opacity:.5;cursor:not-allowed}
+.btn-ready{width:100%;padding:12px;border-radius:10px;background:transparent;border:1px solid var(--b2);color:var(--t2);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--ff)}
+
+/* Post-record overlay */
+.post-panel{position:fixed;inset:0;background:var(--bg);z-index:200;display:none;flex-direction:column}
+.post-panel.on{display:flex}
+.post-preview{flex:1;background:#000;display:flex;align-items:center;justify-content:center}
+#postVideo{max-width:100%;max-height:100%}
+.post-controls{padding:20px 16px 40px;display:flex;gap:10px}
+.btn-send{flex:1;padding:14px;border-radius:10px;background:var(--fire);color:#fff;font-size:14px;font-weight:800;border:none;cursor:pointer;font-family:var(--ff);box-shadow:0 4px 16px rgba(217,79,0,.3)}
+.btn-redo{flex:1;padding:14px;border-radius:10px;background:var(--bg2);border:1px solid var(--b1);color:var(--t2);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--ff)}
+
+/* Permission error */
+.perm-err{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:300;padding:32px;text-align:center}
+.perm-err.on{display:flex}
+.perm-ico{font-size:48px;margin-bottom:16px}
+.perm-title{font-size:20px;font-weight:800;margin-bottom:8px}
+.perm-sub{font-size:14px;color:var(--t2);line-height:1.6;max-width:340px}
+</style>
+</head>
+<body>
+
+<!-- Camera -->
+<div class="cam-wrap">
+  <video id="camVideo" autoplay playsinline muted></video>
+</div>
+
+<!-- Camera overlay -->
+<div class="cam-overlay">
+  <div class="top-bar">
+    <div class="top-left">
+      <div class="af-sm"><svg width="9" height="9" viewBox="0 0 14 14" fill="none"><path d="M1.5 10.5L7 2 12.5 10.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="top-timer" id="timer">00:00</div>
+    </div>
+    <button class="top-close" onclick="history.back()">&times;</button>
+  </div>
+
+  <div class="teleprompter">
+    <div class="tele-scroll" id="teleText"></div>
+  </div>
+
+  <div class="bottom">
+    <div class="controls">
+      <button class="btn-flip" id="btnFlip" onclick="flipCam()">🔄</button>
+      <button class="btn-rec" id="btnRec" onclick="toggleRecord()"><div class="rec-dot"></div></button>
+      <button class="btn-flip" id="btnTele" onclick="toggleTele()" style="font-size:14px">📝</button>
+    </div>
+    <div class="speed-row" id="speedRow" style="display:none">
+      <span class="speed-label">Speed</span>
+      <input type="range" class="speed-slider" id="speedSlider" min="10" max="80" value="35" oninput="teleSpeed=parseInt(this.value)">
+    </div>
+  </div>
+</div>
+
+<!-- Countdown -->
+<div class="countdown" id="countdown"><div class="countdown-num" id="countNum">3</div></div>
+
+<!-- Pre-record panel -->
+<div class="pre-panel" id="prePanel">
+  <div class="pre-hdr">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 5.5l5 2.5-5 2.5V5.5z" fill="currentColor"/></svg>
+    Prepare Your Video
+  </div>
+  <div class="field">
+    <label class="field-label">Customer Name</label>
+    <input class="field-inp" id="fCustomer" placeholder="John Smith">
+  </div>
+  <div class="field">
+    <label class="field-label">Vehicle (optional)</label>
+    <input class="field-inp" id="fVehicle" placeholder="2025 Honda Accord Sport">
+  </div>
+  <button class="btn-gen" id="btnGen" onclick="generateScript()">Generate AI Script</button>
+  <div class="field">
+    <label class="field-label">Script (edit or type your own)</label>
+    <textarea class="field-ta" id="fScript" placeholder="Your script will appear here..."></textarea>
+  </div>
+  <button class="btn-ready" onclick="closePrePanel()">Ready to Record</button>
+</div>
+
+<!-- Post-record -->
+<div class="post-panel" id="postPanel">
+  <div class="post-preview"><video id="postVideo" controls playsinline></video></div>
+  <div class="post-controls">
+    <button class="btn-redo" onclick="redo()">Re-record</button>
+    <button class="btn-send" onclick="sendVideo()">Send Video →</button>
+  </div>
+</div>
+
+<!-- Permission error -->
+<div class="perm-err" id="permErr">
+  <div>
+    <div class="perm-ico">📹</div>
+    <div class="perm-title">Camera Access Needed</div>
+    <div class="perm-sub">AutoFilm needs access to your camera and microphone to record videos. Please allow access in your browser settings and reload.</div>
+  </div>
+</div>
+
+<script>
+const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:3001' : 'https://api.autofilm.io';
+
+const params = new URLSearchParams(location.search);
+const repId = params.get('rep_id') || localStorage.getItem('af_rep_id') || '';
+const rooftopId = params.get('rooftop_id') || localStorage.getItem('af_rooftop_id') || '';
+if (params.get('customer_name')) document.getElementById('fCustomer').value = params.get('customer_name');
+if (params.get('vehicle')) document.getElementById('fVehicle').value = params.get('vehicle');
+
+let stream = null;
+let recorder = null;
+let chunks = [];
+let recording = false;
+let timerInterval = null;
+let recordStart = 0;
+let facingMode = 'user';
+let teleSpeed = 35;
+let teleInterval = null;
+let teleOffset = 0;
+let recordedBlob = null;
+
+// Init camera
+async function initCam() {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: true,
+    });
+    document.getElementById('camVideo').srcObject = stream;
+  } catch (e) {
+    document.getElementById('permErr').classList.add('on');
+  }
+}
+initCam();
+
+async function flipCam() {
+  facingMode = facingMode === 'user' ? 'environment' : 'user';
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  await initCam();
+  document.getElementById('camVideo').style.transform = facingMode === 'user' ? 'scaleX(-1)' : 'none';
+}
+
+function closePrePanel() {
+  document.getElementById('prePanel').classList.add('hidden');
+  const script = document.getElementById('fScript').value.trim();
+  if (script) {
+    document.getElementById('teleText').textContent = script;
+    document.getElementById('teleText').classList.add('on');
+    document.getElementById('speedRow').style.display = 'flex';
+  }
+}
+
+async function generateScript() {
+  const btn = document.getElementById('btnGen');
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+  try {
+    const customer = document.getElementById('fCustomer').value.trim() || 'the customer';
+    const vehicle = document.getElementById('fVehicle').value.trim();
+    const res = await fetch(`${API}/api/ai-script`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customer_name: customer, vehicle, rep_id: repId }),
+    });
+    const data = await res.json();
+    if (data.script) document.getElementById('fScript').value = data.script;
+  } catch (e) {
+    console.error('[record] Script gen error:', e);
+  }
+  btn.disabled = false;
+  btn.textContent = 'Generate AI Script';
+}
+
+function toggleTele() {
+  const tele = document.getElementById('teleText');
+  if (tele.classList.contains('on')) {
+    tele.classList.remove('on');
+    document.getElementById('speedRow').style.display = 'none';
+  } else {
+    const script = document.getElementById('fScript').value.trim();
+    if (script) {
+      tele.textContent = script;
+      tele.classList.add('on');
+      document.getElementById('speedRow').style.display = 'flex';
+    }
+  }
+}
+
+async function toggleRecord() {
+  if (recording) {
+    stopRecording();
+  } else {
+    startCountdown();
+  }
+}
+
+function startCountdown() {
+  const cd = document.getElementById('countdown');
+  const num = document.getElementById('countNum');
+  cd.classList.add('on');
+  let count = 3;
+  num.textContent = count;
+  const iv = setInterval(() => {
+    count--;
+    if (count > 0) {
+      num.textContent = count;
+      num.style.animation = 'none';
+      void num.offsetWidth;
+      num.style.animation = 'countPop .4s ease';
+    } else {
+      clearInterval(iv);
+      cd.classList.remove('on');
+      startRecording();
+    }
+  }, 800);
+}
+
+function startRecording() {
+  chunks = [];
+  const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+    ? 'video/webm;codecs=vp9,opus'
+    : 'video/webm';
+
+  recorder = new MediaRecorder(stream, { mimeType });
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  recorder.onstop = onRecordingDone;
+  recorder.start(1000);
+
+  recording = true;
+  recordStart = Date.now();
+  document.getElementById('btnRec').classList.add('recording');
+  document.getElementById('timer').classList.add('on');
+  updateTimer();
+  timerInterval = setInterval(updateTimer, 1000);
+
+  // Start teleprompter scroll
+  startTeleScroll();
+}
+
+function stopRecording() {
+  if (recorder && recorder.state !== 'inactive') recorder.stop();
+  recording = false;
+  clearInterval(timerInterval);
+  stopTeleScroll();
+  document.getElementById('btnRec').classList.remove('recording');
+}
+
+function onRecordingDone() {
+  recordedBlob = new Blob(chunks, { type: 'video/webm' });
+  const url = URL.createObjectURL(recordedBlob);
+  document.getElementById('postVideo').src = url;
+  document.getElementById('postPanel').classList.add('on');
+}
+
+function updateTimer() {
+  const s = Math.floor((Date.now() - recordStart) / 1000);
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  document.getElementById('timer').textContent =
+    String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+}
+
+function startTeleScroll() {
+  teleOffset = 0;
+  const el = document.getElementById('teleText');
+  if (!el.classList.contains('on')) return;
+  teleInterval = setInterval(() => {
+    teleOffset += teleSpeed / 60;
+    el.style.transform = `translateY(-${teleOffset}px)`;
+  }, 16);
+}
+
+function stopTeleScroll() {
+  clearInterval(teleInterval);
+}
+
+function redo() {
+  document.getElementById('postPanel').classList.remove('on');
+  recordedBlob = null;
+  document.getElementById('timer').classList.remove('on');
+}
+
+async function sendVideo() {
+  if (!recordedBlob) return;
+  // In production: upload to Mux via the upload endpoint, then call /api/send
+  alert('Video ready to upload! In production this sends to Mux and then to the customer via SMS/email.');
+}
+</script>
+</body>
+</html>

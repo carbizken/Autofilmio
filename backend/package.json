@@ -1,7 +1,7 @@
 {
   "name": "autofilm-api",
-  "version": "1.0.0",
-  "description": "AutoFilm backend API — video upload, SMS, watch tracking",
+  "version": "2.0.0",
+  "description": "AutoFilm backend API — video platform for automotive retail",
   "type": "module",
   "main": "src/index.js",
   "scripts": {

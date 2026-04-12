@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AutoFilm — Service MPI Inspection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0a0a0d;--bg1:#111116;--bg2:#18181e;--bg3:#202028;--b0:rgba(255,255,255,.05);--b1:rgba(255,255,255,.09);--b2:rgba(255,255,255,.16);--t1:rgba(255,255,255,.96);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.40);--t4:rgba(255,255,255,.20);--fire:#D94F00;--fire2:#E85A0A;--firet:rgba(217,79,0,.10);--fireb:rgba(217,79,0,.22);--green:#22c55e;--amber:#f59e0b;--rose:#f43f5e;--ff:'Geist',-apple-system,sans-serif;--fm:'Geist Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;min-height:100vh}
+.wrap{max-width:640px;margin:0 auto;padding:20px 16px 100px}
+
+/* Header */
+.hdr{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.hdr-mark{width:28px;height:28px;background:var(--fire);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.hdr-txt{font-size:16px;font-weight:900;letter-spacing:-.3px}
+.hdr-txt em{color:var(--fire2);font-style:normal}
+.hdr-badge{margin-left:auto;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:20px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2);color:var(--amber)}
+
+/* Customer card */
+.cust-card{background:var(--bg1);border:1px solid var(--b1);border-radius:16px;padding:18px 20px;margin-bottom:20px}
+.cust-title{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin-bottom:12px}
+.cust-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cust-field{margin-bottom:0}
+.cust-label{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--t4);margin-bottom:4px}
+.cust-inp{width:100%;padding:9px 11px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--t1);font-size:12px;font-family:var(--ff);outline:none}
+.cust-inp:focus{border-color:var(--fire)}
+.cust-inp::placeholder{color:var(--t4)}
+.cust-full{grid-column:1/-1}
+
+/* Inspection grid */
+.sec-title{font-size:14px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.sec-title span{font-size:11px;color:var(--t3);font-weight:500}
+.insp-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.insp-item{background:var(--bg1);border:1px solid var(--b1);border-radius:12px;padding:14px;cursor:pointer;transition:all .14s;position:relative}
+.insp-item:hover{border-color:var(--b2)}
+.insp-item.green{border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.04)}
+.insp-item.yellow{border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.04)}
+.insp-item.red{border-color:rgba(244,63,94,.3);background:rgba(244,63,94,.04)}
+.insp-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.insp-name{font-size:12px;font-weight:700}
+.insp-ico{font-size:16px}
+.insp-dots{display:flex;gap:5px}
+.insp-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--b2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .14s;font-size:8px}
+.insp-dot.g{border-color:var(--green)}.insp-dot.g.on{background:var(--green);border-color:var(--green)}
+.insp-dot.y{border-color:var(--amber)}.insp-dot.y.on{background:var(--amber);border-color:var(--amber)}
+.insp-dot.r{border-color:var(--rose)}.insp-dot.r.on{background:var(--rose);border-color:var(--rose)}
+.insp-note{width:100%;padding:6px 8px;background:var(--bg2);border:1px solid var(--b0);border-radius:6px;color:var(--t2);font-size:10px;font-family:var(--ff);outline:none;margin-top:6px;display:none}
+.insp-item.yellow .insp-note,.insp-item.red .insp-note{display:block}
+.insp-cost{width:100%;padding:6px 8px;background:var(--bg2);border:1px solid var(--b0);border-radius:6px;color:var(--t1);font-size:11px;font-family:var(--fm);outline:none;margin-top:4px;display:none}
+.insp-item.yellow .insp-cost,.insp-item.red .insp-cost{display:block}
+
+/* Summary */
+.summary{background:var(--bg1);border:1px solid var(--fireb);border-radius:14px;padding:18px 20px;margin-bottom:20px}
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--b0);font-size:12px}
+.sum-row:last-child{border-bottom:none}
+.sum-lbl{color:var(--t3)}
+.sum-val{font-family:var(--fm);font-weight:700}
+.sum-val.red{color:var(--rose)}.sum-val.yellow{color:var(--amber)}.sum-val.green{color:var(--green)}
+.sum-total{font-size:22px;font-weight:900;font-family:var(--fm);color:var(--fire2);letter-spacing:-.5px}
+
+/* Actions */
+.actions{position:fixed;bottom:0;left:0;right:0;padding:16px;background:linear-gradient(0deg,var(--bg) 60%,transparent);display:flex;gap:10px;max-width:640px;margin:0 auto}
+.btn{flex:1;padding:14px;border-radius:12px;font-size:13px;font-weight:800;font-family:var(--ff);cursor:pointer;text-align:center;border:none;transition:all .14s}
+.btn-rec{background:var(--fire);color:#fff;box-shadow:0 4px 16px rgba(217,79,0,.3)}
+.btn-rec:hover{background:var(--fire2)}
+.btn-send{background:var(--green);color:#fff;box-shadow:0 4px 16px rgba(34,197,94,.25)}
+.btn-ghost{background:transparent;border:1px solid var(--b2);color:var(--t2)}
+
+/* Success */
+.success{display:none;text-align:center;padding:60px 24px}
+.success.on{display:block}
+.succ-ico{font-size:48px;margin-bottom:16px}
+.succ-title{font-size:22px;font-weight:900;margin-bottom:8px}
+.succ-sub{font-size:14px;color:var(--t2);line-height:1.6}
+
+@media(max-width:480px){.insp-grid{grid-template-columns:1fr}.cust-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="wrap" id="formState">
+  <div class="hdr">
+    <div class="hdr-mark"><svg width="10" height="10" viewBox="0 0 14 14" fill="none"><path d="M1.5 10.5L7 2 12.5 10.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="hdr-txt">Auto<em>Film</em></div>
+    <div class="hdr-badge">Service MPI</div>
+  </div>
+
+  <div class="cust-card">
+    <div class="cust-title">Customer & Vehicle</div>
+    <div class="cust-grid">
+      <div class="cust-field"><div class="cust-label">Customer Name</div><input class="cust-inp" id="fName" placeholder="John Smith"></div>
+      <div class="cust-field"><div class="cust-label">Phone</div><input class="cust-inp" id="fPhone" type="tel" placeholder="(203) 555-1234"></div>
+      <div class="cust-field"><div class="cust-label">Email</div><input class="cust-inp" id="fEmail" type="email" placeholder="john@email.com"></div>
+      <div class="cust-field"><div class="cust-label">RO #</div><input class="cust-inp" id="fRo" placeholder="RO-12345" style="font-family:var(--fm)"></div>
+      <div class="cust-field"><div class="cust-label">VIN</div><input class="cust-inp" id="fVin" placeholder="1HGBH41JXMN109186" maxlength="17" style="font-family:var(--fm);font-size:11px"></div>
+      <div class="cust-field"><div class="cust-label">Vehicle</div><input class="cust-inp" id="fVehicle" placeholder="2022 Toyota Camry"></div>
+      <div class="cust-field"><div class="cust-label">Mileage</div><input class="cust-inp" id="fMileage" type="number" placeholder="45000"></div>
+    </div>
+  </div>
+
+  <div class="sec-title">Multi-Point Inspection <span id="itemCount">0 of 11 inspected</span></div>
+  <div class="insp-grid" id="inspGrid"></div>
+
+  <div class="summary">
+    <div class="sum-row"><span class="sum-lbl">Items Good</span><span class="sum-val green" id="sumGreen">0</span></div>
+    <div class="sum-row"><span class="sum-lbl">Items to Monitor</span><span class="sum-val yellow" id="sumYellow">0</span></div>
+    <div class="sum-row"><span class="sum-lbl">Items Need Attention</span><span class="sum-val red" id="sumRed">0</span></div>
+    <div class="sum-row"><span class="sum-lbl">Estimated Total</span><span class="sum-total" id="sumTotal">$0</span></div>
+  </div>
+</div>
+
+<div class="success" id="successState">
+  <div class="succ-ico">✅</div>
+  <div class="succ-title">Inspection Sent!</div>
+  <div class="succ-sub" id="succMsg">The customer will receive your MPI video with the inspection details.</div>
+</div>
+
+<div class="actions" id="actionBar">
+  <button class="btn btn-rec" onclick="openRecord()">📹 Record Video</button>
+  <button class="btn btn-send" onclick="sendInspection()">Send →</button>
+</div>
+
+<script>
+const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:3001' : 'https://api.autofilm.io';
+
+const params = new URLSearchParams(location.search);
+const repId = params.get('rep_id') || localStorage.getItem('af_rep_id') || '';
+const rooftopId = params.get('rooftop_id') || localStorage.getItem('af_rooftop_id') || '';
+
+const ITEMS = [
+  { name:'Brake Pads', ico:'🛞' },
+  { name:'Tires', ico:'🔘' },
+  { name:'Engine Oil', ico:'🛢️' },
+  { name:'Coolant', ico:'❄️' },
+  { name:'Belts/Hoses', ico:'⚙️' },
+  { name:'Battery', ico:'🔋' },
+  { name:'Headlights', ico:'💡' },
+  { name:'Wipers', ico:'🌧️' },
+  { name:'Suspension', ico:'🔧' },
+  { name:'Exhaust', ico:'💨' },
+  { name:'Air Filter', ico:'🌬️' },
+];
+
+let inspectionData = ITEMS.map(i => ({ name: i.name, ico: i.ico, status: null, note: '', cost: 0 }));
+
+function renderGrid() {
+  const grid = document.getElementById('inspGrid');
+  grid.innerHTML = inspectionData.map((item, i) => {
+    const cls = item.status || '';
+    return `<div class="insp-item ${cls}" id="item${i}">
+      <div class="insp-top">
+        <div class="insp-name">${item.ico} ${item.name}</div>
+      </div>
+      <div class="insp-dots">
+        <div class="insp-dot g ${item.status === 'green' ? 'on' : ''}" onclick="setStatus(${i},'green')"></div>
+        <div class="insp-dot y ${item.status === 'yellow' ? 'on' : ''}" onclick="setStatus(${i},'yellow')"></div>
+        <div class="insp-dot r ${item.status === 'red' ? 'on' : ''}" onclick="setStatus(${i},'red')"></div>
+      </div>
+      <input class="insp-note" placeholder="Add note..." value="${esc(item.note)}" oninput="inspectionData[${i}].note=this.value">
+      <input class="insp-cost" type="number" placeholder="Cost $" value="${item.cost || ''}" oninput="inspectionData[${i}].cost=parseFloat(this.value)||0;updateSummary()">
+    </div>`;
+  }).join('');
+}
+
+function setStatus(idx, status) {
+  inspectionData[idx].status = status;
+  renderGrid();
+  updateSummary();
+}
+
+function updateSummary() {
+  const g = inspectionData.filter(i => i.status === 'green').length;
+  const y = inspectionData.filter(i => i.status === 'yellow').length;
+  const r = inspectionData.filter(i => i.status === 'red').length;
+  const total = inspectionData.reduce((s, i) => s + (i.cost || 0), 0);
+  const inspected = inspectionData.filter(i => i.status).length;
+  document.getElementById('sumGreen').textContent = g;
+  document.getElementById('sumYellow').textContent = y;
+  document.getElementById('sumRed').textContent = r;
+  document.getElementById('sumTotal').textContent = '$' + total.toLocaleString();
+  document.getElementById('itemCount').textContent = `${inspected} of ${ITEMS.length} inspected`;
+}
+
+function openRecord() {
+  const customer = document.getElementById('fName').value.trim();
+  const vehicle = document.getElementById('fVehicle').value.trim();
+  const url = `autofilm-record.html?rep_id=${repId}&rooftop_id=${rooftopId}&customer_name=${encodeURIComponent(customer)}&vehicle=${encodeURIComponent(vehicle)}`;
+  window.open(url, '_blank');
+}
+
+async function sendInspection() {
+  const name = document.getElementById('fName').value.trim();
+  if (!name) { alert('Please enter customer name'); return; }
+
+  const items = inspectionData.filter(i => i.status).map(i => ({
+    name: i.name, status: i.status, note: i.note, cost: i.cost
+  }));
+
+  if (items.length === 0) { alert('Please inspect at least one item'); return; }
+
+  const total = items.reduce((s, i) => s + (i.cost || 0), 0);
+
+  try {
+    const res = await fetch(`${API}/api/mpi`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rep_id: repId,
+        rooftop_id: rooftopId,
+        customer_name: name,
+        customer_phone: document.getElementById('fPhone').value.trim(),
+        customer_email: document.getElementById('fEmail').value.trim(),
+        ro_number: document.getElementById('fRo').value.trim(),
+        vin: document.getElementById('fVin').value.trim(),
+        vehicle: document.getElementById('fVehicle').value.trim(),
+        mileage: document.getElementById('fMileage').value.trim(),
+        items,
+        total_estimate: total,
+      }),
+    });
+
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error);
+
+    // Now send to customer
+    await fetch(`${API}/api/mpi/${data.inspection_id}/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ via: 'both' }),
+    });
+
+    document.getElementById('formState').style.display = 'none';
+    document.getElementById('actionBar').style.display = 'none';
+    const ss = document.getElementById('successState');
+    ss.classList.add('on');
+    document.getElementById('succMsg').textContent =
+      `${name} will receive your MPI video with ${items.length} inspection items. Estimated service: $${total.toLocaleString()}.`;
+
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+function esc(s) { return String(s || '').replace(/"/g, '&quot;'); }
+
+renderGrid();
+updateSummary();
+</script>
+</body>
+</html>

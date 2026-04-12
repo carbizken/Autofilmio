@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AutoFilm Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0a0a0d;--bg1:#111116;--bg2:#18181e;--bg3:#202028;--b0:rgba(255,255,255,.05);--b1:rgba(255,255,255,.09);--b2:rgba(255,255,255,.16);--t1:rgba(255,255,255,.96);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.40);--t4:rgba(255,255,255,.20);--fire:#D94F00;--fire2:#E85A0A;--firet:rgba(217,79,0,.10);--fireb:rgba(217,79,0,.22);--green:#22c55e;--amber:#f59e0b;--rose:#f43f5e;--sky:#38bdf8;--ff:'Geist',-apple-system,sans-serif;--fm:'Geist Mono',monospace}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;min-height:100vh}
+nav{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(10,10,13,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--b0);z-index:200;display:flex;align-items:center;padding:0 24px}
+.nav-left{display:flex;align-items:center;gap:10px}
+.nav-mark{width:28px;height:28px;background:var(--fire);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(217,79,0,.35)}
+.nav-word{font-size:16px;font-weight:900;letter-spacing:-.3px}
+.nav-word em{color:var(--fire2);font-style:normal}
+.nav-tabs{display:flex;gap:4px;margin-left:40px}
+.nav-tab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;color:var(--t3);cursor:pointer;transition:all .14s}
+.nav-tab:hover{color:var(--t1);background:rgba(255,255,255,.04)}
+.nav-tab.on{color:var(--fire2);background:var(--firet)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.period-sel{padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;background:var(--bg2);border:1px solid var(--b1);color:var(--t2);font-family:var(--ff);cursor:pointer}
+.period-sel:focus{outline:none;border-color:var(--fire)}
+.wrap{max-width:1280px;margin:0 auto;padding:72px 24px 48px}
+h1{font-size:24px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px}
+.sub{font-size:13px;color:var(--t3);margin-bottom:28px}
+
+/* KPI cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.kpi{background:var(--bg1);border:1px solid var(--b1);border-radius:14px;padding:20px 22px;position:relative;overflow:hidden;transition:border-color .2s}
+.kpi:hover{border-color:var(--b2)}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kc,var(--fire))}
+.kpi-n{font-size:32px;font-weight:900;font-family:var(--fm);letter-spacing:-1.5px;line-height:1}
+.kpi-l{font-size:11px;font-weight:600;color:var(--t3);margin-top:6px;text-transform:uppercase;letter-spacing:.06em}
+.kpi-delta{font-size:10px;font-weight:700;margin-top:6px;font-family:var(--fm)}
+.kpi-delta.up{color:var(--green)}.kpi-delta.down{color:var(--rose)}
+
+/* Leaderboard */
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-size:15px;font-weight:800;letter-spacing:-.2px}
+.section-badge{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:20px;background:var(--firet);border:1px solid var(--fireb);color:var(--fire2)}
+.board{background:var(--bg1);border:1px solid var(--b1);border-radius:14px;overflow:hidden;margin-bottom:28px}
+.board-hdr{display:grid;grid-template-columns:40px 1.5fr repeat(5,1fr);gap:0;padding:10px 18px;border-bottom:1px solid var(--b0);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t4)}
+.board-row{display:grid;grid-template-columns:40px 1.5fr repeat(5,1fr);gap:0;padding:12px 18px;border-bottom:1px solid var(--b0);align-items:center;transition:background .14s;font-size:13px}
+.board-row:last-child{border-bottom:none}
+.board-row:hover{background:rgba(255,255,255,.015)}
+.rank{font-family:var(--fm);font-weight:800;font-size:12px;color:var(--t3)}
+.rank-1{color:var(--fire2)}.rank-2{color:var(--amber)}.rank-3{color:var(--green)}
+.rep-info{display:flex;align-items:center;gap:10px}
+.rep-av{width:30px;height:30px;border-radius:50%;background:var(--fire);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0}
+.rep-name{font-weight:700;font-size:13px}
+.rep-dept{font-size:10px;color:var(--t4);margin-top:1px}
+.cell{font-family:var(--fm);font-weight:600;font-size:12px;color:var(--t2)}
+.cell-fire{color:var(--fire2)}.cell-green{color:var(--green)}
+
+/* Panels */
+.panels{display:grid;grid-template-columns:1.6fr 1fr;gap:16px}
+.panel{background:var(--bg1);border:1px solid var(--b1);border-radius:14px;overflow:hidden}
+.panel-hdr{padding:16px 20px;border-bottom:1px solid var(--b0);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:space-between}
+.panel-body{max-height:420px;overflow-y:auto}
+
+/* Activity feed */
+.act{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--b0);transition:background .14s}
+.act:last-child{border-bottom:none}
+.act:hover{background:rgba(255,255,255,.015)}
+.act-ico{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.act-ico.sent{background:rgba(56,189,248,.1)}
+.act-ico.watched{background:rgba(34,197,94,.1)}
+.act-ico.reply{background:rgba(217,79,0,.1)}
+.act-ico.mpi{background:rgba(245,158,11,.1)}
+.act-body{flex:1;min-width:0}
+.act-text{font-size:12px;color:var(--t2);line-height:1.4}
+.act-text strong{color:var(--t1);font-weight:700}
+.act-time{font-size:10px;color:var(--t4);font-family:var(--fm);margin-top:2px}
+.act-pct{font-family:var(--fm);font-weight:800;font-size:11px;flex-shrink:0}
+
+/* CRM status */
+.crm-item{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--b0)}
+.crm-item:last-child{border-bottom:none}
+.crm-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.crm-dot.ok{background:var(--green);box-shadow:0 0 6px rgba(34,197,94,.5)}
+.crm-dot.err{background:var(--rose);box-shadow:0 0 6px rgba(244,63,94,.5)}
+.crm-dot.off{background:var(--t4)}
+.crm-name{font-size:13px;font-weight:700;flex:1}
+.crm-sync{font-size:10px;color:var(--t4);font-family:var(--fm)}
+
+/* Empty state */
+.empty{padding:48px 24px;text-align:center}
+.empty-ico{font-size:32px;margin-bottom:12px;opacity:.4}
+.empty-txt{font-size:13px;color:var(--t3)}
+
+@media(max-width:840px){
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .panels{grid-template-columns:1fr}
+  .board-hdr,.board-row{grid-template-columns:32px 1.4fr repeat(3,1fr);font-size:11px}
+  .board-hdr>:nth-child(n+6),.board-row>:nth-child(n+6){display:none}
+  .nav-tabs{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <div class="nav-mark"><svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M1.5 10.5L7 2 12.5 10.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="nav-word">Auto<em>Film</em></div>
+  </div>
+  <div class="nav-tabs">
+    <div class="nav-tab on">Dashboard</div>
+    <div class="nav-tab">Team</div>
+    <div class="nav-tab">Activity</div>
+    <div class="nav-tab">CRM</div>
+  </div>
+  <div class="nav-right">
+    <select class="period-sel" id="periodSel" onchange="loadAll()">
+      <option value="week">This Week</option>
+      <option value="month" selected>This Month</option>
+      <option value="all">All Time</option>
+    </select>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1>Dashboard</h1>
+  <div class="sub" id="rooftopName">Loading...</div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid" id="kpiGrid">
+    <div class="kpi" style="--kc:var(--sky)"><div class="kpi-n" id="kVideos">--</div><div class="kpi-l">Videos Sent</div></div>
+    <div class="kpi" style="--kc:var(--fire)"><div class="kpi-n" id="kWatch">--</div><div class="kpi-l">Avg Watch %</div></div>
+    <div class="kpi" style="--kc:var(--green)"><div class="kpi-n" id="kHot">--</div><div class="kpi-l">Hot Leads (75%+)</div></div>
+    <div class="kpi" style="--kc:var(--amber)"><div class="kpi-n" id="kReps">--</div><div class="kpi-l">Active Reps</div></div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="section-hdr">
+    <div class="section-title">Team Leaderboard</div>
+    <div class="section-badge">Live</div>
+  </div>
+  <div class="board" id="board">
+    <div class="board-hdr"><div>#</div><div>Rep</div><div>This Week</div><div>This Month</div><div>Watch %</div><div>Hot Leads</div><div>Replies</div></div>
+    <div id="boardBody"></div>
+  </div>
+
+  <!-- Panels -->
+  <div class="panels">
+    <div class="panel">
+      <div class="panel-hdr"><span>Recent Activity</span><span style="font-size:10px;color:var(--t4);font-weight:500">Last 50</span></div>
+      <div class="panel-body" id="actFeed"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-hdr"><span>CRM Connections</span></div>
+      <div class="panel-body" id="crmPanel"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:3001' : 'https://api.autofilm.io';
+
+const params = new URLSearchParams(location.search);
+const rooftopId = params.get('rooftop_id') || localStorage.getItem('af_rooftop_id') || '';
+
+if (rooftopId) localStorage.setItem('af_rooftop_id', rooftopId);
+
+async function loadAll() {
+  if (!rooftopId) {
+    document.getElementById('rooftopName').textContent = 'No rooftop selected — add ?rooftop_id=... to URL';
+    return;
+  }
+  loadKpis();
+  loadLeaderboard();
+  loadActivity();
+  loadCrm();
+}
+
+async function loadKpis() {
+  try {
+    const res = await fetch(`${API}/api/dashboard/kpis?rooftop_id=${rooftopId}`);
+    const { kpis } = await res.json();
+    if (!kpis) return;
+    document.getElementById('rooftopName').textContent = kpis.rooftop_name || 'Your Dealership';
+    document.getElementById('kVideos').textContent = (kpis.videos_this_month || 0).toLocaleString();
+    document.getElementById('kWatch').textContent = Math.round(kpis.avg_watch_pct || 0) + '%';
+    document.getElementById('kHot').textContent = (kpis.total_hot_leads || 0).toLocaleString();
+    document.getElementById('kReps').textContent = kpis.active_reps || 0;
+  } catch (e) { console.error('[dashboard] KPI error:', e); }
+}
+
+async function loadLeaderboard() {
+  try {
+    const res = await fetch(`${API}/api/dashboard/leaderboard?rooftop_id=${rooftopId}`);
+    const { leaderboard } = await res.json();
+    const body = document.getElementById('boardBody');
+    if (!leaderboard?.length) {
+      body.innerHTML = '<div class="empty"><div class="empty-ico">📊</div><div class="empty-txt">No team data yet. Videos sent by your reps will appear here.</div></div>';
+      return;
+    }
+    body.innerHTML = leaderboard.map(r => {
+      const initials = (r.rep_name || '').split(' ').map(w => w[0]).join('').slice(0, 2);
+      const rc = r.rank <= 3 ? ' rank-' + r.rank : '';
+      return `<div class="board-row">
+        <div class="rank${rc}">${r.rank}</div>
+        <div class="rep-info"><div class="rep-av">${esc(initials)}</div><div><div class="rep-name">${esc(r.rep_name)}</div></div></div>
+        <div class="cell cell-fire">${r.videos_this_week || 0}</div>
+        <div class="cell">${r.videos_this_month || 0}</div>
+        <div class="cell">${Math.round(r.avg_watch_pct || 0)}%</div>
+        <div class="cell cell-green">${r.hot_leads || 0}</div>
+        <div class="cell">${r.replies_received || 0}</div>
+      </div>`;
+    }).join('');
+  } catch (e) { console.error('[dashboard] Leaderboard error:', e); }
+}
+
+async function loadActivity() {
+  try {
+    const res = await fetch(`${API}/api/dashboard/activity?rooftop_id=${rooftopId}&limit=50`);
+    const { activity } = await res.json();
+    const feed = document.getElementById('actFeed');
+    if (!activity?.length) {
+      feed.innerHTML = '<div class="empty"><div class="empty-ico">📹</div><div class="empty-txt">No activity yet.</div></div>';
+      return;
+    }
+    feed.innerHTML = activity.map(a => {
+      const repName = a.reps?.name || 'Rep';
+      let ico = 'sent', emoji = '📤', text = '', pctHtml = '';
+      if (a.max_watch_pct > 0 && a.last_watched_at) {
+        ico = 'watched'; emoji = '👀';
+        text = `<strong>${esc(a.customer_name || 'Customer')}</strong> watched ${a.max_watch_pct}% of <strong>${esc(repName)}</strong>'s video`;
+        const c = a.max_watch_pct >= 75 ? 'var(--green)' : a.max_watch_pct >= 25 ? 'var(--amber)' : 'var(--t3)';
+        pctHtml = `<div class="act-pct" style="color:${c}">${a.max_watch_pct}%</div>`;
+      } else if (a.type === 'mpi') {
+        ico = 'mpi'; emoji = '🔧';
+        text = `<strong>${esc(repName)}</strong> sent MPI video to <strong>${esc(a.customer_name || 'Customer')}</strong>`;
+      } else {
+        text = `<strong>${esc(repName)}</strong> sent video to <strong>${esc(a.customer_name || 'Customer')}</strong>`;
+        if (a.vehicle) text += ` about ${esc(a.vehicle)}`;
+      }
+      const time = a.last_watched_at || a.sent_at || a.created_at;
+      return `<div class="act">
+        <div class="act-ico ${ico}">${emoji}</div>
+        <div class="act-body"><div class="act-text">${text}</div><div class="act-time">${timeAgo(time)}</div></div>
+        ${pctHtml}
+      </div>`;
+    }).join('');
+  } catch (e) { console.error('[dashboard] Activity error:', e); }
+}
+
+async function loadCrm() {
+  try {
+    const res = await fetch(`${API}/api/dashboard/crm-status?rooftop_id=${rooftopId}`);
+    const { connections, recent_syncs } = await res.json();
+    const panel = document.getElementById('crmPanel');
+    if (!connections?.length) {
+      panel.innerHTML = '<div class="empty"><div class="empty-ico">🔗</div><div class="empty-txt">No CRM connected yet.<br>Set up in Settings.</div></div>';
+      return;
+    }
+    panel.innerHTML = connections.map(c => {
+      const dot = c.active ? 'ok' : 'err';
+      const syncText = c.last_sync_at ? timeAgo(c.last_sync_at) : 'Never synced';
+      return `<div class="crm-item">
+        <div class="crm-dot ${dot}"></div>
+        <div class="crm-name">${esc(c.provider.charAt(0).toUpperCase() + c.provider.slice(1))}</div>
+        <div class="crm-sync">Last sync: ${syncText}</div>
+      </div>`;
+    }).join('');
+  } catch (e) { console.error('[dashboard] CRM error:', e); }
+}
+
+function timeAgo(d) {
+  if (!d) return '';
+  const ms = Date.now() - new Date(d).getTime();
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  const dy = Math.floor(h / 24);
+  return dy + 'd ago';
+}
+
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+loadAll();
+setInterval(loadAll, 30000);
+</script>
+</body>
+</html>
