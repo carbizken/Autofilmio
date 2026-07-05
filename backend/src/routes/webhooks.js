@@ -52,11 +52,14 @@ router.post('/mux', async (req, res) => {
       const playbackId = asset.playback_ids?.[0]?.id;
       const uploadId = asset.upload_id;
 
-      // Match by upload id first (most reliable), then asset id
+      // Match by upload id first (most reliable), then asset id.
+      // Guard against undefined upload_id producing a bogus filter.
+      const orClauses = [`mux_asset_id.eq.${asset.id}`];
+      if (uploadId) orClauses.unshift(`mux_upload_id.eq.${uploadId}`);
       let { data: videoRow } = await supabase
         .from('videos')
         .select('id, short_code, mux_playback_id')
-        .or(`mux_upload_id.eq.${uploadId},mux_asset_id.eq.${asset.id}`)
+        .or(orClauses.join(','))
         .limit(1)
         .maybeSingle();
 
@@ -77,6 +80,30 @@ router.post('/mux', async (req, res) => {
         }
 
         console.log(`[webhooks] Mux asset ready — finalized video ${videoRow.id}`);
+      }
+    }
+
+    // Also finalize customer video replies (separate table)
+    if (event.type === 'video.asset.ready') {
+      const asset = event.data;
+      const playbackId = asset.playback_ids?.[0]?.id;
+      if (asset.upload_id && playbackId) {
+        const { data: replyRow } = await supabase
+          .from('video_replies')
+          .select('id, parent_video_id')
+          .eq('mux_upload_id', asset.upload_id)
+          .maybeSingle();
+        if (replyRow) {
+          const { getThumbnails } = await import('../lib/thumbnail.js');
+          const thumbs = getThumbnails(playbackId);
+          await supabase.from('video_replies').update({
+            mux_asset_id: asset.id,
+            mux_playback_id: playbackId,
+            duration: asset.duration ? Math.round(asset.duration) : null,
+            thumbnail_url: thumbs?.static || null,
+          }).eq('id', replyRow.id);
+          console.log(`[webhooks] Reply ${replyRow.id} finalized`);
+        }
       }
     }
 

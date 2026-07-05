@@ -13,8 +13,20 @@ const APP_URL = process.env.APP_URL || 'https://autofilm.io';
  */
 router.post('/signup', async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, rooftop_id, onboard_token } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'email and password required' });
+
+    // Onboarding handoff: claim the pending admin rep created during the
+    // website-scan step, gated by the one-time onboarding token.
+    let onboardRooftop = null;
+    if (rooftop_id && onboard_token) {
+      const { data: rt } = await supabase
+        .from('rooftops')
+        .select('id, onboard_token')
+        .eq('id', rooftop_id)
+        .single();
+      if (rt?.onboard_token === onboard_token) onboardRooftop = rt;
+    }
 
     // Create Supabase Auth user
     const { data: authData, error: authErr } = await supabase.auth.admin.createUser({
@@ -30,16 +42,29 @@ router.post('/signup', async (req, res) => {
       throw authErr;
     }
 
-    // Check if rep record exists (created during onboarding)
-    const { data: existingRep } = await supabase
-      .from('reps')
-      .select('id, rooftop_id')
-      .eq('email', email)
-      .single();
-
-    if (existingRep) {
-      // Update existing rep with confirmed status
-      await supabase.from('reps').update({ onboarded: true }).eq('id', existingRep.id);
+    // Attach the auth account to a rep record
+    let repRow = null;
+    if (onboardRooftop) {
+      // Claim the placeholder admin rep from the scan step
+      const { data: claimed } = await supabase
+        .from('reps')
+        .update({ email, name: name || 'Admin', onboarded: true })
+        .eq('rooftop_id', onboardRooftop.id)
+        .eq('role', 'admin')
+        .select('id, rooftop_id, name, role, department')
+        .limit(1);
+      repRow = claimed?.[0] || null;
+    }
+    if (!repRow) {
+      const { data: existingRep } = await supabase
+        .from('reps')
+        .select('id, rooftop_id, name, role, department')
+        .eq('email', email)
+        .single();
+      if (existingRep) {
+        await supabase.from('reps').update({ onboarded: true }).eq('id', existingRep.id);
+        repRow = existingRep;
+      }
     }
 
     // Sign in immediately
@@ -56,7 +81,7 @@ router.post('/signup', async (req, res) => {
         refresh_token: session.session.refresh_token,
         expires_at: session.session.expires_at,
       },
-      rep: existingRep || null,
+      rep: repRow,
     });
 
   } catch (err) {
@@ -129,7 +154,7 @@ router.post('/magic-link', async (req, res) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${APP_URL}/autofilm-app.html`,
+        emailRedirectTo: `${APP_URL}/autofilm-login.html`,
       },
     });
 
@@ -185,7 +210,7 @@ router.post('/reset-password', async (req, res) => {
     if (!email) return res.status(400).json({ error: 'email required' });
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${APP_URL}/autofilm-app.html?reset=true`,
+      redirectTo: `${APP_URL}/autofilm-login.html?reset=true`,
     });
 
     if (error) throw error;
@@ -277,7 +302,7 @@ router.post('/invite', requireAuth(), requireRole('admin', 'manager'), async (re
     await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${APP_URL}/autofilm-app.html?invited=true&setup=true`,
+        emailRedirectTo: `${APP_URL}/autofilm-login.html?invited=true&setup=true`,
       },
     });
 

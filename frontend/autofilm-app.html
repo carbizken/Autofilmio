@@ -4110,14 +4110,6 @@ function closeSend(){
   document.getElementById('successVeil').classList.remove('on');
   navTo('home');
 }
-  var qr=document.getElementById('svQr'), qrEl=document.getElementById('qrEl');
-  if(viaMode==='qr'){ qr.style.display='flex'; qrEl.innerHTML=''; try{ new QRCode(qrEl,{text:link,width:120,height:120,colorDark:'#000',colorLight:'#fff'}); }catch(e){} }
-  else qr.style.display='none';
-  document.getElementById('successVeil').classList.add('on');
-  if(!sched) simWatch(entry);
-  refreshHome();
-  if(Notification.permission==='default') Notification.requestPermission();
-}
 function simWatch(entry){
   var delay=9000+Math.random()*15000;
   setTimeout(function(){
@@ -4161,16 +4153,19 @@ async function genScript(){
   document.getElementById('aiThinking').classList.add('on');
   document.getElementById('genBtn').disabled=true;
   try{
-    if(S.apiKey&&S.apiKey.indexOf('sk-ant')===0){
-      var res=await fetch('https://api.anthropic.com/v1/messages',{
+    var AF_API=(location.hostname==='localhost'||location.hostname==='127.0.0.1')?'http://localhost:3001':'https://api.autofilm.io';
+    var haveApi=true;
+    if(haveApi){
+      // AI scripts go through our backend — the Anthropic key never
+      // touches the browser.
+      var PURPOSE_MAP={'Internet Lead Response':'internet-lead','Unsold Customer Follow-Up':'unsold-follow-up','Appointment Reminder':'appointment-reminder','Service Update':'service-reminder','Trade-In Outreach':'trade-in','Walkaround':'walk-around','Thank You / Delivery':'csi-thank-you','Birthday':'birthday','Follow-Up':'follow-up'};
+      var res=await fetch(AF_API+'/api/ai-script',{
         method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,
-          system:'You are an expert automotive sales video script writer. Write short (60-90 words), personalized, genuine-sounding scripts for car dealership salespeople. Use the customer\'s name. End with one clear CTA. Conversational, no corporate speak. Write in first person as '+sp+' from '+d+'.',
-          messages:[{role:'user',content:'Write a '+p+' video script. Customer: '+c+'. Vehicle: '+v+'. Script only.'}]})
+        body:JSON.stringify({purpose:PURPOSE_MAP[p]||'internet-lead',customer_name:c,vehicle:v,rep_name:sp,dealer:d})
       });
       if(!res.ok) throw new Error('API '+res.status);
       var data=await res.json();
-      lastScript=((data.content||[]).map(function(b){ return b.text||''; }).join('')).trim();
+      lastScript=(data.script||'').trim();
       if(!lastScript) throw new Error('empty');
     } else {
       await new Promise(function(r){ setTimeout(r,1300+Math.random()*500); });

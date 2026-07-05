@@ -77,7 +77,7 @@ router.post('/webhook/inbound', express.urlencoded({ extended: true }), async (r
       await sendPush(video.reps.push_subscription, {
         title: `Reply from ${customerFirst}`,
         body: Body.length > 80 ? Body.slice(0, 77) + '...' : Body,
-        icon: '/icons/message-192.png',
+        icon: '/icon-192.png',
         data: {
           type: 'inbound_sms',
           video_id: video.id,

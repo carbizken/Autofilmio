@@ -1,0 +1,29 @@
+# Render deploy configuration — infrastructure as code.
+#
+# IMPORTANT: numInstances is pinned to 1. Live-call signaling, the
+# in-memory rate limiter, and the BDC dedup set are per-instance state.
+# Do not scale horizontally until those move to Redis (see backlog).
+services:
+  - type: web
+    name: autofilm-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    numInstances: 1
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3001"
+      # Secrets are managed in the Render dashboard — never in this file:
+      # MUX_TOKEN_ID / MUX_TOKEN_SECRET / MUX_WEBHOOK_SECRET
+      # TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_PHONE_NUMBER
+      # SUPABASE_URL / SUPABASE_SERVICE_KEY
+      # ANTHROPIC_API_KEY / SENDGRID_API_KEY
+      # STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET / STRIPE_PRICE_STANDARD / STRIPE_PRICE_BUNDLE
+      # VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_EMAIL
+      # CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_KV_NAMESPACE_ID / CF_WORKER_URL
+      # APP_URL / AUTOCURB_JWT_SECRET / SENTRY_DSN

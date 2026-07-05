@@ -74,7 +74,7 @@ app.use(resolveTenant());
 app.get('/health', publicCors, (req, res) => {
   res.json({
     status: 'ok',
-    version: '3.1.0',
+    version: '3.2.0',
     env: process.env.NODE_ENV,
     tenant: req.tenant?.mode || 'none',
     features: {
@@ -133,7 +133,7 @@ app.use((err, req, res, next) => {
 
 // ── START SERVER ────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`[autofilm-api] v3.1.0 running on port ${PORT}`);
+  console.log(`[autofilm-api] v3.2.0 running on port ${PORT}`);
   console.log(`[autofilm-api] Env: ${process.env.NODE_ENV}`);
 
   // Background services

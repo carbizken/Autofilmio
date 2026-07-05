@@ -1,5 +1,8 @@
 import express from 'express';
-import { nanoid } from 'nanoid';
+import { shortCode } from '../lib/shortcode.js';
+import { requireAuth } from '../lib/auth.js';
+import { guardedSms } from '../lib/consent.js';
+import { sendPush } from '../lib/push.js';
 import { supabase } from '../lib/supabase.js';
 import { video } from '../lib/mux.js';
 import { twilioClient, TWILIO_FROM } from '../lib/twilio.js';
@@ -23,7 +26,7 @@ const CF_WORKER_URL = process.env.CF_WORKER_URL || 'https://links.autofilm.io';
  *   total_estimate?
  * }
  */
-router.post('/', async (req, res) => {
+router.post('/', requireAuth(), async (req, res) => {
   try {
     const {
       rep_id, rooftop_id, customer_name, customer_phone, customer_email,
@@ -44,14 +47,15 @@ router.post('/', async (req, res) => {
     });
 
     // 2. Create the video record
-    const shortCode = nanoid(8);
+    const code = shortCode();
     const { data: videoRow, error: vidErr } = await supabase
       .from('videos')
       .insert({
         rep_id,
         rooftop_id,
         mux_asset_id: upload.asset_id || null,
-        short_code: shortCode,
+        mux_upload_id: upload.id,
+        short_code: code,
         type: 'mpi',
         customer_name,
         customer_phone,
@@ -93,7 +97,7 @@ router.post('/', async (req, res) => {
       success: true,
       inspection_id: inspection.id,
       video_id: videoRow.id,
-      short_code: shortCode,
+      short_code: code,
       upload_url: upload.url,
       upload_id: upload.id,
     });
@@ -108,7 +112,7 @@ router.post('/', async (req, res) => {
  * POST /api/mpi/:id/send
  * Send the MPI video to the customer via SMS and/or email.
  */
-router.post('/:id/send', async (req, res) => {
+router.post('/:id/send', requireAuth(), async (req, res) => {
   try {
     const { id } = req.params;
     const { via = 'sms' } = req.body; // 'sms' | 'email' | 'both'
@@ -160,16 +164,19 @@ router.post('/:id/send', async (req, res) => {
         let smsBody = `Hi ${inspection.customer_name.split(' ')[0]}, ${repName} at ${dealerName} has your vehicle inspection ready.\n\n`;
         if (redCount > 0) smsBody += `${redCount} item${redCount > 1 ? 's' : ''} need${redCount === 1 ? 's' : ''} attention. `;
         if (yellowCount > 0) smsBody += `${yellowCount} to monitor. `;
-        smsBody += `\n\nWatch the video walkthrough: ${shortUrl}`;
+        smsBody += `\n\nWatch the video walkthrough: ${shortUrl}\n\nReply STOP to opt out`;
 
-        const msg = await twilioClient.messages.create({
+        const smsResult = await guardedSms(twilioClient, {
           body: smsBody,
           from: TWILIO_FROM,
           to: inspection.customer_phone,
         });
+        if (smsResult.blocked) {
+          return res.status(403).json({ error: 'Customer has opted out of SMS.' });
+        }
 
-        results.sms_sid = msg.sid;
-        console.log(`[mpi] SMS sent for inspection ${id} — SID: ${msg.sid}`);
+        results.sms_sid = smsResult.sid;
+        console.log(`[mpi] SMS sent for inspection ${id} — SID: ${smsResult.sid}`);
       }
     }
 
@@ -227,7 +234,18 @@ router.post('/:id/send', async (req, res) => {
 router.post('/:id/approve', async (req, res) => {
   try {
     const { id } = req.params;
-    const { approved_amount, approved_items } = req.body;
+    const { approved_amount, approved_items, code } = req.body;
+
+    // Customer-facing endpoint: no session, so the video short_code acts
+    // as the capability token (only the SMS recipient knows it).
+    const { data: check } = await supabase
+      .from('mpi_inspections')
+      .select('id, videos(short_code)')
+      .eq('id', id)
+      .single();
+    if (!check || check.videos?.short_code !== code) {
+      return res.status(403).json({ error: 'Invalid approval link' });
+    }
 
     const { data, error } = await supabase
       .from('mpi_inspections')
@@ -243,6 +261,20 @@ router.post('/:id/approve', async (req, res) => {
     if (error) throw error;
 
     console.log(`[mpi] Inspection ${id} approved — $${approved_amount || 0}`);
+
+    // Notify the service advisor immediately — approved work is money waiting
+    const { data: advisor } = await supabase
+      .from('reps')
+      .select('push_subscription, name')
+      .eq('id', data.rep_id)
+      .single();
+    if (advisor?.push_subscription) {
+      sendPush(advisor.push_subscription, {
+        title: '✅ Service approved',
+        body: `${data.customer_name || 'Customer'} approved $${(approved_amount || data.total_estimate || 0).toLocaleString()} in recommended work`,
+        data: { type: 'mpi_approved', inspection_id: id },
+      }).catch(() => {});
+    }
 
     // CRM sync (async)
     if (data.videos) {
@@ -266,10 +298,10 @@ router.post('/:id/approve', async (req, res) => {
  * GET /api/mpi/list?rooftop_id=<uuid>&status=<status>
  * List MPI inspections for a rooftop.
  */
-router.get('/list', async (req, res) => {
+router.get('/list', requireAuth(), async (req, res) => {
   try {
-    const { rooftop_id, status, limit = 50 } = req.query;
-    if (!rooftop_id) return res.status(400).json({ error: 'rooftop_id required' });
+    const rooftop_id = req.rep.rooftop_id;
+    const { status, limit = 50 } = req.query;
 
     let query = supabase
       .from('mpi_inspections')

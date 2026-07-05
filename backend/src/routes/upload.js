@@ -1,40 +1,86 @@
 import express from 'express';
 import multer from 'multer';
-import { nanoid } from 'nanoid';
+import { shortCode } from '../lib/shortcode.js';
+import { requireAuth } from '../lib/auth.js';
 import { video } from '../lib/mux.js';
 import { supabase } from '../lib/supabase.js';
 import { kvPut } from '../lib/cloudflare.js';
 import { storeThumbnails } from '../lib/thumbnail.js';
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 500 * 1024 * 1024 } }); // 500MB
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 150 * 1024 * 1024 } }); // 150MB — legacy path only; use /create-url
 
 const CF_WORKER_URL = process.env.CF_WORKER_URL || 'https://links.autofilm.io';
 
 /**
- * POST /api/upload
+ * POST /api/upload/create-url  — PREFERRED PATH
+ * Returns a Mux direct-upload URL; the browser PUTs the file straight to
+ * Mux (no server buffering), and the Mux webhook finalizes the video row.
+ * Returns: { upload_id, upload_url, short_code, short_url, video_id }
+ */
+router.post('/create-url', requireAuth(), async (req, res) => {
+  try {
+    const rep_id = req.rep.id;
+    const rooftop_id = req.rep.rooftop_id;
+
+    const muxUpload = await video.uploads.create({
+      cors_origin: '*',
+      new_asset_settings: {
+        playback_policy: ['public'],
+        mp4_support: 'standard',
+      },
+    });
+
+    const short_code = shortCode();
+    const { data: videoRow, error: dbErr } = await supabase.from('videos').insert({
+      rep_id,
+      rooftop_id,
+      mux_upload_id: muxUpload.id,
+      short_code,
+    }).select('id').single();
+    if (dbErr) throw new Error(`Supabase insert failed: ${dbErr.message}`);
+
+    console.log(`[upload] Direct-upload URL issued — ${short_code}`);
+    res.json({
+      upload_id: muxUpload.id,
+      upload_url: muxUpload.url,
+      short_code,
+      short_url: `${CF_WORKER_URL}/v/${short_code}`,
+      video_id: videoRow.id,
+    });
+  } catch (err) {
+    console.error('[upload] create-url error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/upload/status/:short_code
+ * Poll after a direct upload: ready once the Mux webhook has landed.
+ */
+router.get('/status/:short_code', requireAuth(), async (req, res) => {
+  const { data } = await supabase
+    .from('videos')
+    .select('id, mux_playback_id, thumbnail_url')
+    .eq('short_code', req.params.short_code)
+    .eq('rooftop_id', req.rep.rooftop_id)
+    .maybeSingle();
+  if (!data) return res.status(404).json({ error: 'Not found' });
+  res.json({ ready: !!data.mux_playback_id, playback_id: data.mux_playback_id, video_id: data.id });
+});
+
+/**
+ * POST /api/upload — LEGACY multipart path (kept for compatibility)
  * Body: multipart/form-data { video: File, rep_id, rooftop_id }
  * Returns: { playback_id, short_code, short_url, asset_id }
  */
-router.post('/', upload.single('video'), async (req, res) => {
+router.post('/', requireAuth(), upload.single('video'), async (req, res) => {
   try {
-    const { rep_id, rooftop_id } = req.body;
+    const rep_id = req.rep.id;
+    const rooftop_id = req.rep.rooftop_id;
     const file = req.file;
 
     if (!file) return res.status(400).json({ error: 'No video file provided' });
-    if (!rep_id) return res.status(400).json({ error: 'rep_id required' });
-    if (!rooftop_id) return res.status(400).json({ error: 'rooftop_id required' });
-
-    // 0. Validate the rep exists and belongs to this rooftop
-    const { data: rep, error: repErr } = await supabase
-      .from('reps')
-      .select('id, rooftop_id, active')
-      .eq('id', rep_id)
-      .single();
-
-    if (repErr || !rep) return res.status(404).json({ error: 'Rep not found: ' + rep_id });
-    if (rep.rooftop_id !== rooftop_id) return res.status(403).json({ error: 'Rep does not belong to this rooftop' });
-    if (rep.active === false) return res.status(403).json({ error: 'Rep account is deactivated' });
 
     console.log(`[upload] Starting upload for rep ${rep_id}, ${file.size} bytes`);
 
@@ -67,7 +113,7 @@ router.post('/', upload.single('video'), async (req, res) => {
       }
     }
 
-    const short_code = nanoid(8).toUpperCase();
+    const short_code = shortCode();
     const playback_id = asset?.playback_ids?.[0]?.id || null;
     const ready = asset?.status === 'ready';
 

@@ -36,6 +36,34 @@
       "dest": "/frontend/hartecash-trade.html"
     },
     {
+      "src": "/login",
+      "dest": "/frontend/autofilm-login.html"
+    },
+    {
+      "src": "/settings",
+      "dest": "/frontend/autofilm-settings.html"
+    },
+    {
+      "src": "/record",
+      "dest": "/frontend/autofilm-record.html"
+    },
+    {
+      "src": "/dashboard",
+      "dest": "/frontend/autofilm-dashboard.html"
+    },
+    {
+      "src": "/onboard",
+      "dest": "/frontend/autofilm-onboard.html"
+    },
+    {
+      "src": "/terms",
+      "dest": "/frontend/terms.html"
+    },
+    {
+      "src": "/privacy",
+      "dest": "/frontend/privacy.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/frontend/$1"
     }

@@ -20,6 +20,7 @@
 import { supabase } from './supabase.js';
 import { generateAvatarScript, generateAvatarVideo, checkVideoStatus } from './avatar.js';
 import { twilioClient, TWILIO_FROM } from './twilio.js';
+import { guardedSms } from './consent.js';
 import { sendVideoEmail } from './email.js';
 import { kvPut } from './cloudflare.js';
 import { sendPush } from './push.js';
@@ -84,6 +85,16 @@ async function checkForNewLeads() {
     for (const lead of pendingLeads) {
       if (processedLeads.has(lead.id)) continue;
       processedLeads.add(lead.id);
+
+      // Atomic claim: only one worker may take a pending lead. Prevents
+      // duplicate customer texts across restarts or multiple instances.
+      const { data: claimed } = await supabase
+        .from('bdc_lead_queue')
+        .update({ status: 'processing' })
+        .eq('id', lead.id)
+        .eq('status', 'pending')
+        .select('id');
+      if (!claimed?.length) continue;
 
       // Process in background (non-blocking)
       processLead(lead, conn).catch(
@@ -160,7 +171,8 @@ async function processLead(lead, conn) {
         const status = await checkVideoStatus(result.video_id);
         if (status.status === 'completed' && status.video_url) {
           await supabase.from('videos').update({
-            mux_playback_id: status.video_url,
+            playback_source: 'heygen',
+            external_video_url: status.video_url,
             thumbnail_url: status.thumbnail_url,
             duration: status.duration,
           }).eq('id', videoId);
@@ -193,9 +205,14 @@ async function processLead(lead, conn) {
   }
 
   try {
-    await twilioClient.messages.create({
-      body: smsBody, from: TWILIO_FROM, to: lead.customer_phone,
+    const smsResult = await guardedSms(twilioClient, {
+      body: smsBody + '\n\nReply STOP to opt out', from: TWILIO_FROM, to: lead.customer_phone,
     });
+    if (smsResult.blocked) {
+      console.log('[bdc] Lead blocked — customer opted out');
+      await markLeadStatus(lead.id, 'opted_out');
+      return;
+    }
   } catch (err) {
     console.error(`[bdc] SMS failed: ${err.message}`);
   }

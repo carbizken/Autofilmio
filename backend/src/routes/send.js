@@ -5,6 +5,7 @@ import { kvPut } from '../lib/cloudflare.js';
 import { guardedSms } from '../lib/consent.js';
 import { getThumbnails } from '../lib/thumbnail.js';
 import { fireWorkflowTrigger } from '../lib/workflows.js';
+import { requireAuth } from '../lib/auth.js';
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ const PLAYER_BASE   = 'https://autofilm.io/autofilm-player.html';
  * Body: { short_code, customer_name, customer_phone, vehicle?, trade_url? }
  * Returns: { success: true, sms_sid, short_url }
  */
-router.post('/', async (req, res) => {
+router.post('/', requireAuth(), async (req, res) => {
   try {
     const { short_code, customer_name, customer_phone, vehicle, trade_url } = req.body;
 
@@ -33,6 +34,11 @@ router.post('/', async (req, res) => {
 
     if (videoErr || !videoRow) {
       return res.status(404).json({ error: 'Video not found for short_code: ' + short_code });
+    }
+
+    // Tenant isolation: a rep may only send videos from their own rooftop
+    if (videoRow.rooftop_id && videoRow.rooftop_id !== req.rep.rooftop_id) {
+      return res.status(403).json({ error: 'Video belongs to a different rooftop' });
     }
 
     const rep = videoRow.reps;
@@ -52,6 +58,12 @@ router.post('/', async (req, res) => {
 
     if (videoRow.mux_playback_id) {
       params.set('playback_id', videoRow.mux_playback_id);
+    }
+    if (videoRow.playback_source === 'heygen' && videoRow.external_video_url) {
+      params.set('video_url', videoRow.external_video_url);
+    }
+    if (videoRow.rep_id) {
+      params.set('rep_id', videoRow.rep_id);
     }
     if (rep?.photo_url) {
       params.set('photo', rep.photo_url);
