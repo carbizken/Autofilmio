@@ -25,6 +25,7 @@ import authRoute from './routes/auth.js';
 import adminRoute from './routes/admin.js';
 import billingRoute from './routes/billing.js';
 import entitlementsRoute from './routes/entitlements.js';
+import groupRoute from './routes/group.js';
 import webhooksRoute from './routes/webhooks.js';
 
 // AI features
@@ -109,6 +110,7 @@ app.use(appCors);
 app.use('/api/auth', authLimiter, authRoute);
 app.use('/api/billing', billingRoute);
 app.use('/api/entitlements', generalLimiter, entitlementsRoute);
+app.use('/api/group', generalLimiter, groupRoute);
 
 app.use('/api/upload', generalLimiter, uploadRoute);
 app.use('/api/send', sendLimiter, sendRoute);
