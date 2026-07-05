@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AutoFilm Workflows</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0a0a0d;--bg1:#111116;--bg2:#18181e;--bg3:#202028;--b0:rgba(255,255,255,.05);--b1:rgba(255,255,255,.09);--b2:rgba(255,255,255,.16);--t1:rgba(255,255,255,.96);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.40);--t4:rgba(255,255,255,.20);--fire:#D94F00;--fire2:#E85A0A;--firet:rgba(217,79,0,.10);--fireb:rgba(217,79,0,.22);--green:#22c55e;--amber:#f59e0b;--rose:#f43f5e;--sky:#38bdf8;--ff:'Geist',-apple-system,sans-serif;--fm:'Geist Mono',monospace}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;min-height:100vh}
+nav{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(10,10,13,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--b0);z-index:200;display:flex;align-items:center;padding:0 24px}
+.nav-left{display:flex;align-items:center;gap:10px}
+.nav-mark{width:28px;height:28px;background:var(--fire);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(217,79,0,.35)}
+.nav-word{font-size:16px;font-weight:900;letter-spacing:-.3px}
+.nav-word em{color:var(--fire2);font-style:normal}
+.nav-tabs{display:flex;gap:4px;margin-left:40px}
+.nav-tab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;color:var(--t3);cursor:pointer;transition:all .14s}
+.nav-tab:hover{color:var(--t1);background:rgba(255,255,255,.04)}
+.nav-tab.on{color:var(--fire2);background:var(--firet)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.wrap{max-width:1080px;margin:0 auto;padding:72px 24px 48px}
+h1{font-size:24px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px}
+.sub{font-size:13px;color:var(--t3);margin-bottom:28px}
+
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;margin-top:32px}
+.section-title{font-size:15px;font-weight:800;letter-spacing:-.2px}
+.section-badge{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:20px;background:var(--firet);border:1px solid var(--fireb);color:var(--fire2)}
+
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:9px;font-size:12px;font-weight:700;font-family:var(--ff);cursor:pointer;border:1px solid var(--b1);background:var(--bg2);color:var(--t1);transition:all .14s}
+.btn:hover{border-color:var(--b2)}
+.btn.primary{background:var(--fire);border-color:var(--fire);color:#fff;box-shadow:0 2px 10px rgba(217,79,0,.3)}
+.btn.primary:hover{background:var(--fire2)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--t3)}
+.btn.ghost:hover{color:var(--t1);background:rgba(255,255,255,.04)}
+.btn.danger:hover{border-color:var(--rose);color:var(--rose)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* Recipe cards */
+.recipes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:8px}
+.recipe{background:var(--bg1);border:1px dashed var(--b1);border-radius:12px;padding:16px 18px;cursor:pointer;transition:all .14s}
+.recipe:hover{border-color:var(--fireb);background:var(--firet)}
+.recipe-ico{font-size:18px;margin-bottom:8px}
+.recipe-name{font-size:13px;font-weight:800;margin-bottom:4px}
+.recipe-desc{font-size:11px;color:var(--t3);line-height:1.5}
+
+/* Workflow cards */
+.wf-list{display:flex;flex-direction:column;gap:12px}
+.wf-card{background:var(--bg1);border:1px solid var(--b1);border-radius:14px;padding:18px 20px;transition:border-color .2s}
+.wf-card:hover{border-color:var(--b2)}
+.wf-card.off{opacity:.55}
+.wf-top{display:flex;align-items:center;gap:12px}
+.wf-name{font-size:14px;font-weight:800;letter-spacing:-.2px}
+.wf-trigger{font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:20px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);color:var(--sky)}
+.wf-meta{margin-left:auto;display:flex;align-items:center;gap:14px}
+.wf-stat{font-size:11px;color:var(--t3);font-family:var(--fm)}
+.wf-stat strong{color:var(--t1);font-weight:700}
+.wf-steps{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.wf-step{display:flex;align-items:baseline;gap:8px;font-size:12px;color:var(--t2)}
+.wf-step-n{font-family:var(--fm);font-size:10px;font-weight:700;color:var(--t4);flex-shrink:0}
+.wf-step-act{font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:5px;background:var(--bg3);color:var(--t2);flex-shrink:0}
+.wf-step-txt{color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wf-actions{display:flex;gap:6px;margin-top:14px;padding-top:12px;border-top:1px solid var(--b0);align-items:center}
+
+/* Toggle switch */
+.switch{position:relative;width:36px;height:20px;flex-shrink:0;cursor:pointer}
+.switch input{opacity:0;width:0;height:0}
+.switch .track{position:absolute;inset:0;background:var(--bg3);border:1px solid var(--b1);border-radius:20px;transition:all .18s}
+.switch .track::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--t3);transition:all .18s}
+.switch input:checked + .track{background:var(--fire);border-color:var(--fire)}
+.switch input:checked + .track::after{left:18px;background:#fff}
+.switch input:disabled + .track{opacity:.5;cursor:not-allowed}
+
+/* Editor */
+.editor{background:var(--bg1);border:1px solid var(--fireb);border-radius:14px;padding:22px;margin-bottom:24px;display:none}
+.editor.open{display:block}
+.editor-hdr{font-size:15px;font-weight:800;margin-bottom:18px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:6px}
+.inp,.sel,.ta{width:100%;padding:9px 12px;border-radius:9px;background:var(--bg2);border:1px solid var(--b1);color:var(--t1);font-family:var(--ff);font-size:13px}
+.inp:focus,.sel:focus,.ta:focus{outline:none;border-color:var(--fire)}
+.sel{cursor:pointer;appearance:none}
+.ta{font-family:var(--fm);font-size:12px;line-height:1.6;resize:vertical;min-height:74px}
+.row{display:flex;gap:10px}
+.row > *{flex:1}
+
+.step-card{background:var(--bg2);border:1px solid var(--b1);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.step-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.step-num{font-family:var(--fm);font-size:10px;font-weight:800;color:var(--fire2);background:var(--firet);border:1px solid var(--fireb);border-radius:6px;padding:3px 8px}
+.step-inline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--t3)}
+.step-inline .sel,.step-inline .inp{width:auto}
+.inp.num{width:72px;font-family:var(--fm);text-align:center}
+.step-x{margin-left:auto;background:none;border:none;color:var(--t4);font-size:15px;cursor:pointer;padding:4px 8px;border-radius:6px}
+.step-x:hover{color:var(--rose);background:rgba(244,63,94,.08)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.chip{font-family:var(--fm);font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:var(--bg3);border:1px solid var(--b1);color:var(--t2);cursor:pointer;transition:all .12s}
+.chip:hover{border-color:var(--fireb);color:var(--fire2);background:var(--firet)}
+.email-note{font-size:11px;color:var(--t3);background:var(--bg3);border-radius:8px;padding:10px 12px;line-height:1.5}
+.editor-err{display:none;font-size:12px;color:var(--rose);background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.25);border-radius:9px;padding:9px 12px;margin-bottom:14px}
+.editor-btns{display:flex;gap:8px;margin-top:6px}
+
+/* Empty state */
+.empty{padding:48px 24px;text-align:center;background:var(--bg1);border:1px solid var(--b1);border-radius:14px}
+.empty-ico{font-size:32px;margin-bottom:12px;opacity:.4}
+.empty-txt{font-size:13px;color:var(--t3)}
+
+@media(max-width:840px){
+  .recipes{grid-template-columns:1fr}
+  .nav-tabs{display:none}
+  .wf-top{flex-wrap:wrap}
+  .wf-meta{margin-left:0;width:100%}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <div class="nav-mark"><svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M1.5 10.5L7 2 12.5 10.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="nav-word">Auto<em>Film</em></div>
+  </div>
+  <div class="nav-tabs">
+    <a class="nav-tab" href="autofilm-dashboard.html" style="text-decoration:none">Dashboard</a>
+    <a class="nav-tab" href="autofilm-inbox.html" style="text-decoration:none">Inbox</a>
+    <div class="nav-tab on">Workflows</div>
+    <div class="nav-tab">Team</div>
+    <div class="nav-tab">Activity</div>
+    <div class="nav-tab">CRM</div>
+  </div>
+  <div class="nav-right">
+    <button class="btn primary" id="newBtn" onclick="openEditor()" style="display:none">+ New Workflow</button>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1>Workflows</h1>
+  <div class="sub">Automated follow-ups that fire when customers get — or don't get — to your videos.</div>
+
+  <!-- Create / Edit panel -->
+  <div class="editor" id="editor">
+    <div class="editor-hdr" id="editorHdr">New Workflow</div>
+    <div class="editor-err" id="editorErr"></div>
+    <div class="row">
+      <div class="field">
+        <label>Name</label>
+        <input class="inp" id="fName" maxlength="120" placeholder="e.g. 24h no-watch follow-up">
+      </div>
+      <div class="field">
+        <label>When this happens…</label>
+        <select class="sel" id="fTrigger" onchange="onTriggerChange()"></select>
+      </div>
+    </div>
+    <div class="field">
+      <label>…do this</label>
+      <div id="stepList"></div>
+      <button class="btn ghost" onclick="addStep()">+ Add step</button>
+    </div>
+    <div class="editor-btns">
+      <button class="btn primary" id="saveBtn" onclick="saveWorkflow()">Save Workflow</button>
+      <button class="btn ghost" onclick="closeEditor()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Starter recipes -->
+  <div id="recipeSection" style="display:none">
+    <div class="section-hdr" style="margin-top:0">
+      <div class="section-title">Starter Recipes</div>
+      <div class="section-badge">One-Click</div>
+    </div>
+    <div class="recipes" id="recipeGrid"></div>
+  </div>
+
+  <!-- Workflow list -->
+  <div class="section-hdr">
+    <div class="section-title">Your Workflows</div>
+    <div class="section-badge" id="wfCount">0 Active</div>
+  </div>
+  <div class="wf-list" id="wfList"></div>
+</div>
+
+<script src="assets/session.js"></script>
+<script>
+if (!AFSession.requireAuth()) throw new Error('redirecting');
+const API = AFSession.API;
+const rep = AFSession.rep();
+const canEdit = ['admin', 'manager'].includes(rep && rep.role);
+
+// ── Engine capabilities (mirrors backend/src/routes/workflows.js) ──
+const TRIGGERS = {
+  video_sent: {
+    label: 'Video sent',
+    placeholders: ['first_name', 'customer_name', 'customer_phone', 'vehicle', 'rep_name', 'dealer_name', 'short_url', 'short_code'],
+    actions: ['sms'],
+  },
+  video_unwatched: {
+    label: 'Not watched (2h after send)',
+    placeholders: ['first_name', 'customer_name', 'customer_phone', 'customer_email', 'vehicle', 'rep_name', 'dealer_name', 'short_url', 'short_code'],
+    actions: ['sms', 'email'],
+  },
+  video_watched_75: {
+    label: 'Watched 75%+',
+    placeholders: ['first_name', 'customer_name', 'customer_phone', 'customer_email', 'vehicle', 'rep_name', 'watch_pct', 'short_code'],
+    actions: ['sms'],
+  },
+};
+
+const RECIPES = [
+  {
+    ico: '⏰', name: 'Follow up if not watched in 24h',
+    desc: 'Customer never opened the video? Send a friendly nudge with the link a day after it went out.',
+    wf: {
+      name: '24h no-watch follow-up', trigger: 'video_unwatched',
+      steps: [{ delay_minutes: 1320, action: 'sms', template: "Hi {{first_name}}, just making sure my video came through! You can watch it anytime here: {{short_url}} — {{rep_name}}, {{dealer_name}}" }],
+    },
+  },
+  {
+    ico: '🔥', name: 'Strike while the lead is hot',
+    desc: 'They watched 75%+ — text them 15 minutes later to set up the test drive while interest is high.',
+    wf: {
+      name: 'Hot lead follow-up', trigger: 'video_watched_75',
+      steps: [{ delay_minutes: 15, action: 'sms', template: "Hi {{first_name}}, thanks for checking out my video! Want to come by for a quick test drive? Just reply here and I'll get it set up. — {{rep_name}}" }],
+    },
+  },
+  {
+    ico: '📬', name: 'Two-touch no-watch rescue',
+    desc: 'Nudge by text at the 2-hour mark, then back it up with the video email a day later.',
+    wf: {
+      name: 'Two-touch rescue', trigger: 'video_unwatched',
+      steps: [
+        { delay_minutes: 0, action: 'sms', template: "Hi {{first_name}}, {{rep_name}} here from {{dealer_name}} — don't miss the quick video I made just for you: {{short_url}}" },
+        { delay_minutes: 1440, action: 'email', template: '' },
+      ],
+    },
+  },
+];
+
+let workflows = [];
+let draft = null; // { id, name, trigger, steps: [{delay_minutes, action, template}] }
+
+// ── List ───────────────────────────────────────────────────────────
+async function load() {
+  try {
+    const res = await AFSession.fetch(`${API}/api/workflows`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    workflows = data.workflows || [];
+    renderList();
+  } catch (e) {
+    console.error('[workflows] Load error:', e);
+    document.getElementById('wfList').innerHTML =
+      `<div class="empty"><div class="empty-ico">⚠️</div><div class="empty-txt">${esc(e.message || 'Failed to load workflows')}</div></div>`;
+  }
+}
+
+function renderList() {
+  const list = document.getElementById('wfList');
+  const active = workflows.filter(w => w.enabled).length;
+  document.getElementById('wfCount').textContent = `${active} Active`;
+  document.getElementById('recipeSection').style.display = (canEdit && workflows.length < 3) ? '' : 'none';
+
+  if (!workflows.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-ico">⚡</div><div class="empty-txt">No workflows yet.${canEdit ? ' Pick a starter recipe above or create one from scratch.' : ' A manager can set them up.'}</div></div>`;
+    return;
+  }
+
+  list.innerHTML = workflows.map(wf => `
+    <div class="wf-card${wf.enabled ? '' : ' off'}">
+      <div class="wf-top">
+        <label class="switch" title="${wf.enabled ? 'Enabled' : 'Disabled'}">
+          <input type="checkbox" ${wf.enabled ? 'checked' : ''} ${canEdit ? '' : 'disabled'} onchange="toggleWf('${esc(wf.id)}', this.checked)">
+          <span class="track"></span>
+        </label>
+        <div class="wf-name">${esc(wf.name)}</div>
+        <div class="wf-trigger">${esc(wf.trigger_label || wf.trigger)}</div>
+        <div class="wf-meta">
+          <div class="wf-stat"><strong>${wf.steps.length}</strong> step${wf.steps.length === 1 ? '' : 's'}</div>
+          <div class="wf-stat"><strong>${(wf.executions_30d || 0).toLocaleString()}</strong> runs · 30d</div>
+          ${wf.pending_actions ? `<div class="wf-stat" style="color:var(--amber)"><strong>${wf.pending_actions}</strong> queued</div>` : ''}
+        </div>
+      </div>
+      <div class="wf-steps">
+        ${wf.steps.map((s, i) => `
+          <div class="wf-step">
+            <span class="wf-step-n">${i + 1}.</span>
+            <span class="wf-step-act">${s.action === 'email' ? 'Email' : 'SMS'}</span>
+            <span class="wf-step-txt">${s.delay_minutes ? 'after ' + esc(humanDelay(s.delay_minutes)) + ' — ' : ''}${s.action === 'email' ? 'standard video email' : esc(s.template)}</span>
+          </div>`).join('')}
+      </div>
+      ${canEdit ? `
+      <div class="wf-actions">
+        <button class="btn ghost" onclick="editWf('${esc(wf.id)}')">Edit</button>
+        <button class="btn ghost danger" onclick="deleteWf('${esc(wf.id)}', '${esc(wf.name).replace(/'/g, '&#39;')}')">Delete</button>
+      </div>` : ''}
+    </div>`).join('');
+}
+
+async function toggleWf(id, enabled) {
+  try {
+    const res = await AFSession.fetch(`${API}/api/workflows/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const i = workflows.findIndex(w => w.id === id);
+    if (i >= 0) workflows[i] = data.workflow;
+    renderList();
+  } catch (e) {
+    alert('Could not update workflow: ' + e.message);
+    load();
+  }
+}
+
+async function deleteWf(id, name) {
+  if (!confirm(`Delete "${name}"? Queued follow-ups will be cancelled.`)) return;
+  try {
+    const res = await AFSession.fetch(`${API}/api/workflows/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    workflows = workflows.filter(w => w.id !== id);
+    renderList();
+  } catch (e) {
+    alert('Could not delete workflow: ' + e.message);
+  }
+}
+
+// ── Editor ─────────────────────────────────────────────────────────
+function openEditor(wf) {
+  draft = wf ? {
+    id: wf.id, name: wf.name, trigger: wf.trigger,
+    steps: wf.steps.map(s => ({ ...s })),
+  } : {
+    id: null, name: '', trigger: 'video_unwatched',
+    steps: [{ delay_minutes: 0, action: 'sms', template: '' }],
+  };
+  document.getElementById('editorHdr').textContent = draft.id ? 'Edit Workflow' : 'New Workflow';
+  document.getElementById('fName').value = draft.name;
+  document.getElementById('fTrigger').innerHTML = Object.keys(TRIGGERS)
+    .map(t => `<option value="${t}"${t === draft.trigger ? ' selected' : ''}>${esc(TRIGGERS[t].label)}</option>`).join('');
+  hideErr();
+  renderSteps();
+  const ed = document.getElementById('editor');
+  ed.classList.add('open');
+  ed.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function editWf(id) {
+  const wf = workflows.find(w => w.id === id);
+  if (wf) openEditor(wf);
+}
+
+function openRecipe(i) {
+  const r = RECIPES[i];
+  if (!r) return;
+  openEditor({ id: null, name: r.wf.name, trigger: r.wf.trigger, steps: r.wf.steps });
+}
+
+function closeEditor() {
+  draft = null;
+  document.getElementById('editor').classList.remove('open');
+}
+
+function onTriggerChange() {
+  if (!draft) return;
+  syncDraftFromDom();
+  draft.trigger = document.getElementById('fTrigger').value;
+  // Coerce actions the new trigger can't execute
+  const allowed = TRIGGERS[draft.trigger].actions;
+  draft.steps.forEach(s => { if (!allowed.includes(s.action)) s.action = 'sms'; });
+  renderSteps();
+}
+
+function renderSteps() {
+  const trig = TRIGGERS[draft.trigger];
+  document.getElementById('stepList').innerHTML = draft.steps.map((s, i) => {
+    const unit = pickUnit(s.delay_minutes);
+    return `
+    <div class="step-card">
+      <div class="step-hdr">
+        <span class="step-num">STEP ${i + 1}</span>
+        <div class="step-inline">
+          <span>wait</span>
+          <input class="inp num" type="number" min="0" step="1" value="${unit.amount}" id="sAmt${i}" onchange="syncDraftFromDom()">
+          <select class="sel" id="sUnit${i}" onchange="syncDraftFromDom()">
+            <option value="1"${unit.unit === 1 ? ' selected' : ''}>minutes</option>
+            <option value="60"${unit.unit === 60 ? ' selected' : ''}>hours</option>
+            <option value="1440"${unit.unit === 1440 ? ' selected' : ''}>days</option>
+          </select>
+          <span>then send</span>
+          <select class="sel" id="sAct${i}" onchange="syncDraftFromDom(); renderSteps()">
+            <option value="sms"${s.action === 'sms' ? ' selected' : ''}>SMS</option>
+            ${trig.actions.includes('email') ? `<option value="email"${s.action === 'email' ? ' selected' : ''}>Email</option>` : ''}
+          </select>
+        </div>
+        ${draft.steps.length > 1 ? `<button class="step-x" title="Remove step" onclick="removeStep(${i})">✕</button>` : ''}
+      </div>
+      ${s.action === 'email'
+        ? `<div class="email-note">📧 Sends the standard AutoFilm video email — branded layout with the customer's name, your name, and the watch link. No custom copy needed.</div>`
+        : `<textarea class="ta" id="sTpl${i}" placeholder="Hi {{first_name}}, ..." oninput="syncDraftFromDom()">${esc(s.template)}</textarea>
+           <div class="chips">${trig.placeholders.map(p => `<span class="chip" onclick="insertChip(${i}, '${p}')">{{${p}}}</span>`).join('')}</div>`}
+    </div>`;
+  }).join('');
+}
+
+function pickUnit(minutes) {
+  const m = minutes || 0;
+  if (m > 0 && m % 1440 === 0) return { amount: m / 1440, unit: 1440 };
+  if (m > 0 && m % 60 === 0) return { amount: m / 60, unit: 60 };
+  return { amount: m, unit: 1 };
+}
+
+function syncDraftFromDom() {
+  if (!draft) return;
+  draft.name = document.getElementById('fName').value;
+  draft.steps.forEach((s, i) => {
+    const amt = document.getElementById('sAmt' + i);
+    const unit = document.getElementById('sUnit' + i);
+    const act = document.getElementById('sAct' + i);
+    const tpl = document.getElementById('sTpl' + i);
+    if (amt && unit) s.delay_minutes = Math.max(0, Math.round(Number(amt.value) || 0)) * Number(unit.value);
+    if (act) s.action = act.value;
+    if (tpl) s.template = tpl.value;
+  });
+}
+
+function addStep() {
+  syncDraftFromDom();
+  draft.steps.push({ delay_minutes: 1440, action: 'sms', template: '' });
+  renderSteps();
+}
+
+function removeStep(i) {
+  syncDraftFromDom();
+  draft.steps.splice(i, 1);
+  renderSteps();
+}
+
+function insertChip(i, placeholder) {
+  const ta = document.getElementById('sTpl' + i);
+  if (!ta) return;
+  const token = '{{' + placeholder + '}}';
+  const start = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
+  const end = ta.selectionEnd != null ? ta.selectionEnd : start;
+  ta.value = ta.value.slice(0, start) + token + ta.value.slice(end);
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = start + token.length;
+  syncDraftFromDom();
+}
+
+async function saveWorkflow() {
+  syncDraftFromDom();
+  hideErr();
+  if (!draft.name.trim()) return showErr('Give your workflow a name.');
+  for (let i = 0; i < draft.steps.length; i++) {
+    const s = draft.steps[i];
+    if (s.action === 'sms' && !s.template.trim()) return showErr(`Step ${i + 1}: write the SMS message.`);
+  }
+
+  const payload = { name: draft.name.trim(), trigger: draft.trigger, steps: draft.steps };
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  try {
+    const res = await AFSession.fetch(
+      draft.id ? `${API}/api/workflows/${encodeURIComponent(draft.id)}` : `${API}/api/workflows`,
+      {
+        method: draft.id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    closeEditor();
+    await load();
+  } catch (e) {
+    showErr(e.message || 'Save failed');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function showErr(msg) {
+  const el = document.getElementById('editorErr');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function hideErr() { document.getElementById('editorErr').style.display = 'none'; }
+
+// ── Helpers ────────────────────────────────────────────────────────
+function humanDelay(m) {
+  if (!m) return 'immediately';
+  if (m % 1440 === 0) { const d = m / 1440; return d + (d === 1 ? ' day' : ' days'); }
+  if (m % 60 === 0) { const h = m / 60; return h + (h === 1 ? ' hour' : ' hours'); }
+  return m + ' min';
+}
+
+function esc(s) { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Init ───────────────────────────────────────────────────────────
+if (canEdit) {
+  document.getElementById('newBtn').style.display = '';
+  document.getElementById('recipeGrid').innerHTML = RECIPES.map((r, i) => `
+    <div class="recipe" onclick="openRecipe(${i})">
+      <div class="recipe-ico">${r.ico}</div>
+      <div class="recipe-name">${esc(r.name)}</div>
+      <div class="recipe-desc">${esc(r.desc)}</div>
+    </div>`).join('');
+}
+load();
+</script>
+</body>
+</html>

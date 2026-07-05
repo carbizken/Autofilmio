@@ -80,21 +80,39 @@ export async function fireWorkflowTrigger(trigger, context) {
     if (!workflows?.length) return;
 
     for (const wf of workflows) {
-      const executeAt = new Date(Date.now() + (wf.delay_minutes || 0) * 60000);
+      // Multi-step workflows (created via /api/workflows) store an ordered
+      // list in action_config.steps: [{ delay_minutes, action, message }].
+      // Legacy rows are a single action at the top level — normalize both
+      // shapes into steps and queue one workflow_action per step.
+      const steps = Array.isArray(wf.action_config?.steps) && wf.action_config.steps.length
+        ? wf.action_config.steps.map(s => ({
+            delay_minutes: s.delay_minutes || 0,
+            action: s.action,
+            action_config: { ...wf.action_config, steps: undefined, message: s.message },
+          }))
+        : [{
+            delay_minutes: wf.delay_minutes || 0,
+            action: wf.action,
+            action_config: wf.action_config,
+          }];
 
-      // Queue the action
-      await supabase.from('workflow_actions').insert({
-        workflow_id: wf.id,
-        rooftop_id,
-        trigger,
-        action: wf.action,
-        action_config: wf.action_config,
-        context,
-        execute_at: executeAt.toISOString(),
-        status: 'pending',
-      });
+      for (const step of steps) {
+        const executeAt = new Date(Date.now() + (step.delay_minutes || 0) * 60000);
 
-      console.log(`[workflows] Queued "${wf.action}" for trigger "${trigger}" — execute at ${executeAt.toISOString()}`);
+        // Queue the action
+        await supabase.from('workflow_actions').insert({
+          workflow_id: wf.id,
+          rooftop_id,
+          trigger,
+          action: step.action,
+          action_config: step.action_config,
+          context,
+          execute_at: executeAt.toISOString(),
+          status: 'pending',
+        });
+
+        console.log(`[workflows] Queued "${step.action}" for trigger "${trigger}" — execute at ${executeAt.toISOString()}`);
+      }
     }
   } catch (err) {
     console.error('[workflows] Fire trigger error:', err.message);
@@ -293,6 +311,9 @@ async function checkTimeTriggers() {
 function interpolate(template, ctx) {
   return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
     if (key === 'first_name') return (ctx.customer_name || '').split(' ')[0] || 'there';
-    return ctx[key] || match;
+    // Known-but-empty keys (e.g. vehicle: null) become '' instead of
+    // leaking a literal "{{vehicle}}" into a customer-facing message.
+    if (Object.prototype.hasOwnProperty.call(ctx, key)) return ctx[key] ?? '';
+    return match;
   });
 }
