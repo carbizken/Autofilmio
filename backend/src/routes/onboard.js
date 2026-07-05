@@ -48,10 +48,13 @@ router.post('/', async (req, res) => {
 
     const finalName = dealer_name || scraped.name || 'My Dealership';
 
-    // 2. Create rooftop
+    // 2. Create rooftop with a one-time onboarding capability token —
+    //    confirm/invite are pre-auth, so this token gates them instead.
+    const onboardToken = crypto.randomUUID();
     const { data: rooftop, error: rtErr } = await supabase
       .from('rooftops')
       .insert({
+        onboard_token: onboardToken,
         name: finalName,
         website_url: normalizeUrl(website_url),
         logo_url: scraped.logo,
@@ -92,6 +95,7 @@ router.post('/', async (req, res) => {
       success: true,
       rooftop_id: rooftop.id,
       rep_id: rep.id,
+      onboard_token: onboardToken,
       scraped: {
         name: finalName,
         logo: scraped.logo,
@@ -119,6 +123,11 @@ router.post('/', async (req, res) => {
 router.post('/:rooftop_id/confirm', async (req, res) => {
   try {
     const { rooftop_id } = req.params;
+
+    if (!(await checkOnboardToken(rooftop_id, req))) {
+      return res.status(403).json({ error: 'Invalid or expired onboarding token' });
+    }
+
     const updates = {};
 
     // Allow overriding any scraped field
@@ -163,6 +172,10 @@ router.post('/:rooftop_id/invite', async (req, res) => {
     const { rooftop_id } = req.params;
     const { name, email, role = 'sales', department = 'sales' } = req.body;
 
+    if (!(await checkOnboardToken(rooftop_id, req))) {
+      return res.status(403).json({ error: 'Invalid or expired onboarding token' });
+    }
+
     if (!name || !email) return res.status(400).json({ error: 'name and email required' });
 
     const { data: rep, error } = await supabase
@@ -189,6 +202,21 @@ router.post('/:rooftop_id/invite', async (req, res) => {
   }
 });
 
+/**
+ * Validate the one-time onboarding token (header or body) against the
+ * rooftop. Only valid until the rooftop is marked onboarded.
+ */
+async function checkOnboardToken(rooftopId, req) {
+  const token = req.headers['x-onboard-token'] || req.body?.onboard_token;
+  if (!token) return false;
+  const { data } = await supabase
+    .from('rooftops')
+    .select('onboard_token, onboarded')
+    .eq('id', rooftopId)
+    .single();
+  return !!data && data.onboard_token === token;
+}
+
 // ── SCRAPER ─────────────────────────────────────────────────
 
 /**
@@ -210,7 +238,17 @@ async function scrapeDealer(url) {
 
   try {
     const normalUrl = normalizeUrl(url);
+
+    // SSRF guard: only fetch public HTTP(S) hosts, never private ranges
+    // or cloud metadata endpoints.
+    const host = new URL(normalUrl).hostname;
+    if (isPrivateHost(host)) {
+      console.warn(`[onboard] Blocked scrape of private host: ${host}`);
+      return result;
+    }
+
     const response = await fetch(normalUrl, {
+      redirect: 'manual',
       headers: {
         'User-Agent': 'AutoFilm-Onboard/1.0 (dealer scraper)',
         'Accept': 'text/html',
@@ -305,6 +343,22 @@ async function scrapeDealer(url) {
   }
 
   return result;
+}
+
+function isPrivateHost(host) {
+  if (/^(localhost|.*\.local|.*\.internal)$/i.test(host)) return true;
+  // Raw IP checks — RFC1918, loopback, link-local, metadata
+  const ip = host.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/) ? host.split('.').map(Number) : null;
+  if (ip) {
+    const [a, b] = ip;
+    if (a === 10 || a === 127 || a === 0) return true;
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 169 && b === 254) return true; // link-local / cloud metadata
+    if (a === 100 && b >= 64 && b <= 127) return true; // CGNAT
+  }
+  if (host.includes(':')) return true; // IPv6 literals — refuse outright
+  return false;
 }
 
 function normalizeUrl(url) {

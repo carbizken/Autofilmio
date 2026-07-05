@@ -47,13 +47,18 @@ router.get('/:code/ping', async (req, res) => {
     const crossedMilestone = MILESTONES.find(m => m > prevMax && m <= pct);
 
     if (crossedMilestone) {
-      console.log(`[ping] ${code} crossed ${crossedMilestone}% — notifying rep`);
-
-      // Update max_watch_pct + last_watched_at
-      await supabase.from('videos').update({
+      // Atomic guard: only the ping that actually advances max_watch_pct
+      // past the milestone wins. Concurrent 5s pings can't double-notify.
+      const { data: winner } = await supabase.from('videos').update({
         max_watch_pct:   pct,
         last_watched_at: new Date().toISOString(),
-      }).eq('id', videoRow.id);
+      }).eq('id', videoRow.id).lt('max_watch_pct', crossedMilestone).select('id');
+
+      if (!winner?.length) {
+        return res.json({ ok: true, pct, milestone: null });
+      }
+
+      console.log(`[ping] ${code} crossed ${crossedMilestone}% — notifying rep`);
 
       // Send push notification to rep
       const rep = videoRow.reps;
@@ -61,12 +66,16 @@ router.get('/:code/ping', async (req, res) => {
       const vehicle = videoRow.vehicle ? ` — ${videoRow.vehicle}` : '';
 
       if (rep?.push_subscription) {
-        await sendPush(rep.push_subscription, {
+        const pushResult = await sendPush(rep.push_subscription, {
           title: `🔥 ${customerName} watched ${crossedMilestone}% of your video`,
           body:  `${customerName}${vehicle}`,
           icon:  '/icon-192.png',
           data:  { short_code: code, pct: crossedMilestone },
         });
+        // Prune dead subscriptions so we stop retrying them forever
+        if (pushResult?.expired && videoRow.rep_id) {
+          await supabase.from('reps').update({ push_subscription: null }).eq('id', videoRow.rep_id);
+        }
       }
 
       // 4. At 75%+ this is a hot lead: fire workflows + CRM sync (non-blocking)

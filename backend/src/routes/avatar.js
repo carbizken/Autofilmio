@@ -5,6 +5,7 @@ import { createAvatar, generateAvatarVideo, checkVideoStatus, generateAvatarScri
 import { nanoid } from 'nanoid';
 import { kvPut } from '../lib/cloudflare.js';
 import { twilioClient, TWILIO_FROM } from '../lib/twilio.js';
+import { guardedSms } from '../lib/consent.js';
 import { sendVideoEmail } from '../lib/email.js';
 import { syncVideoEvent } from '../lib/crm.js';
 
@@ -195,12 +196,13 @@ async function pollVideoCompletion(heygenVideoId, videoId, shortCode, maxAttempt
     const status = await checkVideoStatus(heygenVideoId);
     if (status.status === 'completed' && status.video_url) {
       await supabase.from('videos').update({
-        mux_playback_id: status.video_url, // Store HeyGen URL as playback source
+        playback_source: 'heygen',
+        external_video_url: status.video_url,
         thumbnail_url: status.thumbnail_url,
         duration: status.duration,
       }).eq('id', videoId);
 
-      await kvPut(`v_${shortCode}`, `https://autofilm.io/autofilm-player.html?code=${shortCode}`);
+      await kvPut(`v_${shortCode}`, `https://autofilm.io/autofilm-player.html?code=${shortCode}&video_url=${encodeURIComponent(status.video_url)}`);
       console.log(`[avatar] Video ${shortCode} ready`);
       return;
     }
@@ -217,24 +219,30 @@ async function pollAndSend(heygenVideoId, videoId, shortCode, opts) {
     const status = await checkVideoStatus(heygenVideoId);
     if (status.status === 'completed' && status.video_url) {
       await supabase.from('videos').update({
-        mux_playback_id: status.video_url,
+        playback_source: 'heygen',
+        external_video_url: status.video_url,
         thumbnail_url: status.thumbnail_url,
         duration: status.duration,
       }).eq('id', videoId);
 
       const shortUrl = `${CF_WORKER_URL}/v/${shortCode}`;
-      const playerUrl = `https://autofilm.io/autofilm-player.html?code=${shortCode}&rep=${encodeURIComponent(opts.repName)}&dealer=${encodeURIComponent(opts.dealerName)}`;
+      const playerUrl = `https://autofilm.io/autofilm-player.html?code=${shortCode}&rep=${encodeURIComponent(opts.repName)}&dealer=${encodeURIComponent(opts.dealerName)}&video_url=${encodeURIComponent(status.video_url)}`;
       await kvPut(`v_${shortCode}`, playerUrl);
 
       // Send SMS
       const firstName = opts.customer_name.split(' ')[0];
-      const smsBody = opts.vehicle
+      const smsBody = (opts.vehicle
         ? `Hey ${firstName}, ${opts.repName} at ${opts.dealerName} recorded a personal video about the ${opts.vehicle} for you 🎬\n\nWatch it here: ${shortUrl}`
-        : `Hey ${firstName}, ${opts.repName} at ${opts.dealerName} has a personal video for you 🎬\n\nWatch it here: ${shortUrl}`;
+        : `Hey ${firstName}, ${opts.repName} at ${opts.dealerName} has a personal video for you 🎬\n\nWatch it here: ${shortUrl}`)
+        + '\n\nReply STOP to opt out';
 
-      await twilioClient.messages.create({
+      const smsResult = await guardedSms(twilioClient, {
         body: smsBody, from: TWILIO_FROM, to: opts.customer_phone,
       });
+      if (smsResult.blocked) {
+        console.log(`[avatar] Auto-send blocked — customer opted out`);
+        return;
+      }
 
       // Send email if available
       if (opts.customer_email) {

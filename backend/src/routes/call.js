@@ -64,7 +64,7 @@ router.post('/initiate', async (req, res) => {
       await sendPush(rep.push_subscription, {
         title: 'Incoming Video Call',
         body: `${caller_name || 'A customer'} is calling from your website`,
-        icon: '/icons/call-192.png',
+        icon: '/icon-192.png',
         data: {
           type: 'incoming_call',
           call_id: callId,

@@ -1637,15 +1637,12 @@ function handleLogin(type){
     window.location.href=dest;
     return;
   }
-  // Rep / Dealer: demo confirmation
-  var labels={rep:'Rep App',dealer:'Command Panel'};
-  alert('✓ Login successful — redirecting to '+labels[type]+'\n\nIn production: POST /api/auth/login → JWT → redirect to '+dest);
-  closeModal(type);
+  // Real sign-in lives on the login page
+  window.location.href = 'autofilm-login.html';
 }
 
 function handleTrial(){
-  alert('✓ Trial started — sending onboarding email\n\nIn production: POST /api/auth/register → create account → send welcome email → redirect to rep app\n\nDay 21 GM outreach sequence initiated.');
-  closeModal('trial');
+  window.location.href = 'autofilm-onboard.html';
 }
 
 // ── NAV ACTIVE STATE ON SCROLL ───────────────────────

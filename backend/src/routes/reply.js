@@ -47,6 +47,7 @@ router.post('/', async (req, res) => {
       .insert({
         parent_video_id: parentVideo.id,
         mux_asset_id: upload.asset_id || null,
+        mux_upload_id: upload.id,
         customer_name: customer_name || parentVideo.customer_name,
         customer_phone: customer_phone || parentVideo.customer_phone,
       })
@@ -64,7 +65,7 @@ router.post('/', async (req, res) => {
       await sendPush(rep.push_subscription, {
         title: 'Video Reply Received',
         body: `${customerFirst} sent you a video reply!`,
-        icon: '/icons/reply-192.png',
+        icon: '/icon-192.png',
         data: {
           type: 'reply',
           reply_id: reply.id,
@@ -117,9 +118,11 @@ router.post('/:id/complete', async (req, res) => {
 
     if (error) throw error;
 
-    // Generate thumbnails if we have a playback ID
+    // Thumbnail belongs to the REPLY record — do not touch the parent
+    // video's thumbnails (that was overwriting the rep's original).
     if (mux_playback_id) {
-      const thumbs = await storeThumbnails(supabase, data.parent_video_id, mux_playback_id);
+      const { getThumbnails } = await import('../lib/thumbnail.js');
+      const thumbs = getThumbnails(mux_playback_id);
       if (thumbs) {
         await supabase.from('video_replies').update({
           thumbnail_url: thumbs.static,

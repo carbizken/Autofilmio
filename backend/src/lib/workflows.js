@@ -27,6 +27,7 @@
 
 import { supabase } from './supabase.js';
 import { twilioClient, TWILIO_FROM } from './twilio.js';
+import { guardedSms } from './consent.js';
 import { sendVideoEmail } from './email.js';
 import { sendPush } from './push.js';
 import { syncVideoEvent } from './crm.js';
@@ -115,6 +116,17 @@ async function processPendingActions() {
   if (!actions?.length) return;
 
   for (const action of actions) {
+    // Atomic claim — a row may only move pending → processing once.
+    // Prevents duplicate SMS/email if two ticks overlap or a second
+    // instance is ever added.
+    const { data: claimed } = await supabase
+      .from('workflow_actions')
+      .update({ status: 'processing' })
+      .eq('id', action.id)
+      .eq('status', 'pending')
+      .select('id');
+    if (!claimed?.length) continue;
+
     try {
       await executeAction(action);
       await supabase.from('workflow_actions').update({
@@ -147,7 +159,11 @@ async function executeAction(action) {
       let body = cfg.message || 'Hi {{first_name}}, just following up on our video!';
       body = interpolate(body, ctx);
 
-      await twilioClient.messages.create({ body, from: TWILIO_FROM, to: phone });
+      const smsResult = await guardedSms(twilioClient, { body, from: TWILIO_FROM, to: phone });
+      if (smsResult.blocked) {
+        console.log(`[workflows] SMS blocked — ${phone} opted out`);
+        break;
+      }
       console.log(`[workflows] SMS sent to ${phone}`);
       break;
     }

@@ -537,21 +537,20 @@ body{font-family:var(--ff);background:var(--bg);color:var(--t1);-webkit-font-smo
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // LOGIN
-var CREDS=[{e:'ken@autofilm.io',p:'autofilm2026'},{e:'admin@autofilm.io',p:'autofilm2026'}];
-function login(){
-  var e=(document.getElementById('le').value||'').trim().toLowerCase();
-  var p=(document.getElementById('lp').value||'').trim();
-  if(CREDS.some(function(c){return c.e===e&&c.p===p;})){
-    document.getElementById('lg').style.display='none';
-    renderDash(); renderFlags();
-    toast('Welcome back, Ken 👋');
-  } else {
-    document.getElementById('lerr').style.display='block';
-    document.getElementById('lp').value='';
-    document.getElementById('lp').focus();
+// Real session gate — vendor ops console requires an authenticated admin.
+// (Sign in at autofilm-login.html; role enforcement happens server-side
+// on every API this console will call.)
+(function gate(){
+  var sess = null, rep = null;
+  try { sess = JSON.parse(localStorage.getItem('af_session')); rep = JSON.parse(localStorage.getItem('af_rep')); } catch(e){}
+  if (!sess || !sess.access_token || !rep || rep.role !== 'admin') {
+    window.location.replace('autofilm-login.html');
+    return;
   }
-}
-document.getElementById('le').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('lp').focus();});
+  document.getElementById('lg').style.display='none';
+  renderDash(); renderFlags();
+})();
+function login(){ window.location.replace('autofilm-login.html'); }
 
 // NAV
 var PAGES=['dash','accts','trials','mrr','churn','video','infra','flags','pipe','support','team'];
@@ -636,4 +635,21 @@ function toggleFlag(k,el){
 }
 
 // MODALS
-function openChurn(name){document.getElementB
+function openChurn(name){document.getElementById('churnName').textContent=name;openModal('m-churn');}
+function openModal(id){var m=document.getElementById(id);if(m)m.style.display='flex';}
+function closeModal(id){var m=document.getElementById(id);if(m)m.style.display='none';}
+document.querySelectorAll('.mo').forEach(function(m){
+  m.addEventListener('click',function(e){if(e.target===m)m.style.display='none';});
+});
+
+// TOAST
+var toastTimer=null;
+function toast(msg){
+  var t=document.getElementById('toastEl');if(!t)return;
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove('show');},2400);
+}
+</script>
+</body>
+</html>

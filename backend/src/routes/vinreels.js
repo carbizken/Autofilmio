@@ -1,6 +1,7 @@
 import express from 'express';
 import { randomUUID } from 'crypto';
-import { nanoid } from 'nanoid';
+import { shortCode as genCode } from '../lib/shortcode.js';
+import { requireAuth } from '../lib/auth.js';
 import { supabase } from '../lib/supabase.js';
 import { video } from '../lib/mux.js';
 import { getThumbnails } from '../lib/thumbnail.js';
@@ -27,9 +28,11 @@ const router = express.Router();
  *   4. Create Mux asset from photo slideshow with audio
  *   5. Store as a 'vin_reel' type video
  */
-router.post('/', async (req, res) => {
+router.post('/', requireAuth(), async (req, res) => {
   try {
-    const { vin, rooftop_id, rep_id, style = 'cinematic' } = req.body;
+    const { vin, style = 'cinematic' } = req.body;
+    const rooftop_id = req.rep.rooftop_id;
+    const rep_id = req.rep.id;
 
     if (!vin) return res.status(400).json({ error: 'vin required' });
     if (!rooftop_id) return res.status(400).json({ error: 'rooftop_id required' });
@@ -80,7 +83,7 @@ router.post('/', async (req, res) => {
     const script = await generateVinReelScript(vehicle, style);
 
     // 3. Create the reel as a video record
-    const shortCode = nanoid(8);
+    const code = genCode();
 
     // Create a Mux asset. In production this would be a rendered slideshow
     // with TTS voiceover. For now we create an upload URL that the frontend
@@ -99,7 +102,8 @@ router.post('/', async (req, res) => {
         rep_id,
         rooftop_id,
         mux_asset_id: upload.asset_id || null,
-        short_code: shortCode,
+        mux_upload_id: upload.id,
+        short_code: code,
         type: 'vin_reel',
         vin,
         vehicle: vehicleName,
@@ -110,19 +114,19 @@ router.post('/', async (req, res) => {
 
     if (insertErr) throw insertErr;
 
-    console.log(`[vin-reels] Created reel ${shortCode} for ${vehicleName}`);
+    console.log(`[vin-reels] Created reel ${code} for ${vehicleName}`);
 
     // 4. CRM sync (async, non-blocking)
     syncVideoEvent(rooftop_id, {
       action: 'video_sent',
       video_id: videoRow.id,
-      short_code: shortCode,
+      short_code: code,
     }).catch(err => console.error('[vin-reels] CRM sync error:', err.message));
 
     res.json({
       success: true,
       video_id: videoRow.id,
-      short_code: shortCode,
+      short_code: code,
       upload_url: upload.url,
       upload_id: upload.id,
       vehicle: vehicleName,
@@ -262,12 +266,13 @@ function getTemplateScript(vehicle, style) {
  *   style?: 'cinematic' | 'quick' | 'detailed'
  * }
  */
-router.post('/render', async (req, res) => {
+router.post('/render', requireAuth(), async (req, res) => {
   try {
-    const { vin, rooftop_id, rep_id, style = 'cinematic' } = req.body;
+    const { vin, style = 'cinematic' } = req.body;
+    const rooftop_id = req.rep.rooftop_id;
+    const rep_id = req.rep.id;
 
     if (!vin) return res.status(400).json({ error: 'vin required' });
-    if (!rooftop_id) return res.status(400).json({ error: 'rooftop_id required' });
 
     // 1. Get vehicle data + photos
     let vehicle = null;
@@ -332,14 +337,15 @@ router.post('/render', async (req, res) => {
     const { uploadId, assetId } = await uploadToMux(video, outputPath);
 
     // 6. Create video record
-    const shortCode = nanoid(8);
+    const code = genCode();
     const { data: videoRow, error: insertErr } = await supabase
       .from('videos')
       .insert({
         rep_id: rep_id || null,
         rooftop_id,
         mux_asset_id: assetId,
-        short_code: shortCode,
+        mux_upload_id: uploadId,
+        short_code: code,
         type: 'vin_reel',
         vin,
         vehicle: vehicleName,
@@ -357,15 +363,15 @@ router.post('/render', async (req, res) => {
     syncVideoEvent(rooftop_id, {
       action: 'video_sent',
       video_id: videoRow.id,
-      short_code: shortCode,
+      short_code: code,
     }).catch(err => console.error('[vin-reels] CRM sync error:', err.message));
 
-    console.log(`[vin-reels] Server render complete: ${shortCode} for ${vehicleName}`);
+    console.log(`[vin-reels] Server render complete: ${code} for ${vehicleName}`);
 
     res.json({
       success: true,
       video_id: videoRow.id,
-      short_code: shortCode,
+      short_code: code,
       vehicle: vehicleName,
       script,
       rendered: true,
@@ -384,10 +390,11 @@ router.post('/render', async (req, res) => {
  *
  * Body: { rooftop_id, rep_id?, style?, limit? }
  */
-router.post('/bulk-render', async (req, res) => {
+router.post('/bulk-render', requireAuth(), async (req, res) => {
   try {
-    const { rooftop_id, rep_id, style = 'cinematic', limit = 50 } = req.body;
-    if (!rooftop_id) return res.status(400).json({ error: 'rooftop_id required' });
+    const { style = 'cinematic', limit = 50 } = req.body;
+    const rooftop_id = req.rep.rooftop_id;
+    const rep_id = req.rep.id;
 
     // Get vehicles with photos that don't already have a vin_reel
     const { data: vehicles, error } = await supabase
@@ -430,14 +437,15 @@ router.post('/bulk-render', async (req, res) => {
             style,
           });
 
-          const { assetId } = await uploadToMux(video, outputPath);
-          const shortCode = nanoid(8);
+          const { assetId, uploadId: upId } = await uploadToMux(video, outputPath);
+          const bulkCode = genCode();
 
           await supabase.from('videos').insert({
             rep_id: rep_id || null,
             rooftop_id,
             mux_asset_id: assetId,
-            short_code: shortCode,
+            mux_upload_id: upId,
+            short_code: bulkCode,
             type: 'vin_reel',
             vin: v.vin,
             vehicle: vehicleName,

@@ -2,7 +2,7 @@ name: AutoFilm CI
 
 on:
   push:
-    branches: [main, dev]
+    branches: ['**']
   pull_request:
     branches: [main]
 

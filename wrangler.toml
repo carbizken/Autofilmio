@@ -1,18 +1,21 @@
 name = "autofilm-links"
 main = "frontend/autofilm-worker.js"
-compatibility_date = "2024-01-01"
+compatibility_date = "2025-06-01"
 account_id = ""  # Fill in your Cloudflare account ID
+
+# Custom domain — bind links.autofilm.io to this worker.
+# Requires the autofilm.io zone on this Cloudflare account.
+routes = [
+  { pattern = "links.autofilm.io/*", zone_name = "autofilm.io" }
+]
 
 [[kv_namespaces]]
 binding = "LINKS"
-id = ""          # Fill in after: wrangler kv:namespace create LINKS
+id = ""          # Fill in after: wrangler kv namespace create LINKS
 
-[vars]
-PLAYER_BASE = "https://autofilm.io/autofilm-player.html"
-API_BASE    = "https://api.autofilm.io"
+[[kv_namespaces]]
+binding = "ANALYTICS"
+id = ""          # Fill in after: wrangler kv namespace create ANALYTICS
 
 # Deploy with:
 #   npx wrangler deploy
-#
-# Custom domain (set in Cloudflare dashboard):
-#   links.autofilm.io → autofilm-links worker

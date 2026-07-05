@@ -133,6 +133,10 @@ body{font-family:var(--ff);background:#000;color:var(--t1);-webkit-font-smoothin
     <input class="field-inp" id="fCustomer" placeholder="John Smith">
   </div>
   <div class="field">
+    <label class="field-label">Customer Cell Phone</label>
+    <input class="field-inp" id="fPhone" type="tel" placeholder="(203) 555-1234">
+  </div>
+  <div class="field">
     <label class="field-label">Vehicle (optional)</label>
     <input class="field-inp" id="fVehicle" placeholder="2025 Honda Accord Sport">
   </div>
@@ -162,13 +166,12 @@ body{font-family:var(--ff);background:#000;color:var(--t1);-webkit-font-smoothin
   </div>
 </div>
 
+<script src="assets/session.js"></script>
 <script>
-const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-  ? 'http://localhost:3001' : 'https://api.autofilm.io';
+if (!AFSession.requireAuth()) throw new Error('redirecting');
+const API = AFSession.API;
 
 const params = new URLSearchParams(location.search);
-const repId = params.get('rep_id') || localStorage.getItem('af_rep_id') || '';
-const rooftopId = params.get('rooftop_id') || localStorage.getItem('af_rooftop_id') || '';
 if (params.get('customer_name')) document.getElementById('fCustomer').value = params.get('customer_name');
 if (params.get('vehicle')) document.getElementById('fVehicle').value = params.get('vehicle');
 
@@ -222,10 +225,17 @@ async function generateScript() {
   try {
     const customer = document.getElementById('fCustomer').value.trim() || 'the customer';
     const vehicle = document.getElementById('fVehicle').value.trim();
+    const rep = AFSession.rep() || {};
     const res = await fetch(`${API}/api/ai-script`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customer_name: customer, vehicle, rep_id: repId }),
+      body: JSON.stringify({
+        purpose: vehicle ? 'walk-around' : 'internet-lead',
+        customer_name: customer,
+        vehicle,
+        rep_name: rep.nickname || rep.name || 'your rep',
+        dealer: (rep.rooftops && rep.rooftops.name) || 'the dealership',
+      }),
     });
     const data = await res.json();
     if (data.script) document.getElementById('fScript').value = data.script;
@@ -347,8 +357,71 @@ function redo() {
 
 async function sendVideo() {
   if (!recordedBlob) return;
-  // In production: upload to Mux via the upload endpoint, then call /api/send
-  alert('Video ready to upload! In production this sends to Mux and then to the customer via SMS/email.');
+  const customer = document.getElementById('fCustomer').value.trim();
+  const phone = document.getElementById('fPhone').value.trim();
+  const vehicle = document.getElementById('fVehicle').value.trim();
+
+  if (!customer || !phone) {
+    document.getElementById('postPanel').classList.remove('on');
+    document.getElementById('prePanel').classList.remove('hidden');
+    alert('Add the customer name and cell number, then hit Send again.');
+    return;
+  }
+
+  const btn = document.querySelector('.btn-send');
+  btn.disabled = true;
+
+  try {
+    // 1. Get a direct-to-Mux upload URL (nothing buffers on our server)
+    btn.textContent = 'Uploading…';
+    const createRes = await AFSession.fetch(`${API}/api/upload/create-url`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
+    });
+    const created = await createRes.json();
+    if (!createRes.ok) throw new Error(created.error || 'Could not start upload');
+
+    // 2. PUT the recording straight to Mux
+    const put = await fetch(created.upload_url, { method: 'PUT', body: recordedBlob });
+    if (!put.ok) throw new Error('Upload failed — check your connection and retry');
+
+    // 3. Wait for Mux to finish encoding (webhook flips the video ready)
+    btn.textContent = 'Processing…';
+    let ready = false;
+    for (let i = 0; i < 40; i++) {
+      await new Promise(r => setTimeout(r, 3000));
+      const st = await AFSession.fetch(`${API}/api/upload/status/${created.short_code}`);
+      const stData = await st.json();
+      if (stData.ready) { ready = true; break; }
+    }
+    if (!ready) throw new Error('Video is still processing — it will send automatically in a moment. You can safely leave this page.');
+
+    // 4. Send the SMS
+    btn.textContent = 'Sending…';
+    const sendRes = await AFSession.fetch(`${API}/api/send`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        short_code: created.short_code,
+        customer_name: customer,
+        customer_phone: phone,
+        vehicle: vehicle || undefined,
+      }),
+    });
+    const sent = await sendRes.json();
+    if (!sendRes.ok) throw new Error(sent.error || 'Send failed');
+
+    btn.textContent = '✅ Sent!';
+    btn.style.background = 'var(--green)';
+    setTimeout(() => {
+      document.getElementById('postPanel').classList.remove('on');
+      document.getElementById('prePanel').classList.remove('hidden');
+      btn.disabled = false; btn.textContent = 'Send Video →'; btn.style.background = '';
+      recordedBlob = null;
+    }, 2200);
+  } catch (e) {
+    alert(e.message);
+    btn.disabled = false;
+    btn.textContent = 'Send Video →';
+  }
 }
 </script>
 </body>

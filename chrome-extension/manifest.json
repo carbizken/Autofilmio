@@ -3,7 +3,7 @@
   "name": "AutoFilm — Video Messaging for Automotive",
   "version": "1.0.0",
   "description": "Record and send personal video messages directly from your CRM, Gmail, or any webpage. Powered by AutoFilm.",
-  "permissions": ["activeTab", "storage", "notifications"],
+  "permissions": ["activeTab", "storage", "notifications", "contextMenus"],
   "host_permissions": ["https://api.autofilm.io/*", "http://localhost:3001/*"],
   "action": {
     "default_popup": "popup.html",

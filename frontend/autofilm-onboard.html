@@ -103,13 +103,14 @@ footer span{color:var(--fire2);font-weight:700}
 
 <footer>Powered by <span>AutoFilm</span> &middot; Video selling for automotive</footer>
 
+<script src="assets/session.js"></script>
 <script>
-const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-  ? 'http://localhost:3001' : 'https://api.autofilm.io';
+const API = AFSession.API;
 
 let step = 1;
 let rooftopId = null;
 let repId = null;
+let onboardToken = null;
 let scraped = {};
 let invitedReps = [];
 
@@ -172,6 +173,7 @@ function renderStep3(card) {
     <div class="step-sub">You'll be the admin for ${esc(scraped.name || 'your dealership')}. Your team can be added next.</div>
     <div class="field"><label class="field-label">Your Full Name</label><input class="field-inp" id="fAdminName" placeholder="Ken Criscione" autofocus></div>
     <div class="field"><label class="field-label">Email</label><input class="field-inp" id="fAdminEmail" type="email" placeholder="ken@dealership.com"></div>
+    <div class="field"><label class="field-label">Password</label><input class="field-inp" id="fAdminPass" type="password" placeholder="At least 8 characters"></div>
     <button class="btn-primary" onclick="createAccount()">Create Account</button>
   </div>`;
 }
@@ -204,9 +206,9 @@ function renderStep5(card) {
     <div class="succ-title">You're Live!</div>
     <div class="succ-sub">AutoFilm is set up for ${esc(scraped.name || 'your dealership')}. Start sending personal videos to your customers today.</div>
     <div class="succ-links">
-      <a class="succ-link" href="autofilm-dashboard.html?rooftop_id=${rooftopId}"><div class="succ-link-ico">📊</div><div><div class="succ-link-txt">Open Dashboard</div><div class="succ-link-sub">See team stats and manage your dealership</div></div></a>
-      <a class="succ-link" href="autofilm-record.html?rep_id=${repId}&rooftop_id=${rooftopId}"><div class="succ-link-ico">📹</div><div><div class="succ-link-txt">Record Your First Video</div><div class="succ-link-sub">Try the teleprompter with AI script assist</div></div></a>
-      <a class="succ-link" href="autofilm-service.html?rep_id=${repId}&rooftop_id=${rooftopId}"><div class="succ-link-ico">🔧</div><div><div class="succ-link-txt">Service MPI Video</div><div class="succ-link-sub">Send video inspections to service customers</div></div></a>
+      <a class="succ-link" href="autofilm-settings.html"><div class="succ-link-ico">💳</div><div><div class="succ-link-txt">Start Your 30-Day Free Trial</div><div class="succ-link-sub">Pick a plan — no charge for 30 days</div></div></a>
+      <a class="succ-link" href="autofilm-dashboard.html"><div class="succ-link-ico">📊</div><div><div class="succ-link-txt">Open Dashboard</div><div class="succ-link-sub">See team stats and manage your dealership</div></div></a>
+      <a class="succ-link" href="autofilm-record.html"><div class="succ-link-ico">📹</div><div><div class="succ-link-txt">Record Your First Video</div><div class="succ-link-sub">Try the teleprompter with AI script assist</div></div></a>
     </div>
   </div>`;
 }
@@ -226,6 +228,7 @@ async function scanWebsite() {
     if (data.error && data.error !== 'Email already registered') throw new Error(data.error);
     rooftopId = data.rooftop_id;
     repId = data.rep_id;
+    onboardToken = data.onboard_token || null;
     scraped = data.scraped || {};
     step = 2;
     render();
@@ -240,7 +243,7 @@ async function confirmDetails() {
   try {
     await fetch(`${API}/api/onboard/${rooftopId}/confirm`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Onboard-Token': onboardToken },
       body: JSON.stringify({
         name: document.getElementById('fName').value.trim(),
         phone: document.getElementById('fPhone').value.trim(),
@@ -259,15 +262,22 @@ async function confirmDetails() {
 async function createAccount() {
   const name = document.getElementById('fAdminName').value.trim();
   const email = document.getElementById('fAdminEmail').value.trim();
-  if (!name || !email) { alert('Please fill in both fields'); return; }
+  const password = document.getElementById('fAdminPass').value;
+  if (!name || !email) { alert('Please fill in your name and email'); return; }
+  if (password.length < 8) { alert('Password must be at least 8 characters'); return; }
   try {
-    // Update the pending rep with real info
-    await fetch(`${API}/api/onboard/${rooftopId}/invite`, {
+    // Real account: creates the Supabase Auth user and claims the
+    // pending admin rep for this rooftop via the onboarding token.
+    const res = await fetch(`${API}/api/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, role: 'admin', department: 'sales' }),
+      body: JSON.stringify({ name, email, password, rooftop_id: rooftopId, onboard_token: onboardToken }),
     });
-    localStorage.setItem('af_rooftop_id', rooftopId);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Signup failed');
+
+    AFSession.set(data.session, data.rep || { rooftop_id: rooftopId, role: 'admin', name, email });
+    if (data.rep?.id) repId = data.rep.id;
     step = 4;
     render();
   } catch (e) { alert('Error: ' + e.message); }
@@ -279,11 +289,13 @@ async function addRep() {
   const dept = document.getElementById('fRepDept').value;
   if (!name || !email) { alert('Name and email required'); return; }
   try {
-    await fetch(`${API}/api/onboard/${rooftopId}/invite`, {
+    const res = await AFSession.fetch(`${API}/api/auth/invite`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, department: dept }),
     });
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.error || 'Invite failed');
     invitedReps.push({ name, email, department: dept });
     render();
   } catch (e) { alert('Error: ' + e.message); }
