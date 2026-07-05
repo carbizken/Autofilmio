@@ -64,6 +64,9 @@ h1{font-size:22px;font-weight:900;letter-spacing:-.4px;margin-bottom:4px}
 .tag{font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:12px;background:var(--bg3);color:var(--t3)}
 .tag.admin{background:var(--firet);color:var(--fire2)}
 .tag.inactive{background:rgba(244,63,94,.1);color:var(--rose)}
+.role-sel{padding:6px 8px;background:var(--bg2);border:1px solid var(--b1);border-radius:8px;color:var(--t1);font-size:11px;font-weight:600;font-family:var(--ff);outline:none;cursor:pointer}
+.role-sel:focus{border-color:var(--fire)}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap}
 
 /* Billing */
 .bill-status{display:flex;align-items:center;gap:14px;padding:16px;border-radius:12px;margin-bottom:16px}
@@ -113,22 +116,49 @@ h1{font-size:22px;font-weight:900;letter-spacing:-.4px;margin-bottom:4px}
   <div class="sub" id="rooftopName">Loading…</div>
 
   <div class="tabs">
-    <div class="tab on" data-panel="team" onclick="showTab(this)">Team</div>
-    <div class="tab" data-panel="dealership" onclick="showTab(this)">Dealership</div>
-    <div class="tab" data-panel="crm" onclick="showTab(this)">CRM</div>
-    <div class="tab" data-panel="billing" onclick="showTab(this)">Billing</div>
+    <div class="tab on" data-panel="profile" onclick="showTab(this)">Profile</div>
+    <div class="tab" data-panel="team" onclick="showTab(this)" data-manage>Team</div>
+    <div class="tab" data-panel="dealership" onclick="showTab(this)" data-manage>Dealership</div>
+    <div class="tab" data-panel="crm" onclick="showTab(this)" data-manage>CRM</div>
+    <div class="tab" data-panel="billing" onclick="showTab(this)" data-manage>Billing</div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="panel on" id="panel-profile">
+    <div class="card">
+      <h3>Your Profile</h3>
+      <p class="hint">This is what customers see on your player pages and in your texts.</p>
+      <div class="row2">
+        <div class="field"><label>Full Name</label><input id="pfName" placeholder="Ken Criscione"></div>
+        <div class="field"><label>Nickname <span style="text-transform:none;letter-spacing:0">(shown to customers)</span></label><input id="pfNickname" placeholder="Kenny"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Title</label><input id="pfTitle" placeholder="Sales Consultant"></div>
+        <div class="field"><label>Phone</label><input id="pfPhone" placeholder="+1 203 555 0100"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Photo URL</label><input id="pfPhoto" placeholder="https://…"></div>
+        <div class="field"><label>Email <span style="text-transform:none;letter-spacing:0">(sign-in — contact your admin to change)</span></label><input id="pfEmail" disabled></div>
+      </div>
+      <button class="btn btn-primary" onclick="saveProfile()">Save Profile</button>
+    </div>
   </div>
 
   <!-- TEAM -->
-  <div class="panel on" id="panel-team">
-    <div class="card">
+  <div class="panel" id="panel-team">
+    <div class="card" id="inviteCard">
       <h3>Invite a Rep</h3>
       <p class="hint">They'll get a magic-link email to set up their account. Unlimited users — always included.</p>
-      <div class="row3">
+      <div class="row2">
         <div class="field"><label>Name</label><input id="invName" placeholder="Jane Doe"></div>
         <div class="field"><label>Email</label><input id="invEmail" type="email" placeholder="jane@dealer.com"></div>
+      </div>
+      <div class="row2">
         <div class="field"><label>Department</label>
           <select id="invDept"><option value="sales">Sales</option><option value="service">Service</option><option value="bdc">BDC</option></select>
+        </div>
+        <div class="field"><label>Role</label>
+          <select id="invRole"><option value="sales">Sales Rep</option><option value="manager">Manager</option><option value="admin">Admin</option></select>
         </div>
       </div>
       <button class="btn btn-primary" onclick="inviteRep()">Send Invite</button>
@@ -153,7 +183,11 @@ h1{font-size:22px;font-weight:900;letter-spacing:-.4px;margin-bottom:4px}
       </div>
       <div class="row2">
         <div class="field"><label>Brand Color</label><input id="rtColor" type="color" style="height:40px;padding:4px"></div>
+        <div class="field"><label>Secondary Color</label><input id="rtColor2" type="color" style="height:40px;padding:4px" onchange="this.dataset.dirty=1"></div>
+      </div>
+      <div class="row2">
         <div class="field"><label>Logo URL</label><input id="rtLogo" placeholder="https://…"></div>
+        <div class="field"><label>Inventory Feed URL <span style="text-transform:none;letter-spacing:0">(CSV/XML feed)</span></label><input id="rtFeed" placeholder="https://…"></div>
       </div>
       <div class="field"><label>Address</label><input id="rtAddress"></div>
       <div class="row3">
@@ -181,9 +215,16 @@ h1{font-size:22px;font-weight:900;letter-spacing:-.4px;margin-bottom:4px}
           </select>
         </div>
         <div class="field"><label>API Key</label><input id="crmKey" type="password" placeholder="••••••••"></div>
-        <div class="field"><label>Dealer ID <span style="text-transform:none;letter-spacing:0">(if required)</span></label><input id="crmDealerId"></div>
+        <div class="field"><label>API Secret <span style="text-transform:none;letter-spacing:0">(if required)</span></label><input id="crmSecret" type="password" placeholder="••••••••"></div>
       </div>
-      <button class="btn btn-primary" onclick="connectCrm()">Connect</button>
+      <div class="row2">
+        <div class="field"><label>Dealer ID <span style="text-transform:none;letter-spacing:0">(if required)</span></label><input id="crmDealerId"></div>
+        <div class="field"><label>Endpoint URL <span style="text-transform:none;letter-spacing:0">(Salesforce instance / custom)</span></label><input id="crmEndpoint" placeholder="https://…"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="crmTestBtn" onclick="testCrm()">Test Connection</button>
+        <button class="btn btn-primary" onclick="connectCrm()">Connect</button>
+      </div>
     </div>
     <div class="card">
       <h3>Connected</h3>
@@ -225,6 +266,17 @@ AppSwitcher.mount('#app-switcher', { currentApp: 'autovideo' });
 
 const API = AFSession.API;
 let rooftop = null;
+let me = AFSession.rep() || {};
+let isAdmin = me.role === 'admin';
+let canManage = isAdmin || me.role === 'manager';
+
+// Backend gates /api/admin/* to admin+manager (requireRole). Reps get Profile only;
+// managers get everything read-mostly; row-level team actions are admin-only.
+function applyRoleGates() {
+  document.querySelectorAll('[data-manage]').forEach(el => {
+    el.style.display = canManage ? '' : 'none';
+  });
+}
 
 function showTab(el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
@@ -252,19 +304,63 @@ async function api(path, opts) {
 
 // ── LOAD EVERYTHING ─────────────────────────────────────────
 async function load() {
+  applyRoleGates();
+  await loadProfile(); // refreshes role from the server, re-applies gates
+  if (canManage) {
+    loadRooftop(); loadTeam(); loadCrm(); loadBilling();
+  }
+}
+function setVal(id, v) { document.getElementById(id).value = v || ''; }
+
+// ── PROFILE ─────────────────────────────────────────────────
+async function loadProfile() {
+  try {
+    const { rep } = await api('/api/auth/me');
+    if (!rep) return;
+    me = rep;
+    isAdmin = rep.role === 'admin';
+    canManage = isAdmin || rep.role === 'manager';
+    AFSession.set(null, rep); // keep the cached profile fresh
+    applyRoleGates();
+    setVal('pfName', rep.name); setVal('pfNickname', rep.nickname);
+    setVal('pfTitle', rep.title); setVal('pfPhone', rep.phone);
+    setVal('pfPhoto', rep.photo_url);
+    document.getElementById('pfEmail').value = rep.email || '';
+    document.getElementById('rooftopName').textContent =
+      (rep.rooftops && rep.rooftops.name) || 'Your Dealership';
+  } catch (e) { toast(e.message); }
+}
+
+async function saveProfile() {
+  try {
+    await api('/api/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: val('pfName'), nickname: val('pfNickname'), title: val('pfTitle'),
+        phone: val('pfPhone'), photo_url: val('pfPhoto'),
+      }),
+    });
+    toast('Profile saved');
+    loadProfile();
+  } catch (e) { toast(e.message); }
+}
+
+// ── DEALERSHIP LOAD ─────────────────────────────────────────
+async function loadRooftop() {
   try {
     const { rooftop: rt } = await api('/api/admin/settings');
     rooftop = rt;
     document.getElementById('rooftopName').textContent = rt.name || 'Your Dealership';
     setVal('rtName', rt.name); setVal('rtGroup', rt.dealer_group);
     setVal('rtPhone', rt.phone); setVal('rtWebsite', rt.website_url);
-    setVal('rtLogo', rt.logo_url); setVal('rtAddress', rt.address);
+    setVal('rtLogo', rt.logo_url); setVal('rtFeed', rt.inventory_feed_url);
+    setVal('rtAddress', rt.address);
     setVal('rtCity', rt.city); setVal('rtState', rt.state); setVal('rtZip', rt.zip);
     document.getElementById('rtColor').value = rt.brand_color || '#D94F00';
+    const c2 = document.getElementById('rtColor2');
+    if (rt.brand_color_2) { c2.value = rt.brand_color_2; c2.dataset.dirty = 1; }
   } catch (e) { toast(e.message); }
-  loadTeam(); loadCrm(); loadBilling();
 }
-function setVal(id, v) { document.getElementById(id).value = v || ''; }
 
 // ── TEAM ────────────────────────────────────────────────────
 async function loadTeam() {
@@ -274,15 +370,26 @@ async function loadTeam() {
     if (!reps.length) { el.innerHTML = '<div class="empty">No team members yet.</div>'; return; }
     el.innerHTML = reps.map(r => {
       const init = (r.name || '?').split(' ').map(w => w[0]).join('').slice(0, 2);
+      const self = r.id === me.id;
+      let actions = '';
+      if (isAdmin && !self) {
+        const roleSel = `<select class="role-sel" onchange="changeRole('${r.id}', this.value, '${esc(r.name)}')">
+          ${['sales', 'manager', 'admin'].map(x => `<option value="${x}" ${r.role === x ? 'selected' : ''}>${x}</option>`).join('')}
+        </select>`;
+        const toggle = r.active !== false
+          ? `<button class="btn btn-danger btn-sm" onclick="deactivate('${r.id}','${esc(r.name)}')">Deactivate</button>`
+          : `<button class="btn btn-ghost btn-sm" onclick="reactivate('${r.id}','${esc(r.name)}')">Reactivate</button>`;
+        actions = roleSel + toggle;
+      }
       return `<div class="team-row">
         <div class="team-av">${esc(init)}</div>
-        <div class="team-info"><div class="team-name">${esc(r.name)}</div><div class="team-email">${esc(r.email)}</div></div>
+        <div class="team-info"><div class="team-name">${esc(r.name)}${self ? ' <span style="color:var(--t4);font-weight:500">(you)</span>' : ''}</div><div class="team-email">${esc(r.email)}</div></div>
         <div class="team-tags">
-          <span class="tag ${r.role === 'admin' ? 'admin' : ''}">${esc(r.role)}</span>
+          ${isAdmin && !self ? '' : `<span class="tag ${r.role === 'admin' ? 'admin' : ''}">${esc(r.role)}</span>`}
           <span class="tag">${esc(r.department)}</span>
           ${r.active === false ? '<span class="tag inactive">Inactive</span>' : ''}
         </div>
-        ${r.active !== false ? `<button class="btn btn-danger btn-sm" onclick="deactivate('${r.id}','${esc(r.name)}')">Deactivate</button>` : ''}
+        ${actions}
       </div>`;
     }).join('');
   } catch (e) { document.getElementById('teamList').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
@@ -292,14 +399,23 @@ async function inviteRep() {
   const name = document.getElementById('invName').value.trim();
   const email = document.getElementById('invEmail').value.trim();
   const department = document.getElementById('invDept').value;
+  const role = document.getElementById('invRole').value;
   if (!name || !email) return toast('Name and email required');
   try {
-    await api('/api/auth/invite', { method: 'POST', body: JSON.stringify({ name, email, department }) });
+    await api('/api/auth/invite', { method: 'POST', body: JSON.stringify({ name, email, department, role }) });
     toast(`Invite sent to ${email}`);
     document.getElementById('invName').value = '';
     document.getElementById('invEmail').value = '';
     loadTeam();
   } catch (e) { toast(e.message); }
+}
+
+async function changeRole(id, role, name) {
+  try {
+    await api(`/api/admin/reps/${id}`, { method: 'PUT', body: JSON.stringify({ role }) });
+    toast(`${name} is now ${role}`);
+    loadTeam();
+  } catch (e) { toast(e.message); loadTeam(); }
 }
 
 async function deactivate(id, name) {
@@ -311,18 +427,27 @@ async function deactivate(id, name) {
   } catch (e) { toast(e.message); }
 }
 
+async function reactivate(id, name) {
+  try {
+    await api(`/api/admin/reps/${id}`, { method: 'PUT', body: JSON.stringify({ active: true }) });
+    toast(`${name} reactivated`);
+    loadTeam();
+  } catch (e) { toast(e.message); }
+}
+
 // ── DEALERSHIP ──────────────────────────────────────────────
 async function saveRooftop() {
   try {
-    await api('/api/admin/settings', {
-      method: 'PUT',
-      body: JSON.stringify({
-        name: val('rtName'), dealer_group: val('rtGroup'), phone: val('rtPhone'),
-        website_url: val('rtWebsite'), logo_url: val('rtLogo'),
-        brand_color: document.getElementById('rtColor').value,
-        address: val('rtAddress'), city: val('rtCity'), state: val('rtState'), zip: val('rtZip'),
-      }),
-    });
+    const body = {
+      name: val('rtName'), dealer_group: val('rtGroup'), phone: val('rtPhone'),
+      website_url: val('rtWebsite'), logo_url: val('rtLogo'), inventory_feed_url: val('rtFeed'),
+      brand_color: document.getElementById('rtColor').value,
+      address: val('rtAddress'), city: val('rtCity'), state: val('rtState'), zip: val('rtZip'),
+    };
+    // Only send the secondary color once it's been set (color inputs always hold a value)
+    const c2 = document.getElementById('rtColor2');
+    if (c2.dataset.dirty) body.brand_color_2 = c2.value;
+    await api('/api/admin/settings', { method: 'PUT', body: JSON.stringify(body) });
     toast('Saved');
   } catch (e) { toast(e.message); }
 }
@@ -338,20 +463,51 @@ async function loadCrm() {
       <div class="crm-dot" style="background:${c.active ? 'var(--green)' : 'var(--rose)'}"></div>
       <div class="crm-name">${esc(c.provider)}</div>
       <div class="crm-meta">${c.last_sync_at ? 'synced ' + timeAgo(c.last_sync_at) : 'never synced'}</div>
+      <button class="btn btn-ghost btn-sm" onclick="testCrmById('${c.id}', this)">Test</button>
       <button class="btn btn-danger btn-sm" onclick="removeCrm('${c.id}')">Remove</button>
     </div>`).join('');
   } catch (e) { document.getElementById('crmList').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
 }
 
-async function connectCrm() {
-  const provider = document.getElementById('crmProvider').value;
-  const api_key = document.getElementById('crmKey').value.trim();
-  const dealer_id = document.getElementById('crmDealerId').value.trim();
-  if (!api_key) return toast('API key required');
+function crmForm() {
+  return {
+    provider: document.getElementById('crmProvider').value,
+    api_key: document.getElementById('crmKey').value.trim(),
+    api_secret: document.getElementById('crmSecret').value.trim() || undefined,
+    dealer_id: document.getElementById('crmDealerId').value.trim() || undefined,
+    endpoint_url: document.getElementById('crmEndpoint').value.trim() || undefined,
+  };
+}
+
+async function testCrm() {
+  const body = crmForm();
+  if (!body.api_key) return toast('API key required');
+  const btn = document.getElementById('crmTestBtn');
+  btn.disabled = true; btn.textContent = 'Testing…';
   try {
-    await api('/api/admin/crm', { method: 'POST', body: JSON.stringify({ provider, api_key, dealer_id }) });
-    toast(`${provider} connected`);
+    const r = await api('/api/admin/crm/test', { method: 'POST', body: JSON.stringify(body) });
+    toast(r.ok ? '✓ ' + r.message : '✗ ' + r.message);
+  } catch (e) { toast(e.message); }
+  btn.disabled = false; btn.textContent = 'Test Connection';
+}
+
+async function testCrmById(id, btn) {
+  btn.disabled = true; btn.textContent = 'Testing…';
+  try {
+    const r = await api('/api/admin/crm/test', { method: 'POST', body: JSON.stringify({ id }) });
+    toast(r.ok ? '✓ ' + r.message : '✗ ' + r.message);
+  } catch (e) { toast(e.message); }
+  btn.disabled = false; btn.textContent = 'Test';
+}
+
+async function connectCrm() {
+  const body = crmForm();
+  if (!body.api_key) return toast('API key required');
+  try {
+    await api('/api/admin/crm', { method: 'POST', body: JSON.stringify(body) });
+    toast(`${body.provider} connected`);
     document.getElementById('crmKey').value = '';
+    document.getElementById('crmSecret').value = '';
     loadCrm();
   } catch (e) { toast(e.message); }
 }
