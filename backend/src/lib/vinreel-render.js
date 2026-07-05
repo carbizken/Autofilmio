@@ -25,8 +25,24 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { randomUUID } from 'crypto';
+import { defaultUploadSettings } from './mux.js';
 
 const TMP = join(tmpdir(), 'autofilm-reels');
+
+/**
+ * Detected once at module load. Render's native Node runtime usually
+ * ships ffmpeg, but never assume — routes check this flag and return
+ * 503 instead of failing mid-job when it's missing.
+ */
+export const ffmpegAvailable = (() => {
+  try {
+    execSync('ffmpeg -version', { stdio: 'ignore' });
+    return true;
+  } catch {
+    console.warn('[vinreel-render] ffmpeg not found on this host — VIN Reel rendering disabled');
+    return false;
+  }
+})();
 
 /**
  * Render a VIN Reel video from photos and script.
@@ -51,6 +67,10 @@ export async function renderVinReel(opts) {
     brandColor = '#D94F00',
     style = 'cinematic',
   } = opts;
+
+  if (!ffmpegAvailable) {
+    throw new Error('ffmpeg is not available on this deployment');
+  }
 
   const jobId = randomUUID().slice(0, 8);
   const workDir = join(TMP, jobId);
@@ -117,6 +137,8 @@ export async function renderVinReel(opts) {
 
   } catch (err) {
     console.error(`[vinreel-render] ${jobId}: Error — ${err.message}`);
+    // Don't leave orphan temp dirs behind on failure
+    await cleanupRender(workDir);
     throw err;
   }
 }

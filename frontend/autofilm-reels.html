@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AutoFilm — VIN Reels</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0a0a0d;--bg1:#111116;--bg2:#18181e;--bg3:#202028;--b0:rgba(255,255,255,.05);--b1:rgba(255,255,255,.09);--b2:rgba(255,255,255,.16);--t1:rgba(255,255,255,.96);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.40);--t4:rgba(255,255,255,.20);--fire:#D94F00;--fire2:#E85A0A;--firet:rgba(217,79,0,.10);--fireb:rgba(217,79,0,.22);--green:#22c55e;--amber:#f59e0b;--rose:#f43f5e;--sky:#38bdf8;--ff:'Geist',-apple-system,sans-serif;--fm:'Geist Mono',monospace}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;min-height:100vh}
+nav{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(10,10,13,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--b0);z-index:200;display:flex;align-items:center;padding:0 24px}
+.nav-left{display:flex;align-items:center;gap:10px}
+.nav-mark{width:28px;height:28px;background:var(--fire);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(217,79,0,.35)}
+.nav-word{font-size:16px;font-weight:900;letter-spacing:-.3px}
+.nav-word em{color:var(--fire2);font-style:normal}
+.nav-tabs{display:flex;gap:4px;margin-left:40px}
+.nav-tab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;color:var(--t3);cursor:pointer;transition:all .14s;text-decoration:none}
+.nav-tab:hover{color:var(--t1);background:rgba(255,255,255,.04)}
+.nav-tab.on{color:var(--fire2);background:var(--firet)}
+.wrap{max-width:1080px;margin:0 auto;padding:72px 24px 48px}
+h1{font-size:24px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px}
+.sub{font-size:13px;color:var(--t3);margin-bottom:28px}
+
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-size:15px;font-weight:800;letter-spacing:-.2px}
+.section-badge{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:20px;background:var(--firet);border:1px solid var(--fireb);color:var(--fire2)}
+.panel{background:var(--bg1);border:1px solid var(--b1);border-radius:14px;overflow:hidden;margin-bottom:24px}
+.panel-hdr{padding:16px 20px;border-bottom:1px solid var(--b0);font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:space-between}
+.panel-pad{padding:20px}
+
+/* Form */
+.field-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);margin-bottom:6px;display:block}
+.inp,.sel,textarea.inp{width:100%;padding:10px 12px;border-radius:9px;background:var(--bg2);border:1px solid var(--b1);color:var(--t1);font-family:var(--fm);font-size:13px;transition:border-color .14s}
+.inp:focus,.sel:focus,textarea.inp:focus{outline:none;border-color:var(--fire)}
+.inp::placeholder{color:var(--t4)}
+textarea.inp{resize:vertical;min-height:74px;line-height:1.6;font-size:11px}
+.sel{font-family:var(--ff);font-weight:600;cursor:pointer}
+.row{display:flex;gap:12px;align-items:flex-end}
+.row .grow{flex:1}
+.btn{padding:10px 18px;border-radius:9px;font-size:12px;font-weight:800;font-family:var(--ff);cursor:pointer;border:1px solid var(--b1);background:var(--bg2);color:var(--t1);transition:all .14s;white-space:nowrap}
+.btn:hover{border-color:var(--b2);background:var(--bg3)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-fire{background:var(--fire);border-color:var(--fire);color:#fff;box-shadow:0 2px 12px rgba(217,79,0,.3)}
+.btn-fire:hover{background:var(--fire2);border-color:var(--fire2)}
+.btn-sm{padding:6px 12px;font-size:11px;border-radius:8px}
+.hint{font-size:11px;color:var(--t4);margin-top:6px;line-height:1.5}
+.form-msg{font-size:12px;font-weight:600;margin-top:12px;display:none;padding:10px 12px;border-radius:9px}
+.form-msg.err{display:block;color:var(--rose);background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.2)}
+.form-msg.ok{display:block;color:var(--green);background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)}
+
+/* Vehicle card */
+.veh-card{display:none;margin-top:18px;padding:16px;border-radius:12px;background:var(--bg2);border:1px solid var(--b1)}
+.veh-card.show{display:block}
+.veh-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.veh-name{font-size:15px;font-weight:800;letter-spacing:-.2px}
+.veh-src{font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:12px}
+.veh-src.inv{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:var(--green)}
+.veh-src.nhtsa{background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.25);color:var(--sky)}
+.veh-specs{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--t3);font-family:var(--fm)}
+.veh-specs strong{color:var(--t2);font-weight:600}
+.veh-photos{display:flex;gap:8px;margin-top:12px;overflow-x:auto;padding-bottom:4px}
+.veh-photos img{width:88px;height:58px;object-fit:cover;border-radius:8px;border:1px solid var(--b1);flex-shrink:0}
+.photo-count{font-size:11px;color:var(--t3);margin-top:10px}
+
+/* Reel rows */
+.reel{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--b0)}
+.reel:last-child{border-bottom:none}
+.reel-ico{width:34px;height:34px;border-radius:9px;background:var(--firet);border:1px solid var(--fireb);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.reel-body{flex:1;min-width:0}
+.reel-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reel-meta{font-size:10px;color:var(--t4);font-family:var(--fm);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reel-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:4px 10px;border-radius:20px;font-family:var(--fm)}
+.chip.rendering{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);color:var(--amber)}
+.chip.processing{background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.25);color:var(--sky)}
+.chip.ready{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:var(--green)}
+.chip.failed{background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.25);color:var(--rose)}
+.spinner{width:10px;height:10px;border:2px solid rgba(245,158,11,.3);border-top-color:var(--amber);border-radius:50%;animation:spin 1s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.reel-err{font-size:10px;color:var(--rose);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Empty */
+.empty{padding:48px 24px;text-align:center}
+.empty-ico{font-size:32px;margin-bottom:12px;opacity:.4}
+.empty-txt{font-size:13px;color:var(--t3)}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg3);border:1px solid var(--b2);border-radius:12px;padding:10px 18px;font-size:12px;font-weight:700;box-shadow:0 12px 40px rgba(0,0,0,.6);transition:transform .25s ease;z-index:300}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+@media(max-width:720px){
+  .nav-tabs{display:none}
+  .row{flex-direction:column;align-items:stretch}
+  .reel{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <div class="nav-mark"><svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M1.5 10.5L7 2 12.5 10.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="nav-word">Auto<em>Film</em></div>
+  </div>
+  <div class="nav-tabs">
+    <a class="nav-tab" href="autofilm-dashboard.html">Dashboard</a>
+    <a class="nav-tab" href="autofilm-inbox.html">Inbox</a>
+    <span class="nav-tab on">VIN Reels</span>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1>VIN Reels</h1>
+  <div class="sub">Auto-generated vehicle showcase videos — photos in, cinematic reel out. No recording needed.</div>
+
+  <!-- Create -->
+  <div class="panel">
+    <div class="panel-hdr"><span>Create a Reel</span><span class="section-badge">Beta</span></div>
+    <div class="panel-pad">
+      <div class="row">
+        <div class="grow">
+          <label class="field-lbl" for="vinInp">VIN</label>
+          <input class="inp" id="vinInp" maxlength="17" placeholder="1HGCV1F34PA012345" autocomplete="off" spellcheck="false">
+        </div>
+        <div>
+          <label class="field-lbl" for="styleSel">Style</label>
+          <select class="sel" id="styleSel">
+            <option value="cinematic" selected>Cinematic · 30s</option>
+            <option value="quick">Quick · 15s</option>
+            <option value="detailed">Detailed · 45s</option>
+          </select>
+        </div>
+        <button class="btn" id="btnDecode" onclick="decodeVin()">Decode VIN</button>
+      </div>
+
+      <div class="veh-card" id="vehCard">
+        <div class="veh-top">
+          <div class="veh-name" id="vehName"></div>
+          <div class="veh-src" id="vehSrc"></div>
+        </div>
+        <div class="veh-specs" id="vehSpecs"></div>
+        <div class="veh-photos" id="vehPhotos" style="display:none"></div>
+        <div class="photo-count" id="photoCount"></div>
+
+        <div id="photoUrlsWrap" style="display:none;margin-top:14px">
+          <label class="field-lbl" for="photoUrls">Photo URLs (one per line, at least 3)</label>
+          <textarea class="inp" id="photoUrls" placeholder="https://photos.dealer.com/stock/12345/1.jpg&#10;https://photos.dealer.com/stock/12345/2.jpg&#10;https://photos.dealer.com/stock/12345/3.jpg"></textarea>
+          <div class="hint">No inventory photos found for this VIN — paste photo URLs to render from.</div>
+        </div>
+
+        <div style="margin-top:16px">
+          <button class="btn btn-fire" id="btnRender" onclick="startRender()">🎬 Generate Reel</button>
+        </div>
+      </div>
+
+      <div class="form-msg" id="formMsg"></div>
+    </div>
+  </div>
+
+  <!-- Bulk -->
+  <div class="panel">
+    <div class="panel-hdr">
+      <span>Bulk Render Inventory</span>
+      <button class="btn btn-sm" id="btnBulk" onclick="startBulk()">Render up to 20 vehicles</button>
+    </div>
+    <div class="panel-pad" style="padding-top:14px;padding-bottom:14px">
+      <div class="hint" style="margin-top:0">Queues a reel for every available inventory vehicle with photos that doesn't have one yet. Renders run one at a time in the background — watch progress below.</div>
+    </div>
+  </div>
+
+  <!-- Reels -->
+  <div class="section-hdr">
+    <div class="section-title">Your Reels</div>
+    <div class="section-badge" id="liveBadge" style="display:none">Rendering</div>
+  </div>
+  <div class="panel" style="margin-bottom:0">
+    <div id="reelList"><div class="empty"><div class="empty-ico">🎞️</div><div class="empty-txt">No reels yet. Decode a VIN above to generate your first one.</div></div></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="assets/session.js"></script>
+<script>
+if (!AFSession.requireAuth()) throw new Error('redirecting');
+const API = AFSession.API;
+const SHORT_BASE = 'https://links.autofilm.io/v/';
+const REELS_KEY = 'af_vinreels';
+
+let decoded = null;        // { source, vehicle } from /decode
+let reels = [];            // [{ reel_id, short_code, vehicle, status, playback_id, error }]
+const pollTimers = {};     // reel_id -> interval
+
+// ── Helpers ───────────────────────────────────────────────────
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function formMsg(text, kind) {
+  const el = document.getElementById('formMsg');
+  el.className = 'form-msg' + (text ? ' ' + kind : '');
+  el.textContent = text || '';
+}
+function saveReels() {
+  try { localStorage.setItem(REELS_KEY, JSON.stringify(reels.slice(0, 30).map(r => r.reel_id))); } catch {}
+}
+
+// ── Decode ────────────────────────────────────────────────────
+async function decodeVin() {
+  const vin = document.getElementById('vinInp').value.trim().toUpperCase();
+  formMsg('');
+  if (vin.length < 11) { formMsg('Enter a full VIN (17 characters).', 'err'); return; }
+
+  const btn = document.getElementById('btnDecode');
+  btn.disabled = true; btn.textContent = 'Decoding…';
+  try {
+    const rooftopId = AFSession.rep()?.rooftop_id || localStorage.getItem('af_rooftop_id') || '';
+    const res = await AFSession.fetch(`${API}/api/vin-reels/decode/${encodeURIComponent(vin)}?rooftop_id=${encodeURIComponent(rooftopId)}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'VIN not found');
+
+    decoded = data;
+    const v = data.vehicle;
+    const name = `${v.year || ''} ${v.make || ''} ${v.model || ''} ${v.trim || ''}`.replace(/\s+/g, ' ').trim();
+
+    document.getElementById('vehName').textContent = name || vin;
+    const src = document.getElementById('vehSrc');
+    src.textContent = data.source === 'inventory' ? 'In Inventory' : 'NHTSA Decode';
+    src.className = 'veh-src ' + (data.source === 'inventory' ? 'inv' : 'nhtsa');
+
+    document.getElementById('vehSpecs').innerHTML = [
+      v.body_style && `<span>Body <strong>${esc(v.body_style)}</strong></span>`,
+      v.engine && `<span>Engine <strong>${esc(v.engine)}</strong></span>`,
+      v.drivetrain && `<span>Drive <strong>${esc(v.drivetrain)}</strong></span>`,
+      v.msrp && `<span>MSRP <strong>$${Number(v.msrp).toLocaleString()}</strong></span>`,
+      v.mileage && `<span>Miles <strong>${Number(v.mileage).toLocaleString()}</strong></span>`,
+    ].filter(Boolean).join('');
+
+    const photos = Array.isArray(v.photos) ? v.photos : [];
+    const photoWrap = document.getElementById('vehPhotos');
+    const urlsWrap = document.getElementById('photoUrlsWrap');
+    if (photos.length) {
+      photoWrap.style.display = 'flex';
+      photoWrap.innerHTML = photos.slice(0, 8).map(p => `<img src="${esc(p)}" alt="" loading="lazy">`).join('');
+      document.getElementById('photoCount').textContent = `${photos.length} inventory photo${photos.length === 1 ? '' : 's'} will be used.`;
+      urlsWrap.style.display = 'none';
+    } else {
+      photoWrap.style.display = 'none';
+      photoWrap.innerHTML = '';
+      document.getElementById('photoCount').textContent = '';
+      urlsWrap.style.display = 'block';
+    }
+
+    document.getElementById('vehCard').classList.add('show');
+  } catch (e) {
+    decoded = null;
+    document.getElementById('vehCard').classList.remove('show');
+    formMsg(e.message || 'Decode failed', 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Decode VIN';
+  }
+}
+
+// ── Render ────────────────────────────────────────────────────
+async function startRender() {
+  if (!decoded) return;
+  formMsg('');
+  const vin = decoded.vehicle.vin || document.getElementById('vinInp').value.trim().toUpperCase();
+  const style = document.getElementById('styleSel').value;
+
+  const body = { vin, style };
+  const invPhotos = Array.isArray(decoded.vehicle.photos) ? decoded.vehicle.photos : [];
+  if (!invPhotos.length) {
+    const urls = document.getElementById('photoUrls').value.split('\n').map(s => s.trim()).filter(s => /^https?:\/\//i.test(s));
+    if (urls.length < 3) { formMsg('Paste at least 3 photo URLs (http/https).', 'err'); return; }
+    body.photos = urls.slice(0, 30);
+  }
+
+  const btn = document.getElementById('btnRender');
+  btn.disabled = true; btn.textContent = 'Starting…';
+  try {
+    const res = await AFSession.fetch(`${API}/api/vin-reels/render`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (res.status === 503) throw new Error('Rendering is unavailable on this deployment.');
+    if (res.status === 429) throw new Error('Render queue is full — try again in a minute.');
+    if (!res.ok) throw new Error(data.error || 'Render failed to start');
+
+    addReel({ reel_id: data.reel_id, short_code: data.short_code, vehicle: data.vehicle, status: 'rendering', playback_id: null, error: null });
+    formMsg('Reel queued — rendering in the background. Track it below.', 'ok');
+    toast('🎬 Render started');
+  } catch (e) {
+    formMsg(e.message || 'Render failed to start', 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = '🎬 Generate Reel';
+  }
+}
+
+// ── Bulk ──────────────────────────────────────────────────────
+async function startBulk() {
+  const btn = document.getElementById('btnBulk');
+  btn.disabled = true; btn.textContent = 'Queuing…';
+  try {
+    const style = document.getElementById('styleSel').value;
+    const res = await AFSession.fetch(`${API}/api/vin-reels/bulk-render`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ style, limit: 20 }),
+    });
+    const data = await res.json();
+    if (res.status === 503) throw new Error('Rendering is unavailable on this deployment.');
+    if (!res.ok) throw new Error(data.error || 'Bulk render failed');
+    if (!data.queued) { toast('Nothing to render — all inventory with photos already has reels.'); return; }
+
+    (data.reels || []).forEach(r => addReel({ reel_id: r.reel_id, short_code: r.short_code, vehicle: r.vehicle || r.vin, status: 'rendering', playback_id: null, error: null }));
+    toast(`🎬 ${data.queued} reel${data.queued === 1 ? '' : 's'} queued`);
+  } catch (e) {
+    toast(e.message || 'Bulk render failed');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Render up to 20 vehicles';
+  }
+}
+
+// ── Reel list + polling ───────────────────────────────────────
+function addReel(reel) {
+  if (reels.some(r => r.reel_id === reel.reel_id)) return;
+  reels.unshift(reel);
+  saveReels();
+  renderList();
+  startPolling(reel.reel_id);
+}
+
+function startPolling(reelId) {
+  if (pollTimers[reelId]) return;
+  let readySince = 0;
+  pollTimers[reelId] = setInterval(async () => {
+    try {
+      const res = await AFSession.fetch(`${API}/api/vin-reels/status/${encodeURIComponent(reelId)}`);
+      if (res.status === 404) { stopPolling(reelId); return; }
+      const data = await res.json();
+      const reel = reels.find(r => r.reel_id === reelId);
+      if (!reel) { stopPolling(reelId); return; }
+
+      const wasReady = reel.status === 'ready' && reel.playback_id;
+      reel.status = data.status;
+      reel.playback_id = data.playback_id || null;
+      reel.error = data.error || null;
+      reel.vehicle = data.vehicle || reel.vehicle;
+      reel.short_code = data.short_code || reel.short_code;
+
+      if (data.status === 'failed') stopPolling(reelId);
+      if (data.status === 'ready') {
+        if (data.playback_id) {
+          stopPolling(reelId);
+          if (!wasReady) toast('✅ Reel ready: ' + (reel.vehicle || reel.short_code));
+        } else {
+          // Rendered + uploaded; waiting on Mux webhook for playback_id.
+          // Give it up to 3 minutes, then stop polling (short link still works once live).
+          if (!readySince) readySince = Date.now();
+          if (Date.now() - readySince > 180000) stopPolling(reelId);
+        }
+      }
+      renderList();
+    } catch { /* transient — keep polling */ }
+  }, 3000);
+  renderList();
+}
+
+function stopPolling(reelId) {
+  clearInterval(pollTimers[reelId]);
+  delete pollTimers[reelId];
+  renderList();
+}
+
+function chipFor(r) {
+  if (r.status === 'failed') return '<span class="chip failed">Failed</span>';
+  if (r.status === 'ready' && r.playback_id) return '<span class="chip ready">Ready</span>';
+  if (r.status === 'ready') return '<span class="chip processing"><span class="spinner" style="border-color:rgba(56,189,248,.3);border-top-color:var(--sky)"></span>Processing</span>';
+  return '<span class="chip rendering"><span class="spinner"></span>Rendering</span>';
+}
+
+function renderList() {
+  const list = document.getElementById('reelList');
+  const anyActive = Object.keys(pollTimers).length > 0;
+  document.getElementById('liveBadge').style.display = anyActive ? '' : 'none';
+
+  if (!reels.length) {
+    list.innerHTML = '<div class="empty"><div class="empty-ico">🎞️</div><div class="empty-txt">No reels yet. Decode a VIN above to generate your first one.</div></div>';
+    return;
+  }
+
+  list.innerHTML = reels.map(r => {
+    const done = r.status === 'ready' && r.playback_id;
+    const actions = done
+      ? `<button class="btn btn-sm" onclick="copyLink('${esc(r.short_code)}')">🔗 Copy Link</button>
+         <a class="btn btn-sm" style="text-decoration:none" href="autofilm-player.html?code=${encodeURIComponent(r.short_code)}&playback_id=${encodeURIComponent(r.playback_id)}" target="_blank">▶ Preview</a>`
+      : (r.status === 'ready'
+        ? `<button class="btn btn-sm" onclick="copyLink('${esc(r.short_code)}')">🔗 Copy Link</button>`
+        : '');
+    return `<div class="reel">
+      <div class="reel-ico">🎬</div>
+      <div class="reel-body">
+        <div class="reel-name">${esc(r.vehicle || 'Vehicle')}</div>
+        <div class="reel-meta">${esc(r.short_code || '')}</div>
+        ${r.status === 'failed' && r.error ? `<div class="reel-err">${esc(r.error)}</div>` : ''}
+      </div>
+      <div class="reel-actions">${actions}${chipFor(r)}</div>
+    </div>`;
+  }).join('');
+}
+
+function copyLink(code) {
+  navigator.clipboard.writeText(SHORT_BASE + code).then(() => toast('🔗 Link copied'));
+}
+
+// ── Restore reels from previous session ───────────────────────
+async function restoreReels() {
+  let ids = [];
+  try { ids = JSON.parse(localStorage.getItem(REELS_KEY)) || []; } catch {}
+  for (const id of ids.slice(0, 20)) {
+    try {
+      const res = await AFSession.fetch(`${API}/api/vin-reels/status/${encodeURIComponent(id)}`);
+      if (!res.ok) continue;
+      const d = await res.json();
+      if (reels.some(r => r.reel_id === id)) continue;
+      reels.push({ reel_id: id, short_code: d.short_code, vehicle: d.vehicle, status: d.status, playback_id: d.playback_id || null, error: d.error || null });
+      if (d.status === 'rendering' || (d.status === 'ready' && !d.playback_id)) startPolling(id);
+    } catch {}
+  }
+  saveReels();
+  renderList();
+}
+
+document.getElementById('vinInp').addEventListener('keydown', e => { if (e.key === 'Enter') decodeVin(); });
+restoreReels();
+</script>
+</body>
+</html>
