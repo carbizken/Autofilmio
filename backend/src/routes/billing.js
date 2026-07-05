@@ -10,12 +10,20 @@ const APP_URL = process.env.APP_URL || 'https://autofilm.io';
 /**
  * POST /api/billing/checkout
  * Admin starts a subscription for their rooftop.
- * Body: { plan?: 'standard' | 'bundle' }
+ * Body: { plan?: 'standard' | 'bundle', return_to?: string }
+ * return_to is an optional same-origin path (e.g. '/autofilm-onboard.html')
+ * Stripe redirects back to with ?billing=success|canceled appended.
  * Returns: { checkout_url }
  */
 router.post('/checkout', requireAuth(), requireRole('admin', 'manager'), async (req, res) => {
   try {
-    const { plan = 'standard' } = req.body;
+    const { plan = 'standard', return_to } = req.body;
+
+    // Only allow absolute paths on our own origin (no '//host', no query) —
+    // anything else falls back to the settings page.
+    const returnPath = (typeof return_to === 'string' && /^\/(?!\/)[\w./-]*$/.test(return_to))
+      ? return_to
+      : '/autofilm-settings.html';
     const priceId = getPriceId(plan);
     if (!priceId) return res.status(500).json({ error: `No Stripe price configured for plan: ${plan}` });
 
@@ -50,8 +58,8 @@ router.post('/checkout', requireAuth(), requireRole('admin', 'manager'), async (
         trial_period_days: TRIAL_DAYS,
         metadata: { rooftop_id: rooftop.id, plan },
       },
-      success_url: `${APP_URL}/autofilm-settings.html?billing=success`,
-      cancel_url: `${APP_URL}/autofilm-settings.html?billing=canceled`,
+      success_url: `${APP_URL}${returnPath}?billing=success`,
+      cancel_url: `${APP_URL}${returnPath}?billing=canceled`,
       allow_promotion_codes: true,
       metadata: { rooftop_id: rooftop.id, plan },
     });

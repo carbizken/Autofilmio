@@ -80,6 +80,28 @@ router.get('/activity', async (req, res) => {
 });
 
 /**
+ * GET /api/dashboard/videos
+ * Returns the authenticated rep's own videos with watch stats, newest first.
+ */
+router.get('/videos', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('videos')
+      .select('id, short_code, customer_name, vehicle, sent_at, last_watched_at, max_watch_pct, created_at, mux_playback_id')
+      .eq('rep_id', req.rep.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    res.json({ videos: data || [] });
+  } catch (err) {
+    console.error('[dashboard] Videos error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * GET /api/dashboard/leaderboard?rooftop_id=<uuid>&period=week|month
  * Returns ranked rep leaderboard by videos sent + engagement.
  */

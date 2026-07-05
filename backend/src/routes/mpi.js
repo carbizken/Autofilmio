@@ -135,22 +135,13 @@ router.post('/:id/send', requireAuth(), async (req, res) => {
     const shortCode = videoRow.short_code;
     const shortUrl = `${CF_WORKER_URL}/v/${shortCode}`;
 
-    // Build player URL for MPI
+    // Customer-facing MPI approval page (video + line items + approve)
     const params = new URLSearchParams({
-      rep: rep?.name || '',
-      rep_display: repName,
-      title: 'Service Advisor',
-      dealer: dealerName,
+      id: inspection.id,
       code: shortCode,
-      customer: inspection.customer_name,
-      mode: 'service',
     });
 
-    if (videoRow.mux_playback_id) params.set('playback_id', videoRow.mux_playback_id);
-    if (inspection.vehicle) params.set('vehicle', inspection.vehicle);
-    if (inspection.ro_number) params.set('ro', inspection.ro_number);
-
-    const playerUrl = `https://autofilm.io/autofilm-player.html?${params.toString()}`;
+    const playerUrl = `https://autofilm.io/autofilm-mpi.html?${params.toString()}`;
     await kvPut(`v_${shortCode}`, playerUrl);
 
     const results = {};
@@ -290,6 +281,71 @@ router.post('/:id/approve', async (req, res) => {
 
   } catch (err) {
     console.error('[mpi] Approve error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/mpi/:id/public?code=SHORT_CODE
+ * Customer-facing inspection details for the MPI approval page.
+ * No auth — like /:id/approve, the video short_code is the capability
+ * token (only the SMS/email recipient knows it).
+ */
+router.get('/:id/public', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { code } = req.query;
+
+    if (!code) return res.status(403).json({ error: 'Invalid inspection link' });
+
+    const { data: inspection } = await supabase
+      .from('mpi_inspections')
+      .select('id, status, customer_name, vehicle, mileage, ro_number, items, total_estimate, approved_amount, approved_at, videos(short_code, mux_playback_id, reps(name, nickname, title, photo_url, rooftops(name)))')
+      .eq('id', id)
+      .single();
+
+    if (!inspection || inspection.videos?.short_code !== code) {
+      return res.status(403).json({ error: 'Invalid inspection link' });
+    }
+
+    const rep = inspection.videos?.reps;
+    const playbackId = inspection.videos?.mux_playback_id || null;
+
+    console.log(`[mpi] Public view of inspection ${id}`);
+
+    res.json({
+      inspection: {
+        id: inspection.id,
+        status: inspection.status,
+        customer_name: inspection.customer_name,
+        vehicle: inspection.vehicle,
+        mileage: inspection.mileage,
+        ro_number: inspection.ro_number,
+        total_estimate: inspection.total_estimate || 0,
+        approved_amount: inspection.approved_amount,
+        approved_at: inspection.approved_at,
+        items: (inspection.items || []).map(it => ({
+          name: it.name || '',
+          description: it.description || it.note || '',
+          price: Number(it.price ?? it.cost ?? 0) || 0,
+          urgency: it.urgency || it.status || 'green',
+          status: it.status || it.urgency || 'green',
+        })),
+      },
+      advisor: {
+        name: rep?.nickname || rep?.name || 'Your Service Advisor',
+        title: rep?.title || 'Service Advisor',
+        photo_url: rep?.photo_url || null,
+      },
+      dealership: rep?.rooftops?.name || 'Your Dealer',
+      video: {
+        mux_playback_id: playbackId,
+        playback_url: playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null,
+      },
+    });
+
+  } catch (err) {
+    console.error('[mpi] Public fetch error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
