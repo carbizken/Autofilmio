@@ -4,7 +4,7 @@ import { requireAuth } from '../lib/auth.js';
 import { guardedSms } from '../lib/consent.js';
 import { sendPush } from '../lib/push.js';
 import { supabase } from '../lib/supabase.js';
-import { video } from '../lib/mux.js';
+import { video, defaultUploadSettings } from '../lib/mux.js';
 import { twilioClient, TWILIO_FROM } from '../lib/twilio.js';
 import { sendVideoEmail } from '../lib/email.js';
 import { kvPut } from '../lib/cloudflare.js';
@@ -40,10 +40,7 @@ router.post('/', requireAuth(), async (req, res) => {
     // 1. Create Mux upload for the inspection video
     const upload = await video.uploads.create({
       cors_origin: '*',
-      new_asset_settings: {
-        playback_policy: ['public'],
-        encoding_tier: 'smart',
-      },
+      new_asset_settings: defaultUploadSettings({ encoding_tier: 'smart' }),
     });
 
     // 2. Create the video record

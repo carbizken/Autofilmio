@@ -898,7 +898,9 @@ body {
     <div class="video-frame" id="videoFrame">
 
       <!-- Real video -->
-      <video id="playerVid" playsinline preload="metadata"
+      <!-- crossorigin + controls: Mux auto-generated captions arrive via the
+           HLS manifest; native controls expose the CC menu to viewers -->
+      <video id="playerVid" playsinline preload="metadata" controls crossorigin="anonymous"
         controlsList="nodownload" style="display:none"
         onclick="this.paused ? this.play() : this.pause()">
       </video>

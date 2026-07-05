@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import { shortCode } from '../lib/shortcode.js';
 import { requireAuth } from '../lib/auth.js';
-import { video } from '../lib/mux.js';
+import { video, defaultUploadSettings } from '../lib/mux.js';
 import { supabase } from '../lib/supabase.js';
 import { kvPut } from '../lib/cloudflare.js';
 import { storeThumbnails } from '../lib/thumbnail.js';
@@ -25,10 +25,7 @@ router.post('/create-url', requireAuth(), async (req, res) => {
 
     const muxUpload = await video.uploads.create({
       cors_origin: '*',
-      new_asset_settings: {
-        playback_policy: ['public'],
-        mp4_support: 'standard',
-      },
+      new_asset_settings: defaultUploadSettings(), // includes English auto-captions
     });
 
     const short_code = shortCode();
@@ -86,10 +83,7 @@ router.post('/', requireAuth(), upload.single('video'), async (req, res) => {
 
     // 1. Create Mux direct upload
     const uploadResponse = await video.uploads.create({
-      new_asset_settings: {
-        playback_policy: ['public'],
-        mp4_support: 'standard',
-      },
+      new_asset_settings: defaultUploadSettings(), // includes English auto-captions
       cors_origin: '*',
     });
 

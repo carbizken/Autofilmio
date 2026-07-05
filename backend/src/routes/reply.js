@@ -1,6 +1,6 @@
 import express from 'express';
 import { supabase } from '../lib/supabase.js';
-import { video } from '../lib/mux.js';
+import { video, defaultUploadSettings } from '../lib/mux.js';
 import { sendPush } from '../lib/push.js';
 import { storeThumbnails } from '../lib/thumbnail.js';
 import { syncVideoEvent } from '../lib/crm.js';
@@ -35,10 +35,7 @@ router.post('/', async (req, res) => {
     // 2. Create Mux upload for the reply
     const upload = await video.uploads.create({
       cors_origin: '*',
-      new_asset_settings: {
-        playback_policy: ['public'],
-        encoding_tier: 'smart',
-      },
+      new_asset_settings: defaultUploadSettings({ encoding_tier: 'smart' }),
     });
 
     // 3. Create the reply record

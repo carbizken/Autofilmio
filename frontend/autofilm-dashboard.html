@@ -85,6 +85,20 @@ h1{font-size:24px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px}
 .crm-name{font-size:13px;font-weight:700;flex:1}
 .crm-sync{font-size:10px;color:var(--t4);font-family:var(--fm)}
 
+/* Watch heatmap */
+.hm-panel{margin-top:16px}
+.hm-stats{display:flex;gap:28px;padding:18px 20px 0}
+.hm-stat-n{font-family:var(--fm);font-weight:900;font-size:22px;letter-spacing:-.5px;line-height:1}
+.hm-stat-l{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+.hm-chart{position:relative;height:160px;margin:18px 20px 0;border-bottom:1px solid var(--b1)}
+.hm-grid{position:absolute;left:0;right:0;border-top:1px dashed var(--b0);pointer-events:none}
+.hm-bars{position:absolute;inset:0;display:flex;align-items:flex-end;gap:2px}
+.hm-bar{flex:1;background:var(--fire2);border-radius:4px 4px 0 0;min-height:2px;transition:opacity .12s;cursor:default}
+.hm-bar:hover{opacity:.75}
+.hm-bar.zero{background:var(--bg3)}
+.hm-x{display:flex;justify-content:space-between;padding:6px 20px 16px;font-size:10px;color:var(--t4);font-family:var(--fm)}
+.hm-tip{position:absolute;display:none;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--b2);border-radius:8px;padding:5px 9px;font-size:10px;font-family:var(--fm);font-weight:600;color:var(--t1);white-space:nowrap;pointer-events:none;z-index:5}
+
 /* Empty state */
 .empty{padding:48px 24px;text-align:center}
 .empty-ico{font-size:32px;margin-bottom:12px;opacity:.4}
@@ -154,6 +168,17 @@ h1{font-size:24px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px}
       <div class="panel-hdr"><span>CRM Connections</span></div>
       <div class="panel-body" id="crmPanel"></div>
     </div>
+  </div>
+
+  <!-- Watch Heatmap -->
+  <div class="panel hm-panel">
+    <div class="panel-hdr">
+      <span>Watch Heatmap</span>
+      <select class="period-sel" id="hmVideoSel" onchange="loadHeatmap()" style="max-width:280px">
+        <option value="">Select a video…</option>
+      </select>
+    </div>
+    <div id="hmBody"><div class="empty"><div class="empty-ico">🔥</div><div class="empty-txt">Pick a video to see its retention curve.</div></div></div>
   </div>
 </div>
 
@@ -263,6 +288,73 @@ async function loadCrm() {
   } catch (e) { console.error('[dashboard] CRM error:', e); }
 }
 
+// ── Watch Heatmap ──────────────────────────────────────────────
+async function loadHeatmapVideos() {
+  try {
+    const res = await authed(`${API}/api/dashboard/videos`);
+    const { videos } = await res.json();
+    const sel = document.getElementById('hmVideoSel');
+    if (!videos?.length) {
+      document.getElementById('hmBody').innerHTML = '<div class="empty"><div class="empty-ico">🔥</div><div class="empty-txt">No videos yet. Send one and its retention curve will appear here.</div></div>';
+      return;
+    }
+    sel.innerHTML = '<option value="">Select a video…</option>' + videos.map(v => {
+      const label = [v.customer_name || v.short_code, v.vehicle].filter(Boolean).join(' — ');
+      const when = v.sent_at || v.created_at;
+      const date = when ? new Date(when).toLocaleDateString() : '';
+      return `<option value="${esc(v.id)}">${esc(label)}${date ? ' · ' + date : ''}</option>`;
+    }).join('');
+    sel.value = videos[0].id;
+    loadHeatmap();
+  } catch (e) { console.error('[dashboard] Heatmap videos error:', e); }
+}
+
+async function loadHeatmap() {
+  const id = document.getElementById('hmVideoSel').value;
+  const body = document.getElementById('hmBody');
+  if (!id) {
+    body.innerHTML = '<div class="empty"><div class="empty-ico">🔥</div><div class="empty-txt">Pick a video to see its retention curve.</div></div>';
+    return;
+  }
+  try {
+    const res = await authed(`${API}/api/dashboard/heatmap?video_id=${encodeURIComponent(id)}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (!data.total_viewers) {
+      body.innerHTML = '<div class="empty"><div class="empty-ico">👀</div><div class="empty-txt">No watch data for this video yet.</div></div>';
+      return;
+    }
+    const max = Math.max(...data.buckets.map(b => b.viewers), 1);
+    body.innerHTML = `
+      <div class="hm-stats">
+        <div><div class="hm-stat-n">${data.total_viewers}</div><div class="hm-stat-l">Viewers</div></div>
+        <div><div class="hm-stat-n" style="color:var(--fire2)">${data.avg_max_pct}%</div><div class="hm-stat-l">Avg Watch</div></div>
+      </div>
+      <div class="hm-chart">
+        <div class="hm-grid" style="top:25%"></div>
+        <div class="hm-grid" style="top:50%"></div>
+        <div class="hm-grid" style="top:75%"></div>
+        <div class="hm-bars">${data.buckets.map(b =>
+          `<div class="hm-bar${b.viewers ? '' : ' zero'}" style="height:${Math.max(2, Math.round(b.viewers / max * 100))}%" data-tip="${b.pct}–${b.pct + 5}% · ${b.viewers} viewer${b.viewers === 1 ? '' : 's'} reached"></div>`).join('')}
+        </div>
+        <div class="hm-tip" id="hmTip"></div>
+      </div>
+      <div class="hm-x"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>`;
+    const tip = document.getElementById('hmTip');
+    body.querySelectorAll('.hm-bar').forEach(bar => {
+      bar.addEventListener('mouseenter', () => {
+        tip.textContent = bar.dataset.tip;
+        tip.style.display = 'block';
+        const cr = bar.parentElement.getBoundingClientRect();
+        const br = bar.getBoundingClientRect();
+        tip.style.left = (br.left - cr.left + br.width / 2) + 'px';
+        tip.style.bottom = Math.min(br.height + 8, cr.height - 24) + 'px';
+      });
+      bar.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    });
+  } catch (e) { console.error('[dashboard] Heatmap error:', e); }
+}
+
 function timeAgo(d) {
   if (!d) return '';
   const ms = Date.now() - new Date(d).getTime();
@@ -279,6 +371,7 @@ function timeAgo(d) {
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 loadAll();
+loadHeatmapVideos(); // once — not in loadAll(), so refreshes keep the selected video
 setInterval(loadAll, 30000);
 </script>
 </body>

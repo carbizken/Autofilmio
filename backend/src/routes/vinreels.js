@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { shortCode as genCode } from '../lib/shortcode.js';
 import { requireAuth } from '../lib/auth.js';
 import { supabase } from '../lib/supabase.js';
-import { video } from '../lib/mux.js';
+import { video, defaultUploadSettings } from '../lib/mux.js';
 import { getThumbnails } from '../lib/thumbnail.js';
 import { syncVideoEvent } from '../lib/crm.js';
 import { renderVinReel, uploadToMux, cleanupRender } from '../lib/vinreel-render.js';
@@ -90,10 +90,7 @@ router.post('/', requireAuth(), async (req, res) => {
     // can use to upload the rendered reel (or the backend renders server-side).
     const upload = await video.uploads.create({
       cors_origin: '*',
-      new_asset_settings: {
-        playback_policy: ['public'],
-        encoding_tier: 'smart',
-      },
+      new_asset_settings: defaultUploadSettings({ encoding_tier: 'smart' }),
     });
 
     const { data: videoRow, error: insertErr } = await supabase

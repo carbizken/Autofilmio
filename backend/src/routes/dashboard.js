@@ -102,6 +102,70 @@ router.get('/videos', async (req, res) => {
 });
 
 /**
+ * GET /api/dashboard/heatmap?video_id=<uuid>
+ * Retention curve for one video, aggregated from watch_events into
+ * twenty 5%-buckets: buckets[i].viewers = distinct viewers whose max
+ * watch_pct reached at least that bucket (viewers approximated by
+ * ip + user_agent since pings carry no session id).
+ */
+router.get('/heatmap', async (req, res) => {
+  try {
+    const { video_id } = req.query;
+    if (!video_id) return res.status(400).json({ error: 'video_id is required' });
+
+    // Ownership: rep's own video, or same rooftop for admin/manager.
+    const { data: videoRow, error: vErr } = await supabase
+      .from('videos')
+      .select('id, rep_id, rooftop_id')
+      .eq('id', video_id)
+      .maybeSingle();
+    if (vErr) throw vErr;
+    if (!videoRow) return res.status(404).json({ error: 'Video not found' });
+
+    const isOwner = videoRow.rep_id === req.rep.id;
+    const isManager = ['admin', 'manager'].includes(req.rep.role)
+      && videoRow.rooftop_id === req.rep.rooftop_id;
+    if (!isOwner && !isManager) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const { data: events, error: eErr } = await supabase
+      .from('watch_events')
+      .select('watch_pct, ip, user_agent')
+      .eq('video_id', video_id)
+      .limit(10000);
+    if (eErr) throw eErr;
+
+    // Max watch_pct per viewer (ip|user_agent key; fall back to per-event).
+    const viewerMax = new Map();
+    let anon = 0;
+    for (const ev of events || []) {
+      const key = (ev.ip || ev.user_agent) ? `${ev.ip || ''}|${ev.user_agent || ''}` : `anon_${anon++}`;
+      const pct = Math.max(0, Math.min(100, ev.watch_pct || 0));
+      if (!viewerMax.has(key) || viewerMax.get(key) < pct) viewerMax.set(key, pct);
+    }
+
+    const maxes = [...viewerMax.values()];
+    const total_viewers = maxes.length;
+
+    // buckets[i] = viewers who reached at least i*5 percent (0,5,...,95).
+    const buckets = Array.from({ length: 20 }, (_, i) => ({
+      pct: i * 5,
+      viewers: maxes.filter(m => m >= i * 5).length,
+    }));
+
+    const avg_max_pct = total_viewers
+      ? Math.round(maxes.reduce((a, b) => a + b, 0) / total_viewers)
+      : 0;
+
+    res.json({ video_id, buckets, total_viewers, avg_max_pct });
+  } catch (err) {
+    console.error('[dashboard] Heatmap error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * GET /api/dashboard/leaderboard?rooftop_id=<uuid>&period=week|month
  * Returns ranked rep leaderboard by videos sent + engagement.
  */
