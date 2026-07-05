@@ -1,6 +1,8 @@
 import express from 'express';
 import { supabase } from '../lib/supabase.js';
 import { sendPush } from '../lib/push.js';
+import { fireWorkflowTrigger } from '../lib/workflows.js';
+import { syncVideoEvent } from '../lib/crm.js';
 
 const router = express.Router();
 
@@ -10,7 +12,8 @@ const MILESTONES = [25, 50, 75, 100];
 /**
  * GET /v/:code/ping?pct=50
  * Called by player page every 5s while video plays.
- * Records watch event, sends push notification at milestones.
+ * Records watch event, sends push notification at milestones,
+ * fires workflow triggers and CRM sync at 75%+.
  */
 router.get('/:code/ping', async (req, res) => {
   try {
@@ -21,7 +24,7 @@ router.get('/:code/ping', async (req, res) => {
     // 1. Find video by short_code
     const { data: videoRow, error: videoErr } = await supabase
       .from('videos')
-      .select('id, rep_id, customer_name, vehicle, max_watch_pct, reps(push_subscription, name, nickname)')
+      .select('id, rep_id, rooftop_id, customer_name, customer_phone, customer_email, vehicle, short_code, max_watch_pct, reps(push_subscription, name, nickname)')
       .eq('short_code', code)
       .single();
 
@@ -64,6 +67,32 @@ router.get('/:code/ping', async (req, res) => {
           icon:  '/icon-192.png',
           data:  { short_code: code, pct: crossedMilestone },
         });
+      }
+
+      // 4. At 75%+ this is a hot lead: fire workflows + CRM sync (non-blocking)
+      if (crossedMilestone >= 75 && videoRow.rooftop_id) {
+        const ctx = {
+          video_id: videoRow.id,
+          short_code: code,
+          rep_id: videoRow.rep_id,
+          rooftop_id: videoRow.rooftop_id,
+          customer_name: videoRow.customer_name,
+          customer_phone: videoRow.customer_phone,
+          customer_email: videoRow.customer_email,
+          vehicle: videoRow.vehicle,
+          watch_pct: crossedMilestone,
+          rep_name: rep?.nickname || rep?.name?.split(' ')[0] || 'Your Rep',
+        };
+        fireWorkflowTrigger('video_watched_75', ctx)
+          .catch(e => console.error('[ping] Workflow trigger error:', e.message));
+        syncVideoEvent(videoRow.rooftop_id, {
+          action: 'video_watched',
+          video_id: videoRow.id,
+          short_code: code,
+          customer_phone: videoRow.customer_phone,
+          customer_email: videoRow.customer_email,
+          watch_pct: crossedMilestone,
+        }).catch(e => console.error('[ping] CRM sync error:', e.message));
       }
     } else if (pct > prevMax) {
       // Update max without notification

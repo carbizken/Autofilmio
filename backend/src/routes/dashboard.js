@@ -1,7 +1,12 @@
 import express from 'express';
 import { supabase } from '../lib/supabase.js';
+import { requireAuth } from '../lib/auth.js';
 
 const router = express.Router();
+
+// All dashboard data is tenant-scoped PII — auth required,
+// and the rooftop always comes from the authenticated rep.
+router.use(requireAuth());
 
 /**
  * GET /api/dashboard/team?rooftop_id=<uuid>&period=week|month|all
@@ -9,8 +14,7 @@ const router = express.Router();
  */
 router.get('/team', async (req, res) => {
   try {
-    const { rooftop_id, period } = req.query;
-    if (!rooftop_id) return res.status(400).json({ error: 'rooftop_id required' });
+    const rooftop_id = req.rep.rooftop_id;
 
     const { data, error } = await supabase
       .from('team_dashboard')
@@ -33,8 +37,7 @@ router.get('/team', async (req, res) => {
  */
 router.get('/kpis', async (req, res) => {
   try {
-    const { rooftop_id } = req.query;
-    if (!rooftop_id) return res.status(400).json({ error: 'rooftop_id required' });
+    const rooftop_id = req.rep.rooftop_id;
 
     const { data, error } = await supabase
       .from('rooftop_kpis')
@@ -57,8 +60,8 @@ router.get('/kpis', async (req, res) => {
  */
 router.get('/activity', async (req, res) => {
   try {
-    const { rooftop_id, limit = 50 } = req.query;
-    if (!rooftop_id) return res.status(400).json({ error: 'rooftop_id required' });
+    const rooftop_id = req.rep.rooftop_id;
+    const { limit = 50 } = req.query;
 
     const { data, error } = await supabase
       .from('videos')
@@ -82,8 +85,7 @@ router.get('/activity', async (req, res) => {
  */
 router.get('/leaderboard', async (req, res) => {
   try {
-    const { rooftop_id } = req.query;
-    if (!rooftop_id) return res.status(400).json({ error: 'rooftop_id required' });
+    const rooftop_id = req.rep.rooftop_id;
 
     const { data, error } = await supabase
       .from('team_dashboard')
@@ -110,8 +112,7 @@ router.get('/leaderboard', async (req, res) => {
  */
 router.get('/crm-status', async (req, res) => {
   try {
-    const { rooftop_id } = req.query;
-    if (!rooftop_id) return res.status(400).json({ error: 'rooftop_id required' });
+    const rooftop_id = req.rep.rooftop_id;
 
     const { data: connections } = await supabase
       .from('crm_connections')

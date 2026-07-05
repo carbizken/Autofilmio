@@ -4,8 +4,18 @@ import { requireAuth } from '../lib/auth.js';
 import { sendRichVideoMessage } from '../lib/rcs.js';
 import { twilioClient, TWILIO_FROM } from '../lib/twilio.js';
 import { sendPush } from '../lib/push.js';
+import {
+  classifyKeyword, recordOptOut, recordOptIn, guardedSms,
+  STOP_REPLY, HELP_REPLY, START_REPLY,
+} from '../lib/consent.js';
 
 const router = express.Router();
+
+function twiml(message) {
+  return message
+    ? `<Response><Message>${message}</Message></Response>`
+    : '<Response></Response>';
+}
 
 // ── TWO-WAY TEXTING ─────────────────────────────────────────
 
@@ -19,6 +29,20 @@ router.post('/webhook/inbound', express.urlencoded({ extended: true }), async (r
     const { From, To, Body, MessageSid, NumMedia } = req.body;
 
     console.log(`[messaging] Inbound from ${From}: "${Body}"`);
+
+    // TCPA/CTIA keyword handling — must be honored before anything else
+    const keyword = classifyKeyword(Body);
+    if (keyword === 'stop') {
+      await recordOptOut(From);
+      return res.type('text/xml').send(twiml(STOP_REPLY));
+    }
+    if (keyword === 'help') {
+      return res.type('text/xml').send(twiml(HELP_REPLY));
+    }
+    if (keyword === 'start') {
+      await recordOptIn(From);
+      return res.type('text/xml').send(twiml(START_REPLY));
+    }
 
     // Find the video/conversation this relates to
     const { data: video } = await supabase
@@ -83,10 +107,14 @@ router.post('/send', requireAuth(), async (req, res) => {
       return res.status(400).json({ error: 'customer_phone and body required' });
     }
 
-    // Send via Twilio
-    const msg = await twilioClient.messages.create({
+    // Send via Twilio with TCPA consent guard
+    const result = await guardedSms(twilioClient, {
       body, from: TWILIO_FROM, to: customer_phone,
     });
+
+    if (result.blocked) {
+      return res.status(403).json({ error: 'Customer has opted out of SMS. Message not sent.' });
+    }
 
     // Store in conversation
     await supabase.from('conversations').insert({
@@ -96,12 +124,12 @@ router.post('/send', requireAuth(), async (req, res) => {
       customer_phone,
       direction: 'outbound',
       body,
-      provider_sid: msg.sid,
+      provider_sid: result.sid,
       channel: 'sms',
     });
 
-    console.log(`[messaging] Outbound to ${customer_phone}: ${msg.sid}`);
-    res.json({ success: true, sid: msg.sid });
+    console.log(`[messaging] Outbound to ${customer_phone}: ${result.sid}`);
+    res.json({ success: true, sid: result.sid });
 
   } catch (err) {
     console.error('[messaging] Send error:', err.message);

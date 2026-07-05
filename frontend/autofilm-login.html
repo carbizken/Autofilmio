@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign In — AutoFilm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{--bg:#0a0a0d;--bg1:#111116;--bg2:#18181e;--b0:rgba(255,255,255,.05);--b1:rgba(255,255,255,.09);--b2:rgba(255,255,255,.16);--t1:rgba(255,255,255,.96);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.40);--t4:rgba(255,255,255,.20);--fire:#D94F00;--fire2:#E85A0A;--firet:rgba(217,79,0,.10);--fireb:rgba(217,79,0,.22);--green:#22c55e;--rose:#f43f5e;--ff:'Geist',-apple-system,sans-serif;--fm:'Geist Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 50% 40% at 50% 0%,rgba(217,79,0,.06),transparent 70%);pointer-events:none}
+
+.logo{display:flex;align-items:center;gap:11px;margin-bottom:32px}
+.logo-mark{width:38px;height:38px;background:var(--fire);border-radius:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(217,79,0,.4)}
+.logo-word{font-size:22px;font-weight:900;letter-spacing:-.4px}
+.logo-word em{color:var(--fire2);font-style:normal}
+
+.card{width:100%;max-width:400px;background:var(--bg1);border:1px solid var(--b1);border-radius:20px;padding:32px 28px;position:relative}
+.card h1{font-size:20px;font-weight:800;letter-spacing:-.3px;margin-bottom:6px;text-align:center}
+.card .sub{font-size:13px;color:var(--t3);text-align:center;margin-bottom:24px}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+.field input{width:100%;padding:12px 14px;background:var(--bg2);border:1px solid var(--b1);border-radius:10px;color:var(--t1);font-size:14px;font-family:var(--ff);outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--fire)}
+.field input::placeholder{color:var(--t4)}
+
+.btn{width:100%;padding:13px;border-radius:11px;font-size:14px;font-weight:800;font-family:var(--ff);border:none;cursor:pointer;transition:all .15s}
+.btn-primary{background:var(--fire);color:#fff;box-shadow:0 4px 18px rgba(217,79,0,.3);margin-top:6px}
+.btn-primary:hover{background:var(--fire2);transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-ghost{background:transparent;border:1px solid var(--b2);color:var(--t2);margin-top:10px}
+.btn-ghost:hover{color:var(--t1);background:rgba(255,255,255,.04)}
+
+.divider{display:flex;align-items:center;gap:12px;margin:18px 0}
+.divider span{font-size:11px;color:var(--t4);white-space:nowrap}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--b1)}
+
+.links{display:flex;justify-content:space-between;margin-top:18px;font-size:12px}
+.links a{color:var(--t3);text-decoration:none;cursor:pointer;transition:color .14s}
+.links a:hover{color:var(--fire2)}
+
+.msg{display:none;padding:11px 14px;border-radius:10px;font-size:12.5px;line-height:1.5;margin-bottom:16px}
+.msg.on{display:block}
+.msg-error{background:rgba(244,63,94,.08);border:1px solid rgba(244,63,94,.2);color:var(--rose)}
+.msg-success{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);color:var(--green)}
+
+footer{margin-top:28px;font-size:11px;color:var(--t4);text-align:center}
+footer a{color:var(--t3);text-decoration:none}
+
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="logo">
+  <div class="logo-mark"><svg width="15" height="15" viewBox="0 0 14 14" fill="none"><path d="M1.5 10.5L7 2 12.5 10.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <div class="logo-word">Auto<em>Film</em></div>
+</div>
+
+<div class="card">
+  <div class="msg" id="msg"></div>
+
+  <!-- SIGN IN VIEW -->
+  <div id="viewLogin">
+    <h1>Welcome back</h1>
+    <p class="sub">Sign in to your dealership account</p>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="loginEmail" placeholder="you@dealership.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" id="btnLogin" onclick="doLogin()">Sign In</button>
+    <div class="divider"><span>or</span></div>
+    <button class="btn btn-ghost" onclick="doMagicLink()">Email me a magic link</button>
+    <div class="links">
+      <a onclick="showView('reset')">Forgot password?</a>
+      <a href="autofilm-onboard.html">New dealership? Start here →</a>
+    </div>
+  </div>
+
+  <!-- RESET VIEW -->
+  <div id="viewReset" style="display:none">
+    <h1>Reset password</h1>
+    <p class="sub">We'll email you a reset link</p>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="resetEmail" placeholder="you@dealership.com" autocomplete="email">
+    </div>
+    <button class="btn btn-primary" id="btnReset" onclick="doReset()">Send Reset Link</button>
+    <div class="links">
+      <a onclick="showView('login')">← Back to sign in</a>
+    </div>
+  </div>
+
+  <!-- SET NEW PASSWORD VIEW (arrived via reset/invite link) -->
+  <div id="viewNewPass" style="display:none">
+    <h1>Set your password</h1>
+    <p class="sub">Choose a password for your account</p>
+    <div class="field">
+      <label>New Password</label>
+      <input type="password" id="newPassword" placeholder="At least 8 characters" autocomplete="new-password">
+    </div>
+    <button class="btn btn-primary" id="btnNewPass" onclick="doSetPassword()">Save & Continue</button>
+  </div>
+</div>
+
+<footer>
+  $299/rooftop/month · unlimited users · <a href="autofilm-landing.html">autofilm.io</a>
+</footer>
+
+<script src="assets/session.js"></script>
+<script>
+const API = window.AF_API || ((location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:3001' : 'https://api.autofilm.io');
+
+// Already signed in? Straight to the app.
+if (window.AFSession?.get()?.access_token && !location.search.includes('reset')) {
+  location.replace('autofilm-app.html');
+}
+
+function showView(v) {
+  document.getElementById('viewLogin').style.display = v === 'login' ? '' : 'none';
+  document.getElementById('viewReset').style.display = v === 'reset' ? '' : 'none';
+  document.getElementById('viewNewPass').style.display = v === 'newpass' ? '' : 'none';
+  hideMsg();
+}
+
+function showMsg(text, type) {
+  const el = document.getElementById('msg');
+  el.textContent = text;
+  el.className = `msg on msg-${type}`;
+}
+function hideMsg() { document.getElementById('msg').className = 'msg'; }
+
+function busy(btnId, on, label) {
+  const btn = document.getElementById(btnId);
+  btn.disabled = on;
+  btn.innerHTML = on ? '<span class="spinner"></span>Working…' : label;
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if (!email || !password) return showMsg('Enter your email and password.', 'error');
+
+  busy('btnLogin', true, 'Sign In');
+  try {
+    const res = await fetch(`${API}/api/auth/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Sign in failed');
+
+    AFSession.set(data.session, data.rep);
+    const dest = data.rep?.role === 'admin' || data.rep?.role === 'manager'
+      ? 'autofilm-dashboard.html' : 'autofilm-app.html';
+    location.replace(dest);
+  } catch (e) {
+    showMsg(e.message, 'error');
+    busy('btnLogin', false, 'Sign In');
+  }
+}
+
+async function doMagicLink() {
+  const email = document.getElementById('loginEmail').value.trim();
+  if (!email) return showMsg('Enter your email first, then tap the magic link button.', 'error');
+  try {
+    const res = await fetch(`${API}/api/auth/magic-link`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not send magic link');
+    showMsg('Magic link sent — check your email.', 'success');
+  } catch (e) { showMsg(e.message, 'error'); }
+}
+
+async function doReset() {
+  const email = document.getElementById('resetEmail').value.trim();
+  if (!email) return showMsg('Enter your email.', 'error');
+  busy('btnReset', true, 'Send Reset Link');
+  try {
+    const res = await fetch(`${API}/api/auth/reset-password`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not send reset link');
+    showMsg('Reset link sent — check your email.', 'success');
+  } catch (e) { showMsg(e.message, 'error'); }
+  busy('btnReset', false, 'Send Reset Link');
+}
+
+async function doSetPassword() {
+  const pw = document.getElementById('newPassword').value;
+  if (pw.length < 8) return showMsg('Password must be at least 8 characters.', 'error');
+  busy('btnNewPass', true, 'Save & Continue');
+  try {
+    const res = await AFSession.fetch(`${API}/api/auth/update-password`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ new_password: pw }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not update password');
+    location.replace('autofilm-app.html');
+  } catch (e) {
+    showMsg(e.message, 'error');
+    busy('btnNewPass', false, 'Save & Continue');
+  }
+}
+
+// Supabase magic-link / invite / reset flows land here with tokens in the hash
+(function handleAuthRedirect() {
+  const hash = new URLSearchParams(location.hash.slice(1));
+  const access = hash.get('access_token');
+  const refresh = hash.get('refresh_token');
+  const type = hash.get('type');
+  if (access) {
+    AFSession.set({ access_token: access, refresh_token: refresh, expires_at: Math.floor(Date.now()/1000) + 3600 }, null);
+    history.replaceState(null, '', location.pathname);
+    if (type === 'recovery' || type === 'invite' || location.search.includes('setup')) {
+      showView('newpass');
+    } else {
+      location.replace('autofilm-app.html');
+    }
+  }
+})();
+
+// Enter key submits
+document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>
