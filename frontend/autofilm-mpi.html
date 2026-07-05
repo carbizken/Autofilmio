@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Your Vehicle Inspection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#0a0a0d;--bg1:#111116;--bg2:#18181e;--bg3:#202028;
+  --b0:rgba(255,255,255,.05);--b1:rgba(255,255,255,.09);--b2:rgba(255,255,255,.16);
+  --t1:rgba(255,255,255,.96);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.40);--t4:rgba(255,255,255,.20);
+  --fire:#D94F00;--fire2:#E85A0A;--firet:rgba(232,90,10,.10);--fireb:rgba(232,90,10,.25);
+  --green:#22c55e;--greent:rgba(34,197,94,.08);--greenb:rgba(34,197,94,.28);
+  --amber:#f59e0b;--ambert:rgba(245,158,11,.08);--amberb:rgba(245,158,11,.28);
+  --rose:#f43f5e;--roset:rgba(244,63,94,.08);--roseb:rgba(244,63,94,.28);
+  --ff:'Geist',-apple-system,sans-serif;--fm:'Geist Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--ff);background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;min-height:100dvh}
+.wrap{max-width:520px;margin:0 auto;padding:18px 16px 130px}
+
+/* ── Reveal animation ── */
+.reveal{opacity:0;transform:translateY(12px);animation:fadeUp .5s cubic-bezier(.22,1,.36,1) forwards}
+.reveal-2{animation-delay:.07s}.reveal-3{animation-delay:.14s}.reveal-4{animation-delay:.21s}
+@keyframes fadeUp{to{opacity:1;transform:none}}
+
+/* ── Header ── */
+.hdr{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.hdr-avatar{width:44px;height:44px;border-radius:50%;background:var(--fire);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;overflow:hidden;flex-shrink:0;box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--fireb)}
+.hdr-avatar img{width:100%;height:100%;object-fit:cover;display:none}
+.hdr-meta{flex:1;min-width:0}
+.hdr-name{font-size:14px;font-weight:700;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-title{font-size:11px;color:var(--t3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-badge{font-size:9px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--fire2);border:1px solid var(--fireb);background:var(--firet);border-radius:20px;padding:5px 10px;flex-shrink:0;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.veh-card{background:var(--bg1);border:1px solid var(--b1);border-radius:16px;padding:16px 18px;margin-bottom:14px}
+.veh-eyebrow{font-size:9px;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:var(--t4);margin-bottom:6px}
+.veh-name{font-size:18px;font-weight:800;letter-spacing:-.3px}
+.veh-sub{font-size:11px;color:var(--t3);margin-top:4px;font-family:var(--fm)}
+
+/* ── Video ── */
+.vid-card{background:var(--bg1);border:1px solid var(--b1);border-radius:16px;overflow:hidden;margin-bottom:20px}
+.vid-frame{position:relative;background:#000;aspect-ratio:16/10}
+.vid-frame video{width:100%;height:100%;object-fit:cover;display:block}
+.vid-empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--t3);font-size:12px}
+.vid-empty .dot{width:34px;height:34px;border-radius:50%;border:2px solid var(--b2);border-top-color:var(--fire2);animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.vid-cap{display:flex;align-items:center;gap:8px;padding:11px 16px;font-size:11px;color:var(--t2)}
+.vid-cap .rec{width:7px;height:7px;border-radius:50%;background:var(--fire2);flex-shrink:0}
+
+/* ── Items ── */
+.sec-title{font-size:14px;font-weight:800;margin-bottom:4px}
+.sec-sub{font-size:11px;color:var(--t3);margin-bottom:14px}
+.item{background:var(--bg1);border:1px solid var(--b1);border-radius:14px;padding:14px 16px;margin-bottom:9px;display:flex;align-items:center;gap:12px;transition:border-color .15s,background .15s}
+.item.sel{border-color:var(--fireb);background:var(--firet)}
+.item-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.item.u-red .item-dot{background:var(--rose);box-shadow:0 0 0 4px var(--roset)}
+.item.u-yellow .item-dot{background:var(--amber);box-shadow:0 0 0 4px var(--ambert)}
+.item.u-green .item-dot{background:var(--green);box-shadow:0 0 0 4px var(--greent)}
+.item-body{flex:1;min-width:0}
+.item-name{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.item-desc{font-size:11px;color:var(--t3);margin-top:2px;line-height:1.45}
+.item-tag{display:inline-block;font-size:8px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;border-radius:5px;padding:2px 6px;margin-top:6px}
+.item.u-red .item-tag{color:var(--rose);background:var(--roset);border:1px solid var(--roseb)}
+.item.u-yellow .item-tag{color:var(--amber);background:var(--ambert);border:1px solid var(--amberb)}
+.item.u-green .item-tag{color:var(--green);background:var(--greent);border:1px solid var(--greenb)}
+.item-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0}
+.item-price{font-family:var(--fm);font-size:13px;font-weight:600}
+.item-price.zero{color:var(--t4);font-size:11px}
+/* Toggle */
+.tgl{position:relative;width:46px;height:26px;flex-shrink:0;cursor:pointer}
+.tgl input{position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.tgl-track{position:absolute;inset:0;background:var(--bg3);border:1px solid var(--b2);border-radius:20px;transition:background .18s,border-color .18s}
+.tgl-knob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.75);transition:transform .18s cubic-bezier(.34,1.56,.64,1),background .18s}
+.tgl input:checked + .tgl-track{background:var(--fire);border-color:var(--fire2)}
+.tgl input:checked + .tgl-track .tgl-knob{transform:translateX(20px);background:#fff}
+.tgl input:focus-visible + .tgl-track{box-shadow:0 0 0 3px var(--fireb)}
+.item.done-ok{opacity:.75}
+.ok-check{width:26px;height:26px;border-radius:50%;background:var(--greent);border:1px solid var(--greenb);display:flex;align-items:center;justify-content:center;color:var(--green);font-size:12px;font-weight:800;flex-shrink:0}
+
+/* ── Sticky footer ── */
+.footer{position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(10,10,13,.88);backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);border-top:1px solid var(--b1);padding:14px 16px calc(14px + env(safe-area-inset-bottom))}
+.footer-inner{max-width:520px;margin:0 auto;display:flex;align-items:center;gap:14px}
+.foot-total{flex-shrink:0}
+.foot-lbl{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
+.foot-amt{font-family:var(--fm);font-size:20px;font-weight:700;letter-spacing:-.3px;margin-top:1px}
+.foot-cnt{font-size:10px;color:var(--t3);margin-top:1px}
+.btn-approve{flex:1;border:none;border-radius:13px;padding:15px 16px;font-family:var(--ff);font-size:14px;font-weight:800;letter-spacing:-.1px;color:#fff;background:linear-gradient(135deg,var(--fire2),var(--fire));cursor:pointer;transition:opacity .15s,transform .12s;box-shadow:0 6px 22px rgba(232,90,10,.30)}
+.btn-approve:active{transform:scale(.98)}
+.btn-approve:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+
+/* ── States (loading / error / success) ── */
+.state{max-width:520px;margin:0 auto;padding:80px 24px;text-align:center}
+.state .spin{width:40px;height:40px;border-radius:50%;border:3px solid var(--b1);border-top-color:var(--fire2);animation:spin .9s linear infinite;margin:0 auto 18px}
+.state-ico{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 18px}
+.state-ico.err{background:var(--roset);border:1px solid var(--roseb)}
+.state-ico.ok{background:var(--greent);border:1px solid var(--greenb)}
+.state-h{font-size:19px;font-weight:800;letter-spacing:-.3px;margin-bottom:8px}
+.state-p{font-size:13px;color:var(--t2);line-height:1.6}
+.succ-list{background:var(--bg1);border:1px solid var(--b1);border-radius:16px;padding:8px 18px;margin:22px 0 0;text-align:left}
+.succ-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--b0);font-size:12px}
+.succ-row:last-child{border-bottom:none}
+.succ-row .nm{font-weight:600}
+.succ-row .pr{font-family:var(--fm);color:var(--t2)}
+.succ-row.tot .nm{font-weight:800}
+.succ-row.tot .pr{color:var(--t1);font-weight:700;font-size:13px}
+.succ-note{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:18px;font-size:12px;color:var(--green);font-weight:600}
+.succ-note .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+
+.brandline{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:34px;font-size:10px;color:var(--t4);font-weight:600}
+.brandline em{color:var(--fire2);font-style:normal;font-weight:800}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="state" id="stLoading">
+  <div class="spin"></div>
+  <div class="state-p">Loading your inspection&hellip;</div>
+</div>
+
+<!-- Error -->
+<div class="state" id="stError" style="display:none">
+  <div class="state-ico err">&#9888;&#65039;</div>
+  <div class="state-h" id="errTitle">Link not valid</div>
+  <div class="state-p" id="errMsg">This inspection link is invalid or has expired. Please contact your service advisor for a new one.</div>
+</div>
+
+<!-- Success / already approved -->
+<div class="state" id="stSuccess" style="display:none">
+  <div class="state-ico ok">&#10003;</div>
+  <div class="state-h" id="succTitle">Work Approved</div>
+  <div class="state-p" id="succSub">Thank you! Here&rsquo;s what you approved:</div>
+  <div class="succ-list" id="succList"></div>
+  <div class="succ-note"><span class="dot"></span><span id="succAdvisor">Your advisor has been notified.</span></div>
+  <div class="brandline">Powered by Auto<em>Film</em></div>
+</div>
+
+<!-- Main -->
+<div class="wrap" id="stMain" style="display:none">
+
+  <div class="hdr reveal">
+    <div class="hdr-avatar" id="advAvatar"><span id="advInitial">A</span><img id="advPhoto" alt=""></div>
+    <div class="hdr-meta">
+      <div class="hdr-name" id="advName">Your Service Advisor</div>
+      <div class="hdr-title" id="advTitle">Service Advisor</div>
+    </div>
+    <div class="hdr-badge" id="dealerBadge">Your Dealer</div>
+  </div>
+
+  <div class="veh-card reveal reveal-2" id="vehCard">
+    <div class="veh-eyebrow">Multi-Point Inspection</div>
+    <div class="veh-name" id="vehName">Your Vehicle</div>
+    <div class="veh-sub" id="vehSub"></div>
+  </div>
+
+  <div class="vid-card reveal reveal-3" id="vidCard">
+    <div class="vid-frame">
+      <video id="mpiVid" controls playsinline preload="metadata" style="display:none"></video>
+      <div class="vid-empty" id="vidEmpty"><div class="dot"></div><span>Video is processing&hellip;</span></div>
+    </div>
+    <div class="vid-cap"><span class="rec"></span><span id="vidCap">Walkaround video from your advisor</span></div>
+  </div>
+
+  <div class="reveal reveal-4">
+    <div class="sec-title">Inspection Results</div>
+    <div class="sec-sub" id="secSub">Toggle the work you&rsquo;d like us to complete.</div>
+    <div id="itemList"></div>
+  </div>
+
+  <div class="brandline">Powered by Auto<em>Film</em></div>
+</div>
+
+<!-- Sticky footer -->
+<div class="footer" id="footBar" style="display:none">
+  <div class="footer-inner">
+    <div class="foot-total">
+      <div class="foot-lbl">Approved Total</div>
+      <div class="foot-amt" id="footAmt">$0</div>
+      <div class="foot-cnt" id="footCnt">0 items selected</div>
+    </div>
+    <button class="btn-approve" id="btnApprove">Approve Selected Work</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── Params & API base (same pattern as autofilm-player.html) ──
+var P = new URLSearchParams(location.search);
+var inspId = (P.get('id') || '').trim();
+var vidCode = (P.get('code') || '').trim();
+var AF_API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:3001' : 'https://api.autofilm.io';
+
+var URGENCY = {
+  red:    { label: 'Needs attention', order: 0 },
+  yellow: { label: 'Monitor soon',   order: 1 },
+  green:  { label: 'Looks good',     order: 2 },
+};
+
+var items = [];          // { name, description, price, urgency, selected }
+var submitting = false;
+
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function money(n){
+  return '$' + (Math.round(Number(n) || 0)).toLocaleString();
+}
+function showState(id){
+  ['stLoading','stError','stSuccess','stMain'].forEach(function(s){
+    document.getElementById(s).style.display = (s === id) ? '' : 'none';
+  });
+  document.getElementById('footBar').style.display = (id === 'stMain') ? '' : 'none';
+}
+function showError(title, msg){
+  document.getElementById('errTitle').textContent = title;
+  document.getElementById('errMsg').textContent = msg;
+  showState('stError');
+}
+
+// ── Video loader: hls.js for Chrome/Firefox, native HLS on Safari,
+//    MP4 fallback (mirrors autofilm-player.html) ──
+function loadVideo(playbackId){
+  var vidEl = document.getElementById('mpiVid');
+  var empty = document.getElementById('vidEmpty');
+  if(!playbackId){ return; } // leave "processing" placeholder
+
+  var hlsSrc = 'https://stream.mux.com/' + playbackId + '.m3u8';
+  var mp4Src = 'https://stream.mux.com/' + playbackId + '/high.mp4';
+
+  function show(){
+    vidEl.style.display = 'block';
+    empty.style.display = 'none';
+    if(!vidEl.poster){
+      vidEl.poster = 'https://image.mux.com/' + playbackId + '/thumbnail.jpg?width=800&fit_mode=smartcrop';
+    }
+  }
+
+  if(vidEl.canPlayType('application/vnd.apple.mpegurl')){
+    vidEl.src = hlsSrc;                 // Safari / iOS — native HLS
+    show();
+  } else {
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/hls.js@1.5/dist/hls.min.js';
+    s.onload = function(){
+      if(window.Hls && Hls.isSupported()){
+        var hls = new Hls({ maxBufferLength: 30 });
+        hls.loadSource(hlsSrc);
+        hls.attachMedia(vidEl);
+        hls.on(Hls.Events.ERROR, function(_, data){
+          if(data.fatal){ hls.destroy(); vidEl.src = mp4Src; }
+        });
+      } else {
+        vidEl.src = mp4Src;
+      }
+      show();
+    };
+    s.onerror = function(){ vidEl.src = mp4Src; show(); };
+    document.head.appendChild(s);
+  }
+}
+
+// ── Render line items ──
+function renderItems(){
+  var list = document.getElementById('itemList');
+  var sorted = items.slice().sort(function(a, b){
+    return (URGENCY[a.urgency] || URGENCY.green).order - (URGENCY[b.urgency] || URGENCY.green).order;
+  });
+
+  list.innerHTML = sorted.map(function(it){
+    var u = URGENCY[it.urgency] ? it.urgency : 'green';
+    var actionable = u !== 'green' || it.price > 0;
+    var idx = items.indexOf(it);
+    var right;
+    if(actionable){
+      right =
+        '<div class="item-right">' +
+          '<div class="item-price' + (it.price > 0 ? '' : ' zero') + '">' + (it.price > 0 ? esc(money(it.price)) : 'No charge') + '</div>' +
+          '<label class="tgl"><input type="checkbox" data-idx="' + idx + '"' + (it.selected ? ' checked' : '') + '>' +
+          '<span class="tgl-track"><span class="tgl-knob"></span></span></label>' +
+        '</div>';
+    } else {
+      right = '<div class="item-right"><div class="ok-check">&#10003;</div></div>';
+    }
+    return '<div class="item u-' + u + (it.selected ? ' sel' : '') + (actionable ? '' : ' done-ok') + '">' +
+      '<div class="item-dot"></div>' +
+      '<div class="item-body">' +
+        '<div class="item-name">' + esc(it.name) + '</div>' +
+        (it.description ? '<div class="item-desc">' + esc(it.description) + '</div>' : '') +
+        '<div class="item-tag">' + esc(URGENCY[u].label) + '</div>' +
+      '</div>' + right +
+    '</div>';
+  }).join('');
+
+  list.querySelectorAll('input[type=checkbox]').forEach(function(cb){
+    cb.addEventListener('change', function(){
+      items[parseInt(cb.getAttribute('data-idx'), 10)].selected = cb.checked;
+      renderItems();
+      updateFooter();
+    });
+  });
+}
+
+function selectedItems(){
+  return items.filter(function(it){ return it.selected; });
+}
+function selectedTotal(){
+  return selectedItems().reduce(function(s, it){ return s + (it.price || 0); }, 0);
+}
+function updateFooter(){
+  var sel = selectedItems();
+  document.getElementById('footAmt').textContent = money(selectedTotal());
+  document.getElementById('footCnt').textContent = sel.length + ' item' + (sel.length === 1 ? '' : 's') + ' selected';
+  document.getElementById('btnApprove').disabled = sel.length === 0 || submitting;
+}
+
+// ── Success state ──
+function showSuccess(approvedItems, total, alreadyApproved, approvedAt){
+  var listEl = document.getElementById('succList');
+  if(approvedItems && approvedItems.length){
+    listEl.style.display = '';
+    listEl.innerHTML = approvedItems.map(function(it){
+      return '<div class="succ-row"><span class="nm">' + esc(it.name) + '</span>' +
+        '<span class="pr">' + (it.price > 0 ? esc(money(it.price)) : 'No charge') + '</span></div>';
+    }).join('') +
+    '<div class="succ-row tot"><span class="nm">Total approved</span><span class="pr">' + esc(money(total)) + '</span></div>';
+  } else {
+    listEl.style.display = 'none';
+  }
+
+  if(alreadyApproved){
+    document.getElementById('succTitle').textContent = 'Already Approved';
+    var when = '';
+    if(approvedAt){
+      try { when = ' on ' + new Date(approvedAt).toLocaleDateString(undefined, { month:'long', day:'numeric' }); } catch(e){}
+    }
+    document.getElementById('succSub').textContent =
+      'This inspection was approved' + when + (total > 0 ? ' for ' + money(total) + '.' : '.');
+    document.getElementById('succAdvisor').textContent = 'Your advisor has it — no further action needed.';
+  } else {
+    document.getElementById('succTitle').textContent = 'Work Approved';
+    document.getElementById('succSub').textContent = 'Thank you! Here’s what you approved:';
+    document.getElementById('succAdvisor').textContent = 'Your advisor has been notified.';
+  }
+  showState('stSuccess');
+}
+
+// ── Approve ──
+async function approve(){
+  var sel = selectedItems();
+  if(sel.length === 0 || submitting) return;
+  submitting = true;
+  var btn = document.getElementById('btnApprove');
+  btn.disabled = true;
+  btn.textContent = 'Sending…';
+
+  var total = selectedTotal();
+  try {
+    var res = await fetch(AF_API + '/api/mpi/' + encodeURIComponent(inspId) + '/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        code: vidCode,
+        approved_amount: total,
+        approved_items: sel.map(function(it){
+          return { name: it.name, price: it.price, urgency: it.urgency, status: it.status };
+        }),
+      }),
+    });
+    var data = await res.json().catch(function(){ return {}; });
+    if(res.status === 403){
+      showError('Link not valid', data.error || 'This approval link is invalid. Please contact your service advisor.');
+      return;
+    }
+    if(!res.ok || !data.success){
+      throw new Error(data.error || 'Something went wrong');
+    }
+    showSuccess(sel, total, false, null);
+  } catch (err) {
+    submitting = false;
+    btn.disabled = false;
+    btn.textContent = 'Approve Selected Work';
+    alert('Could not send your approval: ' + err.message + '\nPlease try again.');
+    return;
+  }
+}
+
+// ── Load ──
+async function init(){
+  if(!inspId || !vidCode){
+    showError('Link not valid', 'This inspection link is missing information. Please use the link your advisor sent you.');
+    return;
+  }
+
+  var res, data;
+  try {
+    res = await fetch(AF_API + '/api/mpi/' + encodeURIComponent(inspId) + '/public?code=' + encodeURIComponent(vidCode));
+    data = await res.json();
+  } catch (err) {
+    showError('Connection problem', 'We couldn’t load your inspection. Check your connection and try again.');
+    return;
+  }
+
+  if(res.status === 403){
+    showError('Link not valid', 'This inspection link is invalid or has expired. Please contact your service advisor for a new one.');
+    return;
+  }
+  if(!res.ok || !data.inspection){
+    showError('Something went wrong', (data && data.error) || 'We couldn’t load your inspection. Please try again later.');
+    return;
+  }
+
+  var insp = data.inspection;
+  var adv = data.advisor || {};
+  var vid = data.video || {};
+
+  // Header
+  document.getElementById('advName').textContent = adv.name || 'Your Service Advisor';
+  document.getElementById('advTitle').textContent = adv.title || 'Service Advisor';
+  document.getElementById('dealerBadge').textContent = data.dealership || 'Your Dealer';
+  document.getElementById('advInitial').textContent = (adv.name || 'A').trim().charAt(0).toUpperCase();
+  if(adv.photo_url){
+    var img = document.getElementById('advPhoto');
+    img.onload = function(){ img.style.display = 'block'; document.getElementById('advInitial').style.display = 'none'; };
+    img.src = adv.photo_url;
+  }
+
+  // Vehicle card
+  document.getElementById('vehName').textContent = insp.vehicle || 'Your Vehicle';
+  var sub = [];
+  if(insp.ro_number) sub.push('RO# ' + insp.ro_number);
+  if(insp.mileage) sub.push(Number(insp.mileage).toLocaleString() + ' mi');
+  document.getElementById('vehSub').textContent = sub.join(' · ');
+  if(insp.customer_name){
+    document.getElementById('vidCap').textContent =
+      'Walkaround video for ' + insp.customer_name.split(' ')[0] + ' from ' + (adv.name || 'your advisor');
+  }
+
+  // Items — pre-select urgent (red) recommendations
+  items = (insp.items || []).map(function(it){
+    var u = URGENCY[it.urgency] ? it.urgency : (URGENCY[it.status] ? it.status : 'green');
+    return {
+      name: it.name || 'Inspection item',
+      description: it.description || '',
+      price: Number(it.price) || 0,
+      urgency: u,
+      status: it.status || u,
+      selected: u === 'red',
+    };
+  });
+
+  // Already approved? Show the receipt view instead of re-asking.
+  if(insp.status === 'approved'){
+    showSuccess([], Number(insp.approved_amount) || 0, true, insp.approved_at);
+    return;
+  }
+
+  if(items.length === 0){
+    document.getElementById('secSub').textContent = 'No line items were recorded for this inspection.';
+  }
+
+  renderItems();
+  updateFooter();
+  showState('stMain');
+  loadVideo(vid.mux_playback_id || '');
+}
+
+document.getElementById('btnApprove').addEventListener('click', approve);
+init();
+</script>
+</body>
+</html>
