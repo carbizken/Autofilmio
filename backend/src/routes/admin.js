@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabase } from '../lib/supabase.js';
 import { requireAuth, requireRole } from '../lib/auth.js';
+import { testConnection } from '../lib/crm.js';
 
 const router = express.Router();
 
@@ -135,6 +136,42 @@ router.post('/crm', async (req, res) => {
       .single();
     if (error) throw error;
     res.json({ success: true, connection: data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/** POST /api/admin/crm/test — test CRM credentials without persisting.
+ *  Body: { id } to test a saved connection, or { provider, api_key, api_secret?, dealer_id?, endpoint_url?, config? } */
+router.post('/crm/test', async (req, res) => {
+  try {
+    const { id, provider, api_key, api_secret, dealer_id, endpoint_url, config } = req.body;
+
+    let connection;
+    if (id) {
+      const { data, error } = await supabase
+        .from('crm_connections')
+        .select('*')
+        .eq('id', id)
+        .eq('rooftop_id', req.rep.rooftop_id)
+        .single();
+      if (error || !data) return res.status(404).json({ error: 'Connection not found' });
+      connection = data;
+    } else {
+      if (!provider || !api_key) return res.status(400).json({ error: 'provider and api_key required' });
+      connection = {
+        provider,
+        api_key,
+        api_secret: api_secret || null,
+        dealer_id: dealer_id || null,
+        endpoint_url: endpoint_url || null,
+        config: config || {},
+      };
+    }
+
+    const result = await testConnection(connection);
+    console.log(`[admin] CRM test ${connection.provider}: ${result.success ? 'ok' : result.error}`);
+    res.json({ ok: result.success, message: result.success ? 'Connection successful' : (result.error || 'Connection failed') });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
