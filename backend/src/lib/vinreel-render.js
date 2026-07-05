@@ -276,10 +276,7 @@ export async function uploadToMux(muxVideo, filePath) {
   // Create a direct upload
   const upload = await muxVideo.uploads.create({
     cors_origin: '*',
-    new_asset_settings: {
-      playback_policy: ['public'],
-      encoding_tier: 'smart',
-    },
+    new_asset_settings: defaultUploadSettings({ encoding_tier: 'smart' }),
   });
 
   // Read file and upload

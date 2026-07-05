@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AutoFilm Group Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0a0a0d;--bg1:#111116;--bg2:#18181e;--bg3:#202028;--b0:rgba(255,255,255,.05);--b1:rgba(255,255,255,.09);--b2:rgba(255,255,255,.16);--t1:rgba(255,255,255,.96);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.40);--t4:rgba(255,255,255,.20);--fire:#D94F00;--fire2:#E85A0A;--firet:rgba(217,79,0,.10);--fireb:rgba(217,79,0,.22);--green:#22c55e;--amber:#f59e0b;--rose:#f43f5e;--sky:#38bdf8;--ff:'Geist',-apple-system,sans-serif;--fm:'Geist Mono',monospace}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;min-height:100vh}
+nav{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(10,10,13,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--b0);z-index:200;display:flex;align-items:center;padding:0 24px}
+.nav-left{display:flex;align-items:center;gap:10px}
+.nav-mark{width:28px;height:28px;background:var(--fire);border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(217,79,0,.35)}
+.nav-word{font-size:16px;font-weight:900;letter-spacing:-.3px}
+.nav-word em{color:var(--fire2);font-style:normal}
+.nav-tabs{display:flex;gap:4px;margin-left:40px}
+.nav-tab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;color:var(--t3);cursor:pointer;transition:all .14s;text-decoration:none}
+.nav-tab:hover{color:var(--t1);background:rgba(255,255,255,.04)}
+.nav-tab.on{color:var(--fire2);background:var(--firet)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.nav-badge{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:20px;background:var(--firet);border:1px solid var(--fireb);color:var(--fire2)}
+.wrap{max-width:1280px;margin:0 auto;padding:72px 24px 48px}
+h1{font-size:24px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px}
+.sub{font-size:13px;color:var(--t3);margin-bottom:28px}
+
+/* KPI cards */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.kpi{background:var(--bg1);border:1px solid var(--b1);border-radius:14px;padding:20px 22px;position:relative;overflow:hidden;transition:border-color .2s}
+.kpi:hover{border-color:var(--b2)}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kc,var(--fire))}
+.kpi-n{font-size:32px;font-weight:900;font-family:var(--fm);letter-spacing:-1.5px;line-height:1}
+.kpi-l{font-size:11px;font-weight:600;color:var(--t3);margin-top:6px;text-transform:uppercase;letter-spacing:.06em}
+.kpi-delta{font-size:10px;font-weight:700;margin-top:6px;font-family:var(--fm)}
+.kpi-delta.up{color:var(--green)}.kpi-delta.down{color:var(--rose)}.kpi-delta.flat{color:var(--t4)}
+
+/* Sections */
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-size:15px;font-weight:800;letter-spacing:-.2px}
+.section-badge{font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:20px;background:var(--firet);border:1px solid var(--fireb);color:var(--fire2)}
+
+/* Rooftop cards */
+.rt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:28px}
+.rt-card{background:var(--bg1);border:1px solid var(--b1);border-radius:14px;padding:18px 20px;cursor:pointer;transition:border-color .2s,transform .14s;position:relative;overflow:hidden}
+.rt-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--fire)}
+.rt-card:hover{border-color:var(--fireb);transform:translateY(-1px)}
+.rt-name{font-size:14px;font-weight:800;letter-spacing:-.2px;margin-bottom:2px;display:flex;align-items:center;gap:8px}
+.rt-inactive{font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:20px;background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.25);color:var(--rose)}
+.rt-reps{font-size:11px;color:var(--t4);font-family:var(--fm);margin-bottom:14px}
+.rt-stats{display:flex;gap:22px}
+.rt-stat-n{font-size:20px;font-weight:900;font-family:var(--fm);letter-spacing:-1px;display:flex;align-items:baseline;gap:6px}
+.rt-stat-l{font-size:10px;font-weight:600;color:var(--t3);margin-top:3px;text-transform:uppercase;letter-spacing:.05em}
+.rt-trend{font-size:11px;font-weight:800;font-family:var(--fm)}
+.rt-trend.up{color:var(--green)}.rt-trend.down{color:var(--rose)}.rt-trend.flat{color:var(--t4)}
+
+/* Boards / tables */
+.board{background:var(--bg1);border:1px solid var(--b1);border-radius:14px;overflow:hidden;margin-bottom:28px}
+.board-hdr,.board-row{display:grid;gap:0;padding:12px 18px;border-bottom:1px solid var(--b0);align-items:center}
+.board-hdr{padding:10px 18px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--t4)}
+.board-row{transition:background .14s;font-size:13px}
+.board-row:last-child{border-bottom:none}
+.board-row:hover{background:rgba(255,255,255,.015)}
+.cols-lb{grid-template-columns:40px 1.5fr 1.2fr 1fr 1fr 1fr}
+.cols-sends{grid-template-columns:1.4fr 1.4fr 1fr 1fr}
+.cols-reps{grid-template-columns:1.6fr 1fr 1fr 1fr}
+.rank{font-family:var(--fm);font-weight:800;font-size:12px;color:var(--t3)}
+.rank-1{color:var(--fire2)}.rank-2{color:var(--amber)}.rank-3{color:var(--green)}
+.rep-info{display:flex;align-items:center;gap:10px;min-width:0}
+.rep-av{width:30px;height:30px;border-radius:50%;background:var(--fire);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0}
+.rep-name{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cell{font-family:var(--fm);font-weight:600;font-size:12px;color:var(--t2)}
+.cell-fire{color:var(--fire2)}.cell-green{color:var(--green)}
+.cell-name{font-weight:700;font-size:13px;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:10px}
+.cell-dim{font-size:12px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:10px}
+
+/* Back button */
+.back-btn{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;color:var(--t2);background:var(--bg2);border:1px solid var(--b1);cursor:pointer;font-family:var(--ff);margin-bottom:20px;transition:all .14s}
+.back-btn:hover{color:var(--t1);border-color:var(--b2)}
+
+/* Empty / error states */
+.empty{padding:48px 24px;text-align:center}
+.empty-ico{font-size:32px;margin-bottom:12px;opacity:.4}
+.empty-txt{font-size:13px;color:var(--t3)}
+.gate{max-width:440px;margin:120px auto 0;text-align:center;background:var(--bg1);border:1px solid var(--b1);border-radius:16px;padding:44px 36px}
+.gate-ico{font-size:40px;margin-bottom:16px}
+.gate-title{font-size:17px;font-weight:800;letter-spacing:-.3px;margin-bottom:8px}
+.gate-txt{font-size:13px;color:var(--t3);line-height:1.55;margin-bottom:22px}
+.gate-btn{display:inline-block;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:800;color:#fff;background:var(--fire);text-decoration:none;box-shadow:0 2px 12px rgba(217,79,0,.3);transition:background .14s}
+.gate-btn:hover{background:var(--fire2)}
+.hide{display:none!important}
+
+@media(max-width:840px){
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .cols-lb{grid-template-columns:32px 1.4fr 1fr 1fr}
+  .cols-lb>:nth-child(n+5){display:none}
+  .cols-sends{grid-template-columns:1.4fr 1fr 1fr}
+  .cols-sends>:nth-child(4){display:none}
+  .nav-tabs{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-left">
+    <div class="nav-mark"><svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M1.5 10.5L7 2 12.5 10.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="nav-word">Auto<em>Film</em></div>
+  </div>
+  <div class="nav-tabs">
+    <a class="nav-tab" href="autofilm-dashboard.html">Dashboard</a>
+    <a class="nav-tab" href="autofilm-inbox.html">Inbox</a>
+    <div class="nav-tab on">Group</div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-badge">Dealer Group</div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- No-group / no-access state -->
+  <div id="gateView" class="gate hide">
+    <div class="gate-ico">&#127970;</div>
+    <div class="gate-title">This account isn't part of a dealer group</div>
+    <div class="gate-txt" id="gateMsg">The group portal is for multi-rooftop dealer groups. Your rooftop isn't linked to a group yet &mdash; contact AutoFilm support to set one up.</div>
+    <a class="gate-btn" href="autofilm-dashboard.html">Back to Dashboard</a>
+  </div>
+
+  <!-- Group overview -->
+  <div id="overviewView" class="hide">
+    <h1 id="groupName">Group Portal</h1>
+    <div class="sub" id="groupSub">Loading&hellip;</div>
+
+    <div class="kpi-grid">
+      <div class="kpi" style="--kc:var(--sky)"><div class="kpi-n" id="gVideos">--</div><div class="kpi-l">Videos Sent (30d)</div><div class="kpi-delta" id="gVideosDelta"></div></div>
+      <div class="kpi" style="--kc:var(--fire)"><div class="kpi-n" id="gWatchRate">--</div><div class="kpi-l">Watch Rate</div></div>
+      <div class="kpi" style="--kc:var(--green)"><div class="kpi-n" id="gAvgPct">--</div><div class="kpi-l">Avg Watch %</div></div>
+      <div class="kpi" style="--kc:var(--amber)"><div class="kpi-n" id="gReps">--</div><div class="kpi-l">Active Reps</div></div>
+    </div>
+
+    <div class="section-hdr">
+      <div class="section-title">Rooftops</div>
+      <div class="section-badge">Last 30 Days</div>
+    </div>
+    <div class="rt-grid" id="rtGrid"></div>
+
+    <div class="section-hdr">
+      <div class="section-title">Group Leaderboard</div>
+      <div class="section-badge">Top 20</div>
+    </div>
+    <div class="board">
+      <div class="board-hdr cols-lb"><div>#</div><div>Rep</div><div>Rooftop</div><div>Sends (30d)</div><div>Watch Rate</div><div>Avg Watch %</div></div>
+      <div id="lbBody"><div class="empty"><div class="empty-ico">&#127942;</div><div class="empty-txt">Loading leaderboard&hellip;</div></div></div>
+    </div>
+  </div>
+
+  <!-- Rooftop drilldown -->
+  <div id="detailView" class="hide">
+    <button class="back-btn" onclick="showOverview()">&larr; All Rooftops</button>
+    <h1 id="rtName">Rooftop</h1>
+    <div class="sub" id="rtSub">Last 30 days</div>
+
+    <div class="kpi-grid">
+      <div class="kpi" style="--kc:var(--sky)"><div class="kpi-n" id="rVideos">--</div><div class="kpi-l">Videos Sent (30d)</div></div>
+      <div class="kpi" style="--kc:var(--fire)"><div class="kpi-n" id="rWatchRate">--</div><div class="kpi-l">Watch Rate</div></div>
+      <div class="kpi" style="--kc:var(--green)"><div class="kpi-n" id="rAvgPct">--</div><div class="kpi-l">Avg Watch %</div></div>
+      <div class="kpi" style="--kc:var(--amber)"><div class="kpi-n" id="rReps">--</div><div class="kpi-l">Active Reps</div></div>
+    </div>
+
+    <div class="section-hdr"><div class="section-title">Recent Sends</div><div class="section-badge">Last 10</div></div>
+    <div class="board">
+      <div class="board-hdr cols-sends"><div>Customer</div><div>Vehicle</div><div>Sent</div><div>Watched</div></div>
+      <div id="sendsBody"></div>
+    </div>
+
+    <div class="section-hdr"><div class="section-title">Reps</div><div class="section-badge">Last 30 Days</div></div>
+    <div class="board">
+      <div class="board-hdr cols-reps"><div>Rep</div><div>Sends (30d)</div><div>Watch Rate</div><div>Avg Watch %</div></div>
+      <div id="repsBody"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="assets/session.js"></script>
+<script>
+if (!AFSession.requireAuth()) throw new Error('redirecting');
+const API = AFSession.API;
+const authed = (u) => AFSession.fetch(u);
+
+// view: 'overview' | rooftop id currently drilled into
+let currentRooftopId = null;
+let gated = false;
+
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function timeAgo(d) {
+  if (!d) return '';
+  const ms = Date.now() - new Date(d).getTime();
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return 'just now';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  return Math.floor(h / 24) + 'd ago';
+}
+
+function trendHtml(cur, prev, cls) {
+  cls = cls || 'rt-trend';
+  if (!prev && !cur) return '';
+  if (!prev) return '<span class="' + cls + ' up">&#9650; new</span>';
+  const delta = Math.round(((cur - prev) / prev) * 100);
+  if (delta > 2) return '<span class="' + cls + ' up">&#9650; ' + delta + '%</span>';
+  if (delta < -2) return '<span class="' + cls + ' down">&#9660; ' + Math.abs(delta) + '%</span>';
+  return '<span class="' + cls + ' flat">&#9644; flat</span>';
+}
+
+function show(id) {
+  for (const v of ['gateView', 'overviewView', 'detailView']) {
+    document.getElementById(v).classList.toggle('hide', v !== id);
+  }
+}
+
+function showGate(msg) {
+  gated = true;
+  if (msg) document.getElementById('gateMsg').textContent = msg;
+  show('gateView');
+}
+
+function showOverview() {
+  currentRooftopId = null;
+  show('overviewView');
+  loadAll();
+}
+
+function openRooftop(id) {
+  currentRooftopId = id;
+  show('detailView');
+  loadRooftop(id);
+}
+
+async function loadOverview() {
+  const res = await authed(API + '/api/group/overview');
+  if (res.status === 403) {
+    const body = await res.json().catch(() => ({}));
+    showGate(body.error);
+    return false;
+  }
+  if (!res.ok) throw new Error('overview HTTP ' + res.status);
+  const d = await res.json();
+
+  document.getElementById('groupName').textContent = d.group;
+  document.getElementById('groupSub').textContent =
+    d.rooftop_count + ' rooftop' + (d.rooftop_count === 1 ? '' : 's') + ' · last 30 days';
+
+  const t = d.totals || {};
+  document.getElementById('gVideos').textContent = (t.videos_sent_30d || 0).toLocaleString();
+  document.getElementById('gWatchRate').textContent = (t.watch_rate || 0) + '%';
+  document.getElementById('gAvgPct').textContent = (t.avg_watch_pct || 0) + '%';
+  document.getElementById('gReps').textContent = t.active_reps || 0;
+  document.getElementById('gVideosDelta').innerHTML = trendHtml(t.videos_sent_30d, t.prev_videos_sent_30d, 'rt-trend');
+
+  const grid = document.getElementById('rtGrid');
+  if (!d.rooftops?.length) {
+    grid.innerHTML = '<div class="empty"><div class="empty-ico">&#127970;</div><div class="empty-txt">No rooftops in this group yet.</div></div>';
+    return true;
+  }
+  grid.innerHTML = d.rooftops.map(function (r) {
+    return '<div class="rt-card" data-id="' + esc(r.id) + '">' +
+      '<div class="rt-name">' + esc(r.name) + (r.active === false ? '<span class="rt-inactive">Inactive</span>' : '') + '</div>' +
+      '<div class="rt-reps">' + (r.active_reps || 0) + ' active reps</div>' +
+      '<div class="rt-stats">' +
+        '<div><div class="rt-stat-n">' + (r.videos_sent_30d || 0).toLocaleString() + trendHtml(r.videos_sent_30d, r.prev_videos_sent_30d) + '</div><div class="rt-stat-l">Sends</div></div>' +
+        '<div><div class="rt-stat-n">' + (r.watch_rate || 0) + '%</div><div class="rt-stat-l">Watch Rate</div></div>' +
+        '<div><div class="rt-stat-n">' + (r.avg_watch_pct || 0) + '%</div><div class="rt-stat-l">Avg Watch</div></div>' +
+      '</div></div>';
+  }).join('');
+  grid.querySelectorAll('.rt-card').forEach(function (card) {
+    card.addEventListener('click', function () { openRooftop(card.dataset.id); });
+  });
+  return true;
+}
+
+async function loadLeaderboard() {
+  const res = await authed(API + '/api/group/leaderboard');
+  if (!res.ok) return;
+  const { leaderboard } = await res.json();
+  const body = document.getElementById('lbBody');
+  if (!leaderboard?.length) {
+    body.innerHTML = '<div class="empty"><div class="empty-ico">&#127942;</div><div class="empty-txt">No sends in the last 30 days yet.</div></div>';
+    return;
+  }
+  body.innerHTML = leaderboard.map(function (r) {
+    const initials = (r.rep_name || '').split(' ').map(function (w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
+    const rc = r.rank <= 3 ? ' rank-' + r.rank : '';
+    return '<div class="board-row cols-lb">' +
+      '<div class="rank' + rc + '">' + r.rank + '</div>' +
+      '<div class="rep-info"><div class="rep-av">' + esc(initials) + '</div><div class="rep-name">' + esc(r.rep_name) + '</div></div>' +
+      '<div class="cell-dim">' + esc(r.rooftop_name) + '</div>' +
+      '<div class="cell cell-fire">' + (r.videos_sent_30d || 0) + '</div>' +
+      '<div class="cell">' + (r.watch_rate || 0) + '%</div>' +
+      '<div class="cell cell-green">' + (r.avg_watch_pct || 0) + '%</div>' +
+      '</div>';
+  }).join('');
+}
+
+async function loadRooftop(id) {
+  try {
+    const res = await authed(API + '/api/group/rooftop/' + encodeURIComponent(id));
+    if (res.status === 403) { showOverview(); return; }
+    if (!res.ok) throw new Error('rooftop HTTP ' + res.status);
+    const d = await res.json();
+
+    document.getElementById('rtName').textContent = d.rooftop?.name || 'Rooftop';
+    document.getElementById('rtSub').textContent = 'Last 30 days';
+    const k = d.kpis || {};
+    document.getElementById('rVideos').textContent = (k.videos_sent_30d || 0).toLocaleString();
+    document.getElementById('rWatchRate').textContent = (k.watch_rate || 0) + '%';
+    document.getElementById('rAvgPct').textContent = (k.avg_watch_pct || 0) + '%';
+    document.getElementById('rReps').textContent = k.active_reps || 0;
+
+    const sends = document.getElementById('sendsBody');
+    if (!d.recent_sends?.length) {
+      sends.innerHTML = '<div class="empty"><div class="empty-ico">&#128228;</div><div class="empty-txt">No videos sent yet.</div></div>';
+    } else {
+      sends.innerHTML = d.recent_sends.map(function (v) {
+        const pct = v.max_watch_pct || 0;
+        const c = pct >= 75 ? 'var(--green)' : pct >= 25 ? 'var(--amber)' : 'var(--t3)';
+        return '<div class="board-row cols-sends">' +
+          '<div class="cell-name">' + esc(v.customer_name || 'Customer') + '</div>' +
+          '<div class="cell-dim">' + esc(v.vehicle || '—') + '</div>' +
+          '<div class="cell">' + timeAgo(v.sent_at) + '</div>' +
+          '<div class="cell" style="color:' + c + '">' + pct + '%</div>' +
+          '</div>';
+      }).join('');
+    }
+
+    const reps = document.getElementById('repsBody');
+    if (!d.reps?.length) {
+      reps.innerHTML = '<div class="empty"><div class="empty-ico">&#128100;</div><div class="empty-txt">No active reps.</div></div>';
+    } else {
+      reps.innerHTML = d.reps.map(function (r) {
+        const initials = (r.name || '').split(' ').map(function (w) { return w[0]; }).join('').slice(0, 2).toUpperCase();
+        return '<div class="board-row cols-reps">' +
+          '<div class="rep-info"><div class="rep-av">' + esc(initials) + '</div><div class="rep-name">' + esc(r.nickname || r.name) + '</div></div>' +
+          '<div class="cell cell-fire">' + (r.videos_sent_30d || 0) + '</div>' +
+          '<div class="cell">' + (r.watch_rate || 0) + '%</div>' +
+          '<div class="cell cell-green">' + (r.avg_watch_pct || 0) + '%</div>' +
+          '</div>';
+      }).join('');
+    }
+  } catch (e) { console.error('[group] Rooftop error:', e); }
+}
+
+async function loadAll() {
+  if (gated) return;
+  if (currentRooftopId) { loadRooftop(currentRooftopId); return; }
+  try {
+    const ok = await loadOverview();
+    if (ok) loadLeaderboard();
+  } catch (e) { console.error('[group] Load error:', e); }
+}
+
+// Initial load + 60s polling only while the tab is visible
+show('overviewView');
+loadAll();
+setInterval(function () {
+  if (document.visibilityState === 'visible') loadAll();
+}, 60000);
+document.addEventListener('visibilitychange', function () {
+  if (document.visibilityState === 'visible') loadAll();
+});
+</script>
+</body>
+</html>

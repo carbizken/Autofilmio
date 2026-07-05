@@ -172,6 +172,14 @@ router.post('/webhook', async (req, res) => {
           current_period_end: sub.current_period_end ? new Date(sub.current_period_end * 1000).toISOString() : null,
           active: ['active', 'trialing', 'past_due'].includes(sub.status),
         };
+        // Keep plan in sync with the subscribed price — upgrades/downgrades
+        // happen in the Stripe billing portal, not through our checkout.
+        const priceId = sub.items?.data?.[0]?.price?.id;
+        if (priceId && priceId === process.env.STRIPE_PRICE_BUNDLE) {
+          update.plan = 'bundle';
+        } else if (priceId && priceId === process.env.STRIPE_PRICE_STANDARD) {
+          update.plan = 'standard';
+        }
         if (rooftopId) {
           await supabase.from('rooftops').update(update).eq('id', rooftopId);
         } else {
