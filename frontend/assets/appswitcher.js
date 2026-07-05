@@ -11,9 +11,11 @@
  *   <script src="assets/appswitcher.js"></script>
  *   <script>AppSwitcher.mount('#app-switcher', { currentApp: 'autovideo' });</script>
  *
- * Subscribed products are read from localStorage `af_products`
- * (JSON array of app ids), refreshed by the settings page from
- * /api/billing/status. Default: only the current app is unlocked.
+ * Entitlements come from GET /api/entitlements (via AFSession.fetch when
+ * session.js is loaded), cached in sessionStorage for 5 minutes. When the
+ * API is unreachable or the page has no session, we fall back to the
+ * legacy localStorage `af_products` list (JSON array of app ids), and
+ * finally to unlocking only the current app.
  */
 (function () {
   'use strict';
@@ -28,12 +30,61 @@
 
   const PRICING_URL = 'https://autocurb.io/pricing';
 
+  // Backend entitlement keys → switcher product ids.
+  // AutoVideo is the switcher name for AutoFilm; Clear Deal ships with AutoCurb.
+  const ENTITLEMENT_KEY = {
+    autocurb:   'autocurb',
+    cleardeal:  'autocurb',
+    autolabels: 'autolabels',
+    autoframe:  'autoframe',
+    autovideo:  'autofilm',
+  };
+
+  const CACHE_KEY = 'afsw_entitlements';
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  // Same API resolution as session.js
+  const API = window.AF_API || ((location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://localhost:3001' : 'https://api.autofilm.io');
+
+  /** Legacy fallback: localStorage list, else just the current app. */
   function activeProducts(currentApp) {
     try {
       const stored = JSON.parse(localStorage.getItem('af_products'));
       if (Array.isArray(stored) && stored.length) return new Set(stored);
     } catch { /* fall through */ }
     return new Set([currentApp]);
+  }
+
+  /** Map an entitlements payload's products object to a set of switcher ids. */
+  function entitledProducts(entitlements, currentApp) {
+    const products = entitlements?.products;
+    if (!products || typeof products !== 'object') return null;
+    const set = new Set([currentApp]); // the app you're on is always shown as yours
+    for (const p of PRODUCTS) {
+      if (products[ENTITLEMENT_KEY[p.id]]) set.add(p.id);
+    }
+    return set;
+  }
+
+  /** Fetch /api/entitlements with a 5-minute sessionStorage cache. Null on any failure. */
+  async function fetchEntitlements() {
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(CACHE_KEY));
+      if (cached?.data && (Date.now() - cached.ts) < CACHE_TTL) return cached.data;
+    } catch { /* stale or corrupt cache — refetch */ }
+
+    if (!window.AFSession?.fetch || !window.AFSession.get()) return null;
+
+    try {
+      const res = await window.AFSession.fetch(`${API}/api/entitlements`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data })); } catch { /* quota */ }
+      return data;
+    } catch {
+      return null;
+    }
   }
 
   function css() {
@@ -67,12 +118,7 @@
     document.head.appendChild(s);
   }
 
-  function mount(selector, { currentApp = 'autovideo' } = {}) {
-    css();
-    const host = typeof selector === 'string' ? document.querySelector(selector) : selector;
-    if (!host) return;
-
-    const active = activeProducts(currentApp);
+  function render(host, currentApp, active) {
     const current = PRODUCTS.find(p => p.id === currentApp) || PRODUCTS[0];
 
     const items = PRODUCTS.map(p => {
@@ -96,6 +142,8 @@
       </div>`;
     }).join('');
 
+    const wasOpen = host.querySelector('#afswRoot')?.classList.contains('open');
+
     host.innerHTML = `
       <div class="afsw" id="afswRoot">
         <button class="afsw-btn" type="button">
@@ -109,11 +157,33 @@
       </div>`;
 
     const root = host.querySelector('#afswRoot');
+    if (wasOpen) root.classList.add('open');
     root.querySelector('.afsw-btn').addEventListener('click', e => {
       e.stopPropagation();
       root.classList.toggle('open');
     });
-    document.addEventListener('click', () => root.classList.remove('open'));
+    if (!host._afswDocClose) {
+      host._afswDocClose = true;
+      document.addEventListener('click', () => {
+        host.querySelector('#afswRoot')?.classList.remove('open');
+      });
+    }
+  }
+
+  function mount(selector, { currentApp = 'autovideo' } = {}) {
+    css();
+    const host = typeof selector === 'string' ? document.querySelector(selector) : selector;
+    if (!host) return;
+
+    // Paint immediately from the local fallback, then refresh from the API.
+    render(host, currentApp, activeProducts(currentApp));
+
+    fetchEntitlements().then(ent => {
+      const set = entitledProducts(ent, currentApp);
+      if (!set) return; // graceful fallback: keep the local render
+      setProducts([...set]); // keep the legacy localStorage cache in sync
+      render(host, currentApp, set);
+    });
   }
 
   /** Called by settings page after /api/billing/status to sync entitlements. */
