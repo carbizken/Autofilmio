@@ -71,6 +71,26 @@ body{font-family:var(--ff);background:var(--bg);color:var(--t1);-webkit-font-smo
 .invited-info{flex:1}.invited-name{font-weight:700}.invited-email{color:var(--t3);font-size:10px}
 .invited-dept{font-size:9px;font-weight:700;padding:2px 7px;border-radius:12px;background:var(--bg3);color:var(--t3)}
 
+/* Billing plans */
+.plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px}
+@media(max-width:520px){.plan-grid{grid-template-columns:1fr}}
+.plan-card{position:relative;background:var(--bg2);border:1px solid var(--b1);border-radius:14px;padding:20px 16px;cursor:pointer;transition:border-color .14s,transform .14s;text-align:left}
+.plan-card:hover{border-color:var(--fire);transform:translateY(-1px)}
+.plan-card.busy{opacity:.55;pointer-events:none}
+.plan-card.featured{border-color:var(--fireb);background:linear-gradient(180deg,var(--firet),var(--bg2))}
+.plan-badge{position:absolute;top:-9px;right:12px;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:12px;background:var(--fire);color:#fff}
+.plan-name{font-size:14px;font-weight:800;margin-bottom:4px}
+.plan-price{font-size:24px;font-weight:900;letter-spacing:-.5px;margin-bottom:12px}
+.plan-price span{font-size:11px;font-weight:600;color:var(--t3);letter-spacing:0}
+.plan-feats{list-style:none;margin-bottom:14px;display:flex;flex-direction:column;gap:6px}
+.plan-feats li{font-size:11px;color:var(--t2);display:flex;gap:7px;align-items:baseline}
+.plan-feats li::before{content:'\2713';color:var(--fire2);font-weight:800}
+.plan-trial{font-size:10px;font-weight:700;color:var(--t3);border-top:1px solid var(--b0);padding-top:10px}
+.billing-note{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);color:var(--amber);font-size:12px;line-height:1.5;border-radius:10px;padding:10px 12px;margin-bottom:16px}
+.billing-ok{width:64px;height:64px;border-radius:50%;background:rgba(34,197,94,.12);border:2px solid var(--green);color:var(--green);font-size:28px;font-weight:800;display:flex;align-items:center;justify-content:center;margin:8px auto 16px}
+.billing-status{font-size:12px;font-weight:700;color:var(--t2);background:var(--bg2);border:1px solid var(--b1);border-radius:10px;padding:10px 14px;margin-bottom:20px}
+.billing-status.on{color:var(--green);border-color:rgba(34,197,94,.3);background:rgba(34,197,94,.06)}
+
 /* Success confetti */
 .success-card{text-align:center}
 .succ-ring{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--fire),var(--fire2));display:flex;align-items:center;justify-content:center;font-size:36px;margin:0 auto 20px;box-shadow:0 8px 32px rgba(217,79,0,.4)}
@@ -95,7 +115,8 @@ footer span{color:var(--fire2);font-weight:700}
   <div class="prog-step"><div class="prog-dot" id="pd2">2</div><div class="prog-line" id="pl2"></div></div>
   <div class="prog-step"><div class="prog-dot" id="pd3">3</div><div class="prog-line" id="pl3"></div></div>
   <div class="prog-step"><div class="prog-dot" id="pd4">4</div><div class="prog-line" id="pl4"></div></div>
-  <div class="prog-step"><div class="prog-dot" id="pd5">5</div></div>
+  <div class="prog-step"><div class="prog-dot" id="pd5">5</div><div class="prog-line" id="pl5"></div></div>
+  <div class="prog-step"><div class="prog-dot" id="pd6">6</div></div>
 </div>
 
 <!-- Steps container -->
@@ -106,6 +127,7 @@ footer span{color:var(--fire2);font-weight:700}
 <script src="assets/session.js"></script>
 <script>
 const API = AFSession.API;
+const STATE_KEY = 'af_onboard_state';
 
 let step = 1;
 let rooftopId = null;
@@ -113,11 +135,36 @@ let repId = null;
 let onboardToken = null;
 let scraped = {};
 let invitedReps = [];
+let billing = { status: 'none', plan: null, trial_ends_at: null };
+let billingConfirmed = false;
+let billingNotice = null;
+let checkoutBusy = false;
+
+// Persist wizard state across the Stripe Checkout redirect.
+function saveState() {
+  try {
+    sessionStorage.setItem(STATE_KEY, JSON.stringify({ step, rooftopId, repId, onboardToken, scraped, invitedReps }));
+  } catch { /* private mode — redirect still works, we just re-derive less */ }
+}
+
+function restoreState() {
+  try {
+    const s = JSON.parse(sessionStorage.getItem(STATE_KEY));
+    if (!s) return false;
+    rooftopId = s.rooftopId || null;
+    repId = s.repId || null;
+    onboardToken = s.onboardToken || null;
+    scraped = s.scraped || {};
+    invitedReps = s.invitedReps || [];
+    step = s.step || 4;
+    return true;
+  } catch { return false; }
+}
 
 function render() {
   const card = document.getElementById('stepCard');
   // Update progress dots
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 6; i++) {
     const dot = document.getElementById('pd' + i);
     const line = document.getElementById('pl' + i);
     dot.className = 'prog-dot' + (i < step ? ' done' : i === step ? ' on' : '');
@@ -129,12 +176,13 @@ function render() {
   else if (step === 2) renderStep2(card);
   else if (step === 3) renderStep3(card);
   else if (step === 4) renderStep4(card);
-  else renderStep5(card);
+  else if (step === 5) renderStep5(card);
+  else renderStep6(card);
 }
 
 function renderStep1(card) {
   card.innerHTML = `<div class="card-inner">
-    <div class="step-eyebrow">Step 1 of 5</div>
+    <div class="step-eyebrow">Step 1 of 6</div>
     <div class="step-title">Enter Your Dealership Website</div>
     <div class="step-sub">We'll automatically detect your dealership name, logo, brand colors, and contact info.</div>
     <div class="field"><label class="field-label">Dealership Website URL</label><input class="field-inp" id="fUrl" placeholder="www.yourdealership.com" autofocus></div>
@@ -145,7 +193,7 @@ function renderStep1(card) {
 
 function renderStep2(card) {
   card.innerHTML = `<div class="card-inner">
-    <div class="step-eyebrow">Step 2 of 5</div>
+    <div class="step-eyebrow">Step 2 of 6</div>
     <div class="step-title">Confirm Your Details</div>
     <div class="step-sub">We scraped these from your website. Fix anything that's off.</div>
     <div class="preview">
@@ -168,9 +216,9 @@ function renderStep2(card) {
 
 function renderStep3(card) {
   card.innerHTML = `<div class="card-inner">
-    <div class="step-eyebrow">Step 3 of 5</div>
+    <div class="step-eyebrow">Step 3 of 6</div>
     <div class="step-title">Create Your Account</div>
-    <div class="step-sub">You'll be the admin for ${esc(scraped.name || 'your dealership')}. Your team can be added next.</div>
+    <div class="step-sub">You'll be the admin for ${esc(scraped.name || 'your dealership')}. Next you'll pick a plan and add your team.</div>
     <div class="field"><label class="field-label">Your Full Name</label><input class="field-inp" id="fAdminName" placeholder="Ken Criscione" autofocus></div>
     <div class="field"><label class="field-label">Email</label><input class="field-inp" id="fAdminEmail" type="email" placeholder="ken@dealership.com"></div>
     <div class="field"><label class="field-label">Password</label><input class="field-inp" id="fAdminPass" type="password" placeholder="At least 8 characters"></div>
@@ -179,13 +227,56 @@ function renderStep3(card) {
 }
 
 function renderStep4(card) {
+  if (billingConfirmed) {
+    card.innerHTML = `<div class="card-inner" style="text-align:center">
+      <div class="step-eyebrow">Step 4 of 6</div>
+      <div class="billing-ok">&#10003;</div>
+      <div class="step-title">Your Free Trial Has Started</div>
+      <div class="step-sub">${esc(trialCopy())}</div>
+      <button class="btn-primary" onclick="step=5;render()">Continue &mdash; Invite Your Team</button>
+    </div>`;
+    return;
+  }
+
+  card.innerHTML = `<div class="card-inner">
+    <div class="step-eyebrow">Step 4 of 6</div>
+    <div class="step-title">Pick Your Plan</div>
+    <div class="step-sub">Both plans start with a 14-day free trial. You won't be charged until the trial ends &mdash; cancel anytime.</div>
+    ${billingNotice ? `<div class="billing-note">${esc(billingNotice)}</div>` : ''}
+    <div class="plan-grid">
+      <div class="plan-card" onclick="startCheckout('standard', this)">
+        <div class="plan-name">AutoFilm</div>
+        <div class="plan-price">$299<span> /rooftop/mo</span></div>
+        <ul class="plan-feats">
+          <li>Unlimited users &amp; videos</li>
+          <li>SMS delivery + branded player</li>
+          <li>Real-time watch notifications</li>
+        </ul>
+        <div class="plan-trial">14-day free trial &middot; cancel anytime</div>
+      </div>
+      <div class="plan-card featured" onclick="startCheckout('bundle', this)">
+        <div class="plan-badge">Best Value</div>
+        <div class="plan-name">Suite Bundle</div>
+        <div class="plan-price">$599<span> /mo</span></div>
+        <ul class="plan-feats">
+          <li>Everything in AutoFilm</li>
+          <li>+ AutoCurb, AutoLabels &amp; AutoFrame</li>
+          <li>One bill for the whole suite</li>
+        </ul>
+        <div class="plan-trial">14-day free trial &middot; cancel anytime</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderStep5(card) {
   const repHtml = invitedReps.map(r => {
     const init = r.name.split(' ').map(w => w[0]).join('').slice(0, 2);
     return `<div class="invited"><div class="invited-av">${esc(init)}</div><div class="invited-info"><div class="invited-name">${esc(r.name)}</div><div class="invited-email">${esc(r.email)}</div></div><div class="invited-dept">${esc(r.department)}</div></div>`;
   }).join('');
 
   card.innerHTML = `<div class="card-inner">
-    <div class="step-eyebrow">Step 4 of 5</div>
+    <div class="step-eyebrow">Step 5 of 6</div>
     <div class="step-title">Invite Your Team</div>
     <div class="step-sub">Add sales reps, service advisors, and BDC staff. They'll get an email invite.</div>
     <div class="invite-row">
@@ -196,21 +287,93 @@ function renderStep4(card) {
     </div>
     <div class="invited-list" id="invitedList">${repHtml}</div>
     <button class="btn-primary" onclick="finishInvites()">Continue</button>
-    <button class="btn-secondary" onclick="step=5;render()">Skip for Now</button>
+    <button class="btn-secondary" onclick="finishInvites()">Skip for Now</button>
   </div>`;
 }
 
-function renderStep5(card) {
+function renderStep6(card) {
   card.innerHTML = `<div class="card-inner success-card">
     <div class="succ-ring">🎬</div>
     <div class="succ-title">You're Live!</div>
     <div class="succ-sub">AutoFilm is set up for ${esc(scraped.name || 'your dealership')}. Start sending personal videos to your customers today.</div>
+    <div class="billing-status${['trialing', 'active'].includes(billing.status) ? ' on' : ''}">${esc(billingLine())}</div>
     <div class="succ-links">
-      <a class="succ-link" href="autofilm-settings.html"><div class="succ-link-ico">💳</div><div><div class="succ-link-txt">Start Your 30-Day Free Trial</div><div class="succ-link-sub">Pick a plan — no charge for 30 days</div></div></a>
       <a class="succ-link" href="autofilm-dashboard.html"><div class="succ-link-ico">📊</div><div><div class="succ-link-txt">Open Dashboard</div><div class="succ-link-sub">See team stats and manage your dealership</div></div></a>
       <a class="succ-link" href="autofilm-record.html"><div class="succ-link-ico">📹</div><div><div class="succ-link-txt">Record Your First Video</div><div class="succ-link-sub">Try the teleprompter with AI script assist</div></div></a>
+      <a class="succ-link" href="autofilm-settings.html"><div class="succ-link-ico">💳</div><div><div class="succ-link-txt">Manage Billing</div><div class="succ-link-sub">Update card, change plan, view invoices</div></div></a>
     </div>
   </div>`;
+}
+
+function planLabel(plan) {
+  return plan === 'bundle' ? 'Suite Bundle' : 'AutoFilm';
+}
+
+function fmtDate(iso) {
+  try {
+    return new Date(iso).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' });
+  } catch { return iso; }
+}
+
+function trialCopy() {
+  if (billing.status === 'trialing' && billing.trial_ends_at) {
+    return `You're on the ${planLabel(billing.plan)} plan. No charge until ${fmtDate(billing.trial_ends_at)} — cancel anytime from Settings.`;
+  }
+  if (billing.status === 'active') {
+    return `Your ${planLabel(billing.plan)} subscription is active.`;
+  }
+  return `Payment method saved. Your 14-day free trial is active — you won't be charged until it ends, and you can cancel anytime from Settings.`;
+}
+
+function billingLine() {
+  if (billing.status === 'trialing' && billing.trial_ends_at) {
+    return `Free trial active — ${planLabel(billing.plan)} plan, no charge until ${fmtDate(billing.trial_ends_at)}.`;
+  }
+  if (billing.status === 'trialing') return `Free trial active — ${planLabel(billing.plan)} plan.`;
+  if (billing.status === 'active') return `Subscription active — ${planLabel(billing.plan)} plan.`;
+  if (billingConfirmed) return 'Free trial starting — Stripe is confirming your subscription.';
+  return 'No plan selected yet — pick one in Settings to start your free trial.';
+}
+
+async function refreshBillingStatus() {
+  if (!AFSession.get()) return;
+  try {
+    const res = await AFSession.fetch(`${API}/api/billing/status`);
+    if (!res.ok) return;
+    billing = await res.json();
+    if (['trialing', 'active'].includes(billing.status)) billingConfirmed = true;
+    // Only re-render the billing-aware steps — never clobber form input elsewhere
+    if (step === 4 || step === 6) render();
+  } catch (e) { console.warn('[onboard] billing status failed:', e.message); }
+}
+
+async function startCheckout(plan, el) {
+  if (checkoutBusy) return;
+  checkoutBusy = true;
+  if (el) el.classList.add('busy');
+  try {
+    saveState();
+    const res = await AFSession.fetch(`${API}/api/billing/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan, return_to: '/autofilm-onboard.html' }),
+    });
+    const data = await res.json();
+    if (res.status === 409) {
+      // Already trialing/active — nothing to buy, move along
+      billingConfirmed = true;
+      refreshBillingStatus();
+      render();
+      return;
+    }
+    if (!res.ok || !data.checkout_url) throw new Error(data.error || 'Could not start checkout');
+    location.href = data.checkout_url;
+  } catch (e) {
+    alert('Error starting checkout: ' + e.message);
+  } finally {
+    checkoutBusy = false;
+    if (el) el.classList.remove('busy');
+  }
 }
 
 async function scanWebsite() {
@@ -301,11 +464,33 @@ async function addRep() {
   } catch (e) { alert('Error: ' + e.message); }
 }
 
-function finishInvites() { step = 5; render(); }
+function finishInvites() {
+  step = 6;
+  render();
+  refreshBillingStatus(); // fill in the trial end date on the done screen
+}
 
 function esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
-render();
+// Boot — detect a return from Stripe Checkout (?billing=success|canceled)
+(function boot() {
+  const billingReturn = new URLSearchParams(location.search).get('billing');
+  if (billingReturn) {
+    history.replaceState(null, '', location.pathname);
+    const restored = restoreState();
+    if (restored || AFSession.get()) {
+      step = 4;
+      if (billingReturn === 'success') {
+        billingConfirmed = true;
+        refreshBillingStatus(); // pull real trial end date once the webhook lands
+      } else {
+        billingNotice = 'Checkout was canceled — no charge was made. Pick a plan below to start your free trial.';
+      }
+    }
+    // No saved state and no session: fall through to step 1 from scratch
+  }
+  render();
+})();
 </script>
 </body>
 </html>
