@@ -156,20 +156,13 @@ h1{font-size:24px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px}
   </div>
 </div>
 
+<script src="assets/session.js"></script>
 <script>
-const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-  ? 'http://localhost:3001' : 'https://api.autofilm.io';
-
-const params = new URLSearchParams(location.search);
-const rooftopId = params.get('rooftop_id') || localStorage.getItem('af_rooftop_id') || '';
-
-if (rooftopId) localStorage.setItem('af_rooftop_id', rooftopId);
+if (!AFSession.requireAuth()) throw new Error('redirecting');
+const API = AFSession.API;
+const authed = (u) => AFSession.fetch(u);
 
 async function loadAll() {
-  if (!rooftopId) {
-    document.getElementById('rooftopName').textContent = 'No rooftop selected — add ?rooftop_id=... to URL';
-    return;
-  }
   loadKpis();
   loadLeaderboard();
   loadActivity();
@@ -178,7 +171,7 @@ async function loadAll() {
 
 async function loadKpis() {
   try {
-    const res = await fetch(`${API}/api/dashboard/kpis?rooftop_id=${rooftopId}`);
+    const res = await authed(`${API}/api/dashboard/kpis`);
     const { kpis } = await res.json();
     if (!kpis) return;
     document.getElementById('rooftopName').textContent = kpis.rooftop_name || 'Your Dealership';
@@ -191,7 +184,7 @@ async function loadKpis() {
 
 async function loadLeaderboard() {
   try {
-    const res = await fetch(`${API}/api/dashboard/leaderboard?rooftop_id=${rooftopId}`);
+    const res = await authed(`${API}/api/dashboard/leaderboard`);
     const { leaderboard } = await res.json();
     const body = document.getElementById('boardBody');
     if (!leaderboard?.length) {
@@ -216,7 +209,7 @@ async function loadLeaderboard() {
 
 async function loadActivity() {
   try {
-    const res = await fetch(`${API}/api/dashboard/activity?rooftop_id=${rooftopId}&limit=50`);
+    const res = await authed(`${API}/api/dashboard/activity?limit=50`);
     const { activity } = await res.json();
     const feed = document.getElementById('actFeed');
     if (!activity?.length) {
@@ -250,7 +243,7 @@ async function loadActivity() {
 
 async function loadCrm() {
   try {
-    const res = await fetch(`${API}/api/dashboard/crm-status?rooftop_id=${rooftopId}`);
+    const res = await authed(`${API}/api/dashboard/crm-status`);
     const { connections, recent_syncs } = await res.json();
     const panel = document.getElementById('crmPanel');
     if (!connections?.length) {

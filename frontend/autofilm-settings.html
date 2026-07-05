@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Settings — AutoFilm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+:root{--bg:#0a0a0d;--bg1:#111116;--bg2:#18181e;--bg3:#202028;--b0:rgba(255,255,255,.05);--b1:rgba(255,255,255,.09);--b2:rgba(255,255,255,.16);--t1:rgba(255,255,255,.96);--t2:rgba(255,255,255,.65);--t3:rgba(255,255,255,.40);--t4:rgba(255,255,255,.20);--fire:#D94F00;--fire2:#E85A0A;--firet:rgba(217,79,0,.10);--fireb:rgba(217,79,0,.22);--green:#22c55e;--amber:#f59e0b;--rose:#f43f5e;--ff:'Geist',-apple-system,sans-serif;--fm:'Geist Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased;min-height:100vh}
+
+nav{position:fixed;top:0;left:0;right:0;height:56px;background:rgba(10,10,13,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--b0);z-index:200;display:flex;align-items:center;padding:0 20px;gap:14px}
+.nav-mark{width:28px;height:28px;background:var(--fire);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.nav-word{font-size:16px;font-weight:900;letter-spacing:-.3px}
+.nav-word em{color:var(--fire2);font-style:normal}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.nav-link{font-size:12px;font-weight:600;color:var(--t3);text-decoration:none;cursor:pointer}
+.nav-link:hover{color:var(--t1)}
+
+.wrap{max-width:860px;margin:0 auto;padding:80px 20px 60px}
+h1{font-size:22px;font-weight:900;letter-spacing:-.4px;margin-bottom:4px}
+.sub{font-size:13px;color:var(--t3);margin-bottom:24px}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--b1);margin-bottom:24px;overflow-x:auto}
+.tab{padding:10px 16px;font-size:13px;font-weight:700;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:color .14s}
+.tab:hover{color:var(--t1)}
+.tab.on{color:var(--fire2);border-bottom-color:var(--fire)}
+
+.panel{display:none}
+.panel.on{display:block;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.card{background:var(--bg1);border:1px solid var(--b1);border-radius:14px;padding:22px;margin-bottom:16px}
+.card h3{font-size:14px;font-weight:800;margin-bottom:14px}
+.card .hint{font-size:11.5px;color:var(--t3);margin:-8px 0 14px;line-height:1.5}
+
+.field{margin-bottom:13px}
+.field label{display:block;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--t3);margin-bottom:5px}
+.field input,.field select{width:100%;padding:10px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:9px;color:var(--t1);font-size:13px;font-family:var(--ff);outline:none}
+.field input:focus,.field select:focus{border-color:var(--fire)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:600px){.row2,.row3{grid-template-columns:1fr}}
+
+.btn{padding:10px 18px;border-radius:9px;font-size:13px;font-weight:800;font-family:var(--ff);border:none;cursor:pointer;transition:all .14s}
+.btn-primary{background:var(--fire);color:#fff;box-shadow:0 3px 14px rgba(217,79,0,.28)}
+.btn-primary:hover{background:var(--fire2)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent;border:1px solid var(--b2);color:var(--t2)}
+.btn-ghost:hover{color:var(--t1)}
+.btn-danger{background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.25);color:var(--rose)}
+.btn-sm{padding:6px 12px;font-size:11px}
+
+/* Team table */
+.team-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--b0)}
+.team-row:last-child{border-bottom:none}
+.team-av{width:34px;height:34px;border-radius:50%;background:var(--fire);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0}
+.team-info{flex:1;min-width:0}
+.team-name{font-size:13px;font-weight:700}
+.team-email{font-size:11px;color:var(--t3)}
+.team-tags{display:flex;gap:6px;align-items:center}
+.tag{font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:12px;background:var(--bg3);color:var(--t3)}
+.tag.admin{background:var(--firet);color:var(--fire2)}
+.tag.inactive{background:rgba(244,63,94,.1);color:var(--rose)}
+
+/* Billing */
+.bill-status{display:flex;align-items:center;gap:14px;padding:16px;border-radius:12px;margin-bottom:16px}
+.bill-status.active{background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2)}
+.bill-status.none{background:var(--firet);border:1px solid var(--fireb)}
+.bill-status.trouble{background:rgba(244,63,94,.06);border:1px solid rgba(244,63,94,.2)}
+.bill-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.bill-dot.g{background:var(--green)}.bill-dot.o{background:var(--fire)}.bill-dot.r{background:var(--rose)}
+.bill-txt{font-size:13px;font-weight:700}
+.bill-sub{font-size:11px;color:var(--t3);margin-top:2px}
+
+.plans{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+@media(max-width:600px){.plans{grid-template-columns:1fr}}
+.plan{border:1px solid var(--b1);border-radius:14px;padding:20px;transition:border-color .15s}
+.plan:hover{border-color:var(--fireb)}
+.plan.featured{border-color:var(--fireb);background:linear-gradient(160deg,rgba(217,79,0,.06),transparent 60%)}
+.plan-name{font-size:13px;font-weight:800;margin-bottom:4px}
+.plan-price{font-size:28px;font-weight:900;font-family:var(--fm);letter-spacing:-1px}
+.plan-price span{font-size:12px;color:var(--t3);font-weight:500;letter-spacing:0}
+.plan-feats{margin:12px 0 16px;font-size:12px;color:var(--t2);line-height:1.9}
+
+.crm-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--b0)}
+.crm-row:last-child{border-bottom:none}
+.crm-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.crm-name{flex:1;font-size:13px;font-weight:700;text-transform:capitalize}
+.crm-meta{font-size:10.5px;color:var(--t4);font-family:var(--fm)}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg2);border:1px solid var(--b2);color:var(--t1);padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 12px 40px rgba(0,0,0,.5);transition:transform .25s ease;z-index:999}
+.toast.on{transform:translateX(-50%) translateY(0)}
+.empty{padding:24px;text-align:center;font-size:12.5px;color:var(--t3)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-mark"><svg width="11" height="11" viewBox="0 0 14 14" fill="none"><path d="M1.5 10.5L7 2 12.5 10.5" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  <div class="nav-word">Auto<em>Film</em></div>
+  <div id="app-switcher"></div>
+  <div class="nav-right">
+    <a class="nav-link" href="autofilm-dashboard.html">Dashboard</a>
+    <a class="nav-link" onclick="AFSession.logout()">Sign Out</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <h1>Settings</h1>
+  <div class="sub" id="rooftopName">Loading…</div>
+
+  <div class="tabs">
+    <div class="tab on" data-panel="team" onclick="showTab(this)">Team</div>
+    <div class="tab" data-panel="dealership" onclick="showTab(this)">Dealership</div>
+    <div class="tab" data-panel="crm" onclick="showTab(this)">CRM</div>
+    <div class="tab" data-panel="billing" onclick="showTab(this)">Billing</div>
+  </div>
+
+  <!-- TEAM -->
+  <div class="panel on" id="panel-team">
+    <div class="card">
+      <h3>Invite a Rep</h3>
+      <p class="hint">They'll get a magic-link email to set up their account. Unlimited users — always included.</p>
+      <div class="row3">
+        <div class="field"><label>Name</label><input id="invName" placeholder="Jane Doe"></div>
+        <div class="field"><label>Email</label><input id="invEmail" type="email" placeholder="jane@dealer.com"></div>
+        <div class="field"><label>Department</label>
+          <select id="invDept"><option value="sales">Sales</option><option value="service">Service</option><option value="bdc">BDC</option></select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="inviteRep()">Send Invite</button>
+    </div>
+    <div class="card">
+      <h3>Team</h3>
+      <div id="teamList"><div class="empty">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- DEALERSHIP -->
+  <div class="panel" id="panel-dealership">
+    <div class="card">
+      <h3>Dealership Profile</h3>
+      <div class="row2">
+        <div class="field"><label>Dealership Name</label><input id="rtName"></div>
+        <div class="field"><label>Dealer Group</label><input id="rtGroup"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Phone</label><input id="rtPhone"></div>
+        <div class="field"><label>Website</label><input id="rtWebsite"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Brand Color</label><input id="rtColor" type="color" style="height:40px;padding:4px"></div>
+        <div class="field"><label>Logo URL</label><input id="rtLogo" placeholder="https://…"></div>
+      </div>
+      <div class="field"><label>Address</label><input id="rtAddress"></div>
+      <div class="row3">
+        <div class="field"><label>City</label><input id="rtCity"></div>
+        <div class="field"><label>State</label><input id="rtState"></div>
+        <div class="field"><label>ZIP</label><input id="rtZip"></div>
+      </div>
+      <button class="btn btn-primary" onclick="saveRooftop()">Save Changes</button>
+    </div>
+  </div>
+
+  <!-- CRM -->
+  <div class="panel" id="panel-crm">
+    <div class="card">
+      <h3>Connect a CRM</h3>
+      <p class="hint">Video sends and watch events sync into your CRM automatically. Keys are stored server-side and never shown again.</p>
+      <div class="row3">
+        <div class="field"><label>Provider</label>
+          <select id="crmProvider">
+            <option value="elead">Elead (CDK)</option>
+            <option value="vinsolutions">VinSolutions</option>
+            <option value="dealersocket">DealerSocket</option>
+            <option value="hubspot">HubSpot</option>
+            <option value="salesforce">Salesforce</option>
+          </select>
+        </div>
+        <div class="field"><label>API Key</label><input id="crmKey" type="password" placeholder="••••••••"></div>
+        <div class="field"><label>Dealer ID <span style="text-transform:none;letter-spacing:0">(if required)</span></label><input id="crmDealerId"></div>
+      </div>
+      <button class="btn btn-primary" onclick="connectCrm()">Connect</button>
+    </div>
+    <div class="card">
+      <h3>Connected</h3>
+      <div id="crmList"><div class="empty">Loading…</div></div>
+    </div>
+  </div>
+
+  <!-- BILLING -->
+  <div class="panel" id="panel-billing">
+    <div class="card">
+      <h3>Subscription</h3>
+      <div id="billStatus"><div class="empty">Loading…</div></div>
+      <div id="billActions"></div>
+      <div class="plans" id="billPlans" style="display:none">
+        <div class="plan">
+          <div class="plan-name">AutoFilm</div>
+          <div class="plan-price">$299<span>/rooftop/mo</span></div>
+          <div class="plan-feats">Unlimited users & videos<br>SMS + email + push<br>AI scripts & VIN Reels<br>Service MPI video<br>CRM sync</div>
+          <button class="btn btn-primary" style="width:100%" onclick="checkout('standard')">Start 30-Day Free Trial</button>
+        </div>
+        <div class="plan featured">
+          <div class="plan-name">Suite Bundle <span class="tag admin" style="margin-left:6px">Best value</span></div>
+          <div class="plan-price">$599<span>/rooftop/mo</span></div>
+          <div class="plan-feats">Everything in AutoFilm<br>+ AutoCurb trade & acquisition<br>+ AutoLabels vehicle passport<br>+ Priority support</div>
+          <button class="btn btn-primary" style="width:100%" onclick="checkout('bundle')">Start 30-Day Free Trial</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="assets/session.js"></script>
+<script src="assets/appswitcher.js"></script>
+<script>
+if (!AFSession.requireAuth()) throw new Error('redirecting');
+AppSwitcher.mount('#app-switcher', { currentApp: 'autovideo' });
+
+const API = AFSession.API;
+let rooftop = null;
+
+function showTab(el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('panel-' + el.dataset.panel).classList.add('on');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  setTimeout(() => t.classList.remove('on'), 2600);
+}
+
+async function api(path, opts) {
+  const res = await AFSession.fetch(API + path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+}
+
+// ── LOAD EVERYTHING ─────────────────────────────────────────
+async function load() {
+  try {
+    const { rooftop: rt } = await api('/api/admin/settings');
+    rooftop = rt;
+    document.getElementById('rooftopName').textContent = rt.name || 'Your Dealership';
+    setVal('rtName', rt.name); setVal('rtGroup', rt.dealer_group);
+    setVal('rtPhone', rt.phone); setVal('rtWebsite', rt.website_url);
+    setVal('rtLogo', rt.logo_url); setVal('rtAddress', rt.address);
+    setVal('rtCity', rt.city); setVal('rtState', rt.state); setVal('rtZip', rt.zip);
+    document.getElementById('rtColor').value = rt.brand_color || '#D94F00';
+  } catch (e) { toast(e.message); }
+  loadTeam(); loadCrm(); loadBilling();
+}
+function setVal(id, v) { document.getElementById(id).value = v || ''; }
+
+// ── TEAM ────────────────────────────────────────────────────
+async function loadTeam() {
+  try {
+    const { reps } = await api('/api/admin/reps');
+    const el = document.getElementById('teamList');
+    if (!reps.length) { el.innerHTML = '<div class="empty">No team members yet.</div>'; return; }
+    el.innerHTML = reps.map(r => {
+      const init = (r.name || '?').split(' ').map(w => w[0]).join('').slice(0, 2);
+      return `<div class="team-row">
+        <div class="team-av">${esc(init)}</div>
+        <div class="team-info"><div class="team-name">${esc(r.name)}</div><div class="team-email">${esc(r.email)}</div></div>
+        <div class="team-tags">
+          <span class="tag ${r.role === 'admin' ? 'admin' : ''}">${esc(r.role)}</span>
+          <span class="tag">${esc(r.department)}</span>
+          ${r.active === false ? '<span class="tag inactive">Inactive</span>' : ''}
+        </div>
+        ${r.active !== false ? `<button class="btn btn-danger btn-sm" onclick="deactivate('${r.id}','${esc(r.name)}')">Deactivate</button>` : ''}
+      </div>`;
+    }).join('');
+  } catch (e) { document.getElementById('teamList').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+async function inviteRep() {
+  const name = document.getElementById('invName').value.trim();
+  const email = document.getElementById('invEmail').value.trim();
+  const department = document.getElementById('invDept').value;
+  if (!name || !email) return toast('Name and email required');
+  try {
+    await api('/api/auth/invite', { method: 'POST', body: JSON.stringify({ name, email, department }) });
+    toast(`Invite sent to ${email}`);
+    document.getElementById('invName').value = '';
+    document.getElementById('invEmail').value = '';
+    loadTeam();
+  } catch (e) { toast(e.message); }
+}
+
+async function deactivate(id, name) {
+  if (!confirm(`Deactivate ${name}? They will lose access immediately.`)) return;
+  try {
+    await api(`/api/admin/reps/${id}`, { method: 'DELETE' });
+    toast(`${name} deactivated`);
+    loadTeam();
+  } catch (e) { toast(e.message); }
+}
+
+// ── DEALERSHIP ──────────────────────────────────────────────
+async function saveRooftop() {
+  try {
+    await api('/api/admin/settings', {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: val('rtName'), dealer_group: val('rtGroup'), phone: val('rtPhone'),
+        website_url: val('rtWebsite'), logo_url: val('rtLogo'),
+        brand_color: document.getElementById('rtColor').value,
+        address: val('rtAddress'), city: val('rtCity'), state: val('rtState'), zip: val('rtZip'),
+      }),
+    });
+    toast('Saved');
+  } catch (e) { toast(e.message); }
+}
+function val(id) { return document.getElementById(id).value.trim(); }
+
+// ── CRM ─────────────────────────────────────────────────────
+async function loadCrm() {
+  try {
+    const { connections } = await api('/api/admin/crm');
+    const el = document.getElementById('crmList');
+    if (!connections.length) { el.innerHTML = '<div class="empty">No CRM connected yet.</div>'; return; }
+    el.innerHTML = connections.map(c => `<div class="crm-row">
+      <div class="crm-dot" style="background:${c.active ? 'var(--green)' : 'var(--rose)'}"></div>
+      <div class="crm-name">${esc(c.provider)}</div>
+      <div class="crm-meta">${c.last_sync_at ? 'synced ' + timeAgo(c.last_sync_at) : 'never synced'}</div>
+      <button class="btn btn-danger btn-sm" onclick="removeCrm('${c.id}')">Remove</button>
+    </div>`).join('');
+  } catch (e) { document.getElementById('crmList').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+async function connectCrm() {
+  const provider = document.getElementById('crmProvider').value;
+  const api_key = document.getElementById('crmKey').value.trim();
+  const dealer_id = document.getElementById('crmDealerId').value.trim();
+  if (!api_key) return toast('API key required');
+  try {
+    await api('/api/admin/crm', { method: 'POST', body: JSON.stringify({ provider, api_key, dealer_id }) });
+    toast(`${provider} connected`);
+    document.getElementById('crmKey').value = '';
+    loadCrm();
+  } catch (e) { toast(e.message); }
+}
+
+async function removeCrm(id) {
+  if (!confirm('Remove this CRM connection?')) return;
+  try { await api(`/api/admin/crm/${id}`, { method: 'DELETE' }); toast('Removed'); loadCrm(); }
+  catch (e) { toast(e.message); }
+}
+
+// ── BILLING ─────────────────────────────────────────────────
+async function loadBilling() {
+  try {
+    const s = await api('/api/billing/status');
+    const statusEl = document.getElementById('billStatus');
+    const actionsEl = document.getElementById('billActions');
+    const plansEl = document.getElementById('billPlans');
+
+    const map = {
+      active:   { cls: 'active',  dot: 'g', txt: 'Subscription active',   sub: s.current_period_end ? `Renews ${fmtDate(s.current_period_end)}` : '' },
+      trialing: { cls: 'active',  dot: 'g', txt: 'Free trial active',     sub: s.trial_ends_at ? `Trial ends ${fmtDate(s.trial_ends_at)}` : '' },
+      past_due: { cls: 'trouble', dot: 'r', txt: 'Payment failed',        sub: 'Update your card to keep service running' },
+      canceled: { cls: 'none',    dot: 'o', txt: 'Subscription canceled', sub: 'Restart anytime — your data is safe' },
+      none:     { cls: 'none',    dot: 'o', txt: 'No subscription yet',   sub: 'Start a 30-day free trial — no card charged today' },
+    };
+    const st = map[s.status] || map.none;
+
+    statusEl.innerHTML = `<div class="bill-status ${st.cls}">
+      <div class="bill-dot ${st.dot}"></div>
+      <div><div class="bill-txt">${st.txt} ${s.plan && s.status !== 'none' ? `· ${esc(s.plan)} plan` : ''}</div><div class="bill-sub">${st.sub}</div></div>
+    </div>`;
+
+    if (['active', 'trialing', 'past_due'].includes(s.status)) {
+      actionsEl.innerHTML = `<button class="btn btn-ghost" onclick="portal()">Manage Billing → invoices, card, cancel</button>`;
+      plansEl.style.display = 'none';
+      AppSwitcher.setProducts(s.plan === 'bundle'
+        ? ['autovideo', 'autocurb', 'autolabels', 'cleardeal']
+        : ['autovideo']);
+    } else {
+      actionsEl.innerHTML = '';
+      plansEl.style.display = '';
+    }
+  } catch (e) {
+    document.getElementById('billStatus').innerHTML = `<div class="empty">${esc(e.message)}</div>`;
+  }
+}
+
+async function checkout(plan) {
+  try {
+    const { checkout_url } = await api('/api/billing/checkout', { method: 'POST', body: JSON.stringify({ plan }) });
+    location.href = checkout_url;
+  } catch (e) { toast(e.message); }
+}
+
+async function portal() {
+  try {
+    const { portal_url } = await api('/api/billing/portal', { method: 'POST', body: '{}' });
+    location.href = portal_url;
+  } catch (e) { toast(e.message); }
+}
+
+// Post-checkout landing
+if (location.search.includes('billing=success')) {
+  toast('Subscription started — welcome aboard! 🎬');
+  history.replaceState(null, '', location.pathname);
+}
+
+// ── HELPERS ─────────────────────────────────────────────────
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(d) { return new Date(d).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }); }
+function timeAgo(d) {
+  const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+  if (s < 3600) return Math.floor(s / 60) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  return Math.floor(s / 86400) + 'd ago';
+}
+
+load();
+</script>
+</body>
+</html>

@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { resolveTenant } from './lib/tenant.js';
+import { rateLimit } from './lib/ratelimit.js';
 import { startBDCAssistant } from './lib/bdc.js';
 import { startWorkflowEngine } from './lib/workflows.js';
 
@@ -19,9 +20,11 @@ import replyRoute from './routes/reply.js';
 import onboardRoute from './routes/onboard.js';
 import callRoute from './routes/call.js';
 
-// Auth + Admin
+// Auth + Admin + Billing
 import authRoute from './routes/auth.js';
 import adminRoute from './routes/admin.js';
+import billingRoute from './routes/billing.js';
+import webhooksRoute from './routes/webhooks.js';
 
 // AI features
 import avatarRoute from './routes/avatar.js';
@@ -33,78 +36,89 @@ import distributeRoute from './routes/distribute.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ── MIDDLEWARE ───────────────────────────────────────────────
-app.use(cors({
-  origin: [
-    'https://autofilm.io',
-    'https://www.autofilm.io',
-    /\.autofilm\.io$/,
-    // AutoCurb bundled mode
-    'https://autocurb.io',
-    /\.autocurb\.io$/,
-    // Any dealer website (for widget + overlay)
-    /./,
-    // Local dev
-    'http://localhost:3000',
-    'http://localhost:5500',
-    'http://127.0.0.1:5500',
-  ],
+// ── CORS ─────────────────────────────────────────────────────
+// App surfaces get a strict allowlist. Public embed endpoints
+// (player pings, widget calls, replies) get open CORS below,
+// because they run on arbitrary dealer websites by design.
+const APP_ORIGINS = [
+  'https://autofilm.io',
+  'https://www.autofilm.io',
+  /\.autofilm\.io$/,
+  'https://autocurb.io',
+  /\.autocurb\.io$/,
+  // Local dev
+  'http://localhost:3000',
+  'http://localhost:5500',
+  'http://127.0.0.1:5500',
+];
+
+const appCors = cors({
+  origin: APP_ORIGINS,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Token', 'X-Api-Key'],
-}));
+});
 
-app.use(express.json({ limit: '10mb' }));
+const publicCors = cors({ origin: true, methods: ['GET', 'POST', 'OPTIONS'] });
+
+// Capture the raw body for webhook signature verification
+// (Stripe and Mux both HMAC the exact bytes on the wire).
+app.use(express.json({
+  limit: '10mb',
+  verify: (req, _res, buf) => { req.rawBody = buf; },
+}));
 
 // Tenant resolution (runs on every request, non-blocking)
 app.use(resolveTenant());
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', publicCors, (req, res) => {
   res.json({
     status: 'ok',
-    version: '3.0.0',
+    version: '3.1.0',
     env: process.env.NODE_ENV,
     tenant: req.tenant?.mode || 'none',
     features: {
+      billing: !!process.env.STRIPE_SECRET_KEY,
       bdc: !!process.env.HEYGEN_API_KEY,
       rcs: !!process.env.TWILIO_RCS_SENDER_ID,
-      youtube: !!process.env.YOUTUBE_API_KEY,
       tts: !!(process.env.ELEVENLABS_API_KEY || process.env.GOOGLE_TTS_API_KEY),
     },
   });
 });
 
-// ── AUTH ROUTES (no tenant required) ────────────────────────
-app.use('/api/auth', authRoute);
+// ── RATE LIMITS ──────────────────────────────────────────────
+const authLimiter    = rateLimit({ windowMs: 60_000, max: 10 });   // brute-force guard
+const sendLimiter    = rateLimit({ windowMs: 60_000, max: 30 });   // SMS abuse guard
+const pingLimiter    = rateLimit({ windowMs: 60_000, max: 120 });  // player pings every 5s
+const generalLimiter = rateLimit({ windowMs: 60_000, max: 120 });
 
-// ── CORE ROUTES ─────────────────────────────────────────────
-app.use('/api/upload', uploadRoute);
-app.use('/api/send', sendRoute);
-app.use('/v', pingRoute);
-app.use('/api/ai-script', aiRoute);
+// ── PUBLIC EMBED ENDPOINTS (open CORS — run on dealer sites) ─
+app.use('/v', publicCors, pingLimiter, pingRoute);
+app.use('/api/reply', publicCors, generalLimiter, replyRoute);
+app.use('/api/call', publicCors, generalLimiter, callRoute);
 
-// ── FEATURE ROUTES ──────────────────────────────────────────
-app.use('/api/dashboard', dashboardRoute);
-app.use('/api/vin-reels', vinReelsRoute);
-app.use('/api/mpi', mpiRoute);
-app.use('/api/reply', replyRoute);
-app.use('/api/onboard', onboardRoute);
-app.use('/api/call', callRoute);
+// ── WEBHOOKS (no CORS needed — server-to-server) ─────────────
+app.use('/api/webhooks', webhooksRoute);
+// Twilio inbound + status callbacks live under messaging:
+app.use('/api/messaging', publicCors, generalLimiter, messagingRoute);
 
-// ── ADMIN ROUTES (auth + admin role required) ───────────────
-app.use('/api/admin', adminRoute);
+// ── APP ROUTES (strict CORS) ─────────────────────────────────
+app.use(appCors);
 
-// ── AI FEATURES ─────────────────────────────────────────────
-app.use('/api/avatar', avatarRoute);
+app.use('/api/auth', authLimiter, authRoute);
+app.use('/api/billing', billingRoute);
 
-// ── MESSAGING + DISTRIBUTION ────────────────────────────────
-app.use('/api/messaging', messagingRoute);
-app.use('/api/distribute', distributeRoute);
+app.use('/api/upload', generalLimiter, uploadRoute);
+app.use('/api/send', sendLimiter, sendRoute);
+app.use('/api/ai-script', generalLimiter, aiRoute);
 
-// ── TWILIO WEBHOOKS (no auth, Twilio signature validation in prod) ──
-// These are also mounted under /api/messaging but listed for clarity:
-// POST /api/messaging/webhook/inbound  — inbound SMS/RCS
-// POST /api/messaging/webhook/status   — delivery receipts
+app.use('/api/dashboard', generalLimiter, dashboardRoute);
+app.use('/api/vin-reels', generalLimiter, vinReelsRoute);
+app.use('/api/mpi', generalLimiter, mpiRoute);
+app.use('/api/onboard', authLimiter, onboardRoute);
+app.use('/api/admin', generalLimiter, adminRoute);
+app.use('/api/avatar', generalLimiter, avatarRoute);
+app.use('/api/distribute', generalLimiter, distributeRoute);
 
 // 404
 app.use((req, res) => {
@@ -119,10 +133,10 @@ app.use((err, req, res, next) => {
 
 // ── START SERVER ────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`[autofilm-api] v3.0.0 running on port ${PORT}`);
+  console.log(`[autofilm-api] v3.1.0 running on port ${PORT}`);
   console.log(`[autofilm-api] Env: ${process.env.NODE_ENV}`);
 
-  // Start background services
+  // Background services
   startBDCAssistant();
   startWorkflowEngine();
 });
