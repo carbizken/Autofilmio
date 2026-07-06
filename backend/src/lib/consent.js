@@ -74,11 +74,18 @@ export async function recordOptIn(phone, source = 'sms_keyword') {
 export async function canText(phone) {
   const normalized = normalizePhone(phone);
   if (!normalized) return false;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('sms_consent')
     .select('opted_out')
     .eq('phone', normalized)
     .maybeSingle();
+  // A missing record means implied consent (customer gave the dealer their
+  // number) → OK to text. But a genuine lookup FAILURE must fail closed:
+  // texting a number we can't verify risks a $500–$1,500 TCPA violation.
+  if (error) {
+    console.error(`[consent] canText lookup failed for ${normalized}, failing closed:`, error.message);
+    return false;
+  }
   return !(data?.opted_out);
 }
 
