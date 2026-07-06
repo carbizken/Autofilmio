@@ -253,7 +253,28 @@ async function load() {
   }
 }
 
+let wfActionsWired = false;
+function wireWfActions() {
+  if (wfActionsWired) return;
+  wfActionsWired = true;
+  const list = document.getElementById('wfList');
+  if (!list) return;
+  // Workflow names live in data-* attributes (esc() escapes quotes) rather
+  // than inline onclick JS strings — a workflow named with a quote or an
+  // O'Brien-style value can't break out of the handler.
+  list.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    if (b.dataset.act === 'edit') editWf(b.dataset.id);
+    else if (b.dataset.act === 'delete') deleteWf(b.dataset.id, b.dataset.name);
+  });
+  list.addEventListener('change', e => {
+    const c = e.target.closest('[data-act="toggle"]'); if (!c) return;
+    toggleWf(c.dataset.id, c.checked);
+  });
+}
+
 function renderList() {
+  wireWfActions();
   const list = document.getElementById('wfList');
   const active = workflows.filter(w => w.enabled).length;
   document.getElementById('wfCount').textContent = `${active} Active`;
@@ -268,7 +289,7 @@ function renderList() {
     <div class="wf-card${wf.enabled ? '' : ' off'}">
       <div class="wf-top">
         <label class="switch" title="${wf.enabled ? 'Enabled' : 'Disabled'}">
-          <input type="checkbox" ${wf.enabled ? 'checked' : ''} ${canEdit ? '' : 'disabled'} onchange="toggleWf('${esc(wf.id)}', this.checked)">
+          <input type="checkbox" ${wf.enabled ? 'checked' : ''} ${canEdit ? '' : 'disabled'} data-act="toggle" data-id="${esc(wf.id)}">
           <span class="track"></span>
         </label>
         <div class="wf-name">${esc(wf.name)}</div>
@@ -289,8 +310,8 @@ function renderList() {
       </div>
       ${canEdit ? `
       <div class="wf-actions">
-        <button class="btn ghost" onclick="editWf('${esc(wf.id)}')">Edit</button>
-        <button class="btn ghost danger" onclick="deleteWf('${esc(wf.id)}', '${esc(wf.name).replace(/'/g, '&#39;')}')">Delete</button>
+        <button class="btn ghost" data-act="edit" data-id="${esc(wf.id)}">Edit</button>
+        <button class="btn ghost danger" data-act="delete" data-id="${esc(wf.id)}" data-name="${esc(wf.name)}">Delete</button>
       </div>` : ''}
     </div>`).join('');
 }
