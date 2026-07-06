@@ -31,7 +31,9 @@ svg{display:block}
 
 /* sidebar */
 .side{background:var(--af-bg-soft);border-right:1px solid var(--af-border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
-.brand{display:flex;align-items:center;gap:11px;padding:20px 20px 18px}
+.brand{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:22px 20px 18px}
+.wm{font-size:25px;font-weight:800;letter-spacing:-.02em;color:var(--af-text);line-height:1}.wm span{color:var(--af-orange)}.wm-mini{display:none;font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--af-text);line-height:1}.wm-mini span{color:var(--af-orange)}.wm-tag{font-size:10px;font-weight:600;color:var(--af-text-muted);letter-spacing:.04em;margin-top:3px}
+
 .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--af-orange),var(--af-orange-hover));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 18px rgba(249,115,22,.35)}
 .brand .nm{font-weight:800;font-size:16px;letter-spacing:.02em;color:#fff;line-height:1.1}
 .brand .tg{font-size:9.5px;font-weight:600;color:var(--af-orange);letter-spacing:.05em;margin-top:2px}
@@ -225,8 +227,8 @@ svg{display:block}
 }
 @media (max-width:900px){
   .app{grid-template-columns:74px 1fr}
-  .brand .nm,.brand .tg,.nav a span,.nav a .badge,.side-foot .side-card>div,.collapse span{display:none}
-  .brand{justify-content:center;padding:18px 0}
+  .wm,.wm-tag,.nav a span,.nav a .badge,.side-foot .side-card>div,.collapse span{display:none}
+  .brand{align-items:center;padding:18px 0}.wm-mini{display:block}
   .nav a{justify-content:center;padding:10px}
   .nav a.on::before{display:none}
   .side-card{justify-content:center}
@@ -263,8 +265,9 @@ svg{display:block}
 
   <aside class="side">
     <div class="brand">
-      <div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>
-      <div><div class="nm">AUTOFILM</div><div class="tg">Engage. Explain. Close.</div></div>
+      <div class="wm">auto<span>(FILM)</span></div>
+      <div class="wm-mini">a<span>(F)</span></div>
+      <div class="wm-tag">Engage. Explain. Close.</div>
     </div>
     <nav class="nav">
       <a href="#" class="on"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg><span>Home</span></a>
@@ -295,18 +298,18 @@ svg{display:block}
       <div class="tb-right">
         <div class="search"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input placeholder="Search customer, VIN, stock #, rep, RO…"></div>
         <div class="sync"><span class="a">● Live</span><span class="b">Synced 2 min ago</span></div>
-        <div class="pill eco" data-app="autocurb"><span class="mark c">C</span><svg class="chk" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span class="txt">AutoCurb</span></div>
-        <div class="pill eco" data-app="autolabels"><span class="mark l">L</span><svg class="chk" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span class="txt">AutoLabels</span></div>
+        <div class="pill eco" data-app="autocurb"><span class="mark c">C</span><svg class="chk" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span class="txt">auto(CURB)</span></div>
+        <div class="pill eco" data-app="autolabels"><span class="mark l">L</span><svg class="chk" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span class="txt">auto(LABELS)</span></div>
         <button class="btn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M20 8v6M23 11h-6"/><circle cx="9" cy="7" r="4"/></svg><span class="invite-txt">Invite Teammate</span></button>
         <div class="menu-sel"><button class="iconbtn" id="bellBtn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg><span class="n">5</span></button><div class="pop" id="bellPop" style="width:310px"></div></div>
         <div class="menu-sel">
           <div class="avatar" id="avatarBtn"></div>
           <div class="pop" id="profilePop">
             <div class="pop-h">Switch app</div>
-            <a class="app-row" href="#" data-app="autocurb"><span class="mark c">C</span><div><div class="an">AutoCurb</div><div class="ad">Acquire · Trade · Appraise</div></div><span class="tag" style="margin-left:auto;color:var(--autocurb);background:var(--autocurb-soft)">Open</span></a>
-            <a class="app-row" href="#" data-app="autolabels"><span class="mark l">L</span><div><div class="an">AutoLabels</div><div class="ad">Protect · Label · Comply</div></div><span class="tag" style="margin-left:auto;color:var(--autolabels);background:var(--autolabels-soft)">Open</span></a>
-            <a class="app-row" href="#"><span class="mark f">F</span><div><div class="an">AutoFilm</div><div class="ad">Engage · Explain · Close</div></div><span class="tag cur">Current</span></a>
-            <a class="app-row locked" href="#"><span class="mark" style="background:var(--af-card-soft);color:var(--af-text-muted)">◇</span><div><div class="an">AutoFrame</div><div class="ad">Inventory media</div></div><span class="tag soon">Soon</span></a>
+            <a class="app-row" href="#" data-app="autocurb"><span class="mark c">C</span><div><div class="an">auto(CURB)</div><div class="ad">Acquire · Trade · Appraise</div></div><span class="tag" style="margin-left:auto;color:var(--autocurb);background:var(--autocurb-soft)">Open</span></a>
+            <a class="app-row" href="#" data-app="autolabels"><span class="mark l">L</span><div><div class="an">auto(LABELS)</div><div class="ad">Protect · Label · Comply</div></div><span class="tag" style="margin-left:auto;color:var(--autolabels);background:var(--autolabels-soft)">Open</span></a>
+            <a class="app-row" href="#"><span class="mark f">F</span><div><div class="an">auto(FILM)</div><div class="ad">Engage · Explain · Close</div></div><span class="tag cur">Current</span></a>
+            <a class="app-row locked" href="#"><span class="mark" style="background:var(--af-card-soft);color:var(--af-text-muted)">◇</span><div><div class="an">auto(FRAME)</div><div class="ad">Inventory media</div></div><span class="tag soon">Soon</span></a>
             <div class="pop-foot">3 of 4 products active</div>
             <div class="divider"></div>
             <a class="menu-item" href="autofilm-settings.html"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>My profile &amp; availability</a>
@@ -367,28 +370,28 @@ svg{display:block}
         <div class="eco-wrap">
           <div class="eco-flow">
             <div class="eco-card c" data-app="autocurb">
-              <div class="eco-top"><span class="mark c">C</span><span class="eco-name">AutoCurb</span></div>
+              <div class="eco-top"><span class="mark c">C</span><span class="eco-name">auto(CURB)</span></div>
               <div class="eco-desc"><b>12 new trade leads</b> need follow-up</div>
               <span class="eco-cta">View Leads →</span>
             </div>
             <div class="eco-arrow"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
             <div class="eco-card l" data-app="autolabels">
-              <div class="eco-top"><span class="mark l">L</span><span class="eco-name">AutoLabels</span></div>
+              <div class="eco-top"><span class="mark l">L</span><span class="eco-name">auto(LABELS)</span></div>
               <div class="eco-desc"><b>7 vehicle passports</b> ready to share</div>
               <span class="eco-cta">View Inventory →</span>
             </div>
             <div class="eco-arrow"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
             <div class="eco-card f" onclick="location.href='autofilm-app.html'">
-              <div class="eco-top"><span class="mark f">F</span><span class="eco-name">AutoFilm</span></div>
+              <div class="eco-top"><span class="mark f">F</span><span class="eco-name">auto(FILM)</span></div>
               <div class="eco-desc"><b>31 opportunities</b> need your video</div>
               <span class="eco-cta">Go to Queue →</span>
             </div>
           </div>
           <div class="together">
             <h3>Together We Close More Deals</h3>
-            <div class="tl"><span class="mark c">C</span><div><b class="c">AutoCurb</b> gets the opportunity.</div></div>
-            <div class="tl"><span class="mark l">L</span><div><b class="l">AutoLabels</b> protects the vehicle.</div></div>
-            <div class="tl"><span class="mark f">F</span><div><b class="f">AutoFilm</b> turns it into a personal conversation.</div></div>
+            <div class="tl"><span class="mark c">C</span><div><b class="c">auto(CURB)</b> gets the opportunity.</div></div>
+            <div class="tl"><span class="mark l">L</span><div><b class="l">auto(LABELS)</b> protects the vehicle.</div></div>
+            <div class="tl"><span class="mark f">F</span><div><b class="f">auto(FILM)</b> turns it into a personal conversation.</div></div>
           </div>
         </div>
       </div>
@@ -414,7 +417,7 @@ var METRICS=[
  {key:'watch',label:'Avg Watch Time',num:'2:41',trend:'+0:32 vs yesterday',cls:'up',tip:'Average seconds watched per video — tracked to the second.',spark:[70,88,95,110,120,140,150,161]},
  {key:'appt',label:'Appointments',sub:'From Video',num:'6',trend:'+2 vs yesterday',cls:'up',tip:'Appointments booked directly from a video link.',spark:[1,2,2,3,3,4,5,6]},
  {key:'svc',label:'Service Approvals',sub:'From Video',num:'4',trend:'+1 vs yesterday',cls:'up',tip:'Repair orders approved from an inspection video.',spark:[0,1,1,2,2,3,3,4]},
- {key:'hot',label:'Hot Leads',sub:'Need Follow-Up',num:'9',trend:'Watched 75%+',cls:'warn',tip:'Customers who watched 75%+ — highest intent right now.',spark:[3,4,3,5,6,7,8,9]}
+ {key:'hot',label:'Hot Leads',sub:'Need Follow-Up',num:'9',trend:'+2 vs yesterday',cls:'up',tip:'Customers who watched 75%+ — highest intent right now.',spark:[3,4,3,5,6,7,8,9]}
 ];
 var MI={
  sent:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/>',
@@ -452,7 +455,7 @@ var NOTIFS=[
 ];
 var CHART={
  day:[[8,3],[10,5],[12,7],[14,6],[16,9],[18,12],[20,16]],
- week:[[11,5],[18,8],[22,11],[24,13],[34,19],[38,22],[47,27]],
+ week:[[12,5],[18,8],[24,11],[25,14],[35,19],[38,23],[46,28]],
  month:[[120,70],[150,92],[180,110],[165,120],[210,150],[240,175],[280,210]]
 };
 var XLAB={day:['9a','11a','1p','3p','5p','7p','9p'],week:['May 5','May 6','May 7','May 8','May 9','May 10','May 11'],month:['W1','W2','W3','W4','W5','W6','W7']};
