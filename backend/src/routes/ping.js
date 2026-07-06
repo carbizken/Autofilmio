@@ -42,9 +42,13 @@ router.get('/:code/ping', async (req, res) => {
       user_agent:    req.headers['user-agent'],
     });
 
-    // 3. Check if we've crossed a milestone
+    // 3. Check if we've crossed a milestone. A single ping can jump past
+    // several at once (the viewer seeks ahead, or pings were dropped), so
+    // take the HIGHEST milestone crossed — otherwise a jump from 10% to 80%
+    // would notify "25%" and never fire the 75% hot-lead trigger.
     const prevMax = videoRow.max_watch_pct || 0;
-    const crossedMilestone = MILESTONES.find(m => m > prevMax && m <= pct);
+    const crossed = MILESTONES.filter(m => m > prevMax && m <= pct);
+    const crossedMilestone = crossed.length ? crossed[crossed.length - 1] : undefined;
 
     if (crossedMilestone) {
       // Atomic guard: only the ping that actually advances max_watch_pct

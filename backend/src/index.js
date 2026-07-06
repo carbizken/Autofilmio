@@ -39,6 +39,19 @@ import distributeRoute from './routes/distribute.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const VERSION = '3.6.0';
+
+// Don't advertise the framework (minor info-leak reduction).
+app.disable('x-powered-by');
+
+// Baseline security headers on every API response. Kept dependency-free;
+// the frontend host (Vercel) sets its own headers for static assets.
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
 
 // ── CORS ─────────────────────────────────────────────────────
 // App surfaces get a strict allowlist. Public embed endpoints
@@ -78,7 +91,7 @@ app.use(resolveTenant());
 app.get('/health', publicCors, (req, res) => {
   res.json({
     status: 'ok',
-    version: '3.2.0',
+    version: VERSION,
     env: process.env.NODE_ENV,
     tenant: req.tenant?.mode || 'none',
     features: {
@@ -133,18 +146,44 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Error handler
+// Error handler. In production we log the full error but return a generic
+// message — unexpected 500s can carry stack/internal detail. Routes that
+// want a specific client-facing message return their own 4xx/5xx.
 app.use((err, req, res, next) => {
-  console.error('[error]', err.message);
-  res.status(500).json({ error: err.message || 'Internal server error' });
+  if (res.headersSent) return next(err);
+  console.error(`[error] ${req.method} ${req.originalUrl}:`, err.stack || err.message);
+  const message = process.env.NODE_ENV === 'production'
+    ? 'Internal server error'
+    : (err.message || 'Internal server error');
+  res.status(err.status || 500).json({ error: message });
 });
 
 // ── START SERVER ────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`[autofilm-api] v3.2.0 running on port ${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`[autofilm-api] v${VERSION} running on port ${PORT}`);
   console.log(`[autofilm-api] Env: ${process.env.NODE_ENV}`);
 
   // Background services
   startBDCAssistant();
   startWorkflowEngine();
 });
+
+// A single crashing background job (workflow tick, BDC poll, render) must not
+// take the whole instance down. Log loudly; only exit on a truly unknown
+// uncaught exception, letting Render restart us cleanly.
+process.on('unhandledRejection', (reason) => {
+  console.error('[fatal] Unhandled promise rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[fatal] Uncaught exception:', err.stack || err.message);
+});
+
+// Graceful shutdown on deploy (Render sends SIGTERM).
+for (const sig of ['SIGTERM', 'SIGINT']) {
+  process.on(sig, () => {
+    console.log(`[autofilm-api] ${sig} received — shutting down`);
+    server.close(() => process.exit(0));
+    // Force-exit if connections don't drain in 10s.
+    setTimeout(() => process.exit(0), 10_000).unref();
+  });
+}

@@ -2,7 +2,7 @@ import express from 'express';
 import { supabase } from '../lib/supabase.js';
 import { requireAuth } from '../lib/auth.js';
 import { sendRichVideoMessage } from '../lib/rcs.js';
-import { twilioClient, TWILIO_FROM } from '../lib/twilio.js';
+import { twilioClient, TWILIO_FROM, verifyTwilioSignature } from '../lib/twilio.js';
 import { sendPush } from '../lib/push.js';
 import {
   classifyKeyword, recordOptOut, recordOptIn, guardedSms,
@@ -24,7 +24,7 @@ function twiml(message) {
  * Twilio webhook for inbound SMS/RCS messages.
  * Twilio POSTs here when a customer replies to an AutoFilm message.
  */
-router.post('/webhook/inbound', express.urlencoded({ extended: true }), async (req, res) => {
+router.post('/webhook/inbound', express.urlencoded({ extended: true }), verifyTwilioSignature(), async (req, res) => {
   try {
     const { From, To, Body, MessageSid, NumMedia } = req.body;
 
@@ -220,7 +220,7 @@ router.get('/conversations', requireAuth(), async (req, res) => {
  * POST /api/messaging/webhook/status
  * Twilio status callback for message delivery/read receipts.
  */
-router.post('/webhook/status', express.urlencoded({ extended: true }), async (req, res) => {
+router.post('/webhook/status', express.urlencoded({ extended: true }), verifyTwilioSignature(), async (req, res) => {
   try {
     const { MessageSid, MessageStatus } = req.body;
     // Update conversation record with delivery status

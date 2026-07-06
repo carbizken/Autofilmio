@@ -13,6 +13,9 @@ router.post('/', async (req, res) => {
     const { purpose, rep_name, dealer, vehicle, customer_name } = req.body;
 
     if (!purpose) return res.status(400).json({ error: 'purpose required' });
+    if (!process.env.ANTHROPIC_API_KEY) {
+      return res.status(503).json({ error: 'Script generation is not configured' });
+    }
 
     const prompts = {
       'internet-lead': `Write a short, natural video script (45-60 seconds when spoken) for ${rep_name} at ${dealer} reaching out to ${customer_name || 'a new internet lead'}${vehicle ? ` about the ${vehicle}` : ''}. Warm, personal, not salesy. End with a clear next step.`,
@@ -41,22 +44,28 @@ router.post('/', async (req, res) => {
         max_tokens: 400,
         messages: [{ role: 'user', content: systemPrompt }],
       }),
+      // Bound the upstream call so the rep's request can't spin forever.
+      signal: AbortSignal.timeout(30_000),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      throw new Error(`Anthropic API error: ${err}`);
+      throw new Error(`Anthropic API error ${response.status}: ${err}`);
     }
 
     const data = await response.json();
     const script = data.content?.[0]?.text || '';
 
-    console.log(`[ai] Generated ${purpose} script for ${rep_name} (${script.length} chars)`);
+    console.log(`[ai] Generated ${purpose} script for ${rep_name || 'rep'} (${script.length} chars)`);
     res.json({ script });
 
   } catch (err) {
+    // Log the detail; return a friendly message (this surfaces in the rep UI).
     console.error('[ai] Error:', err.message);
-    res.status(500).json({ error: err.message });
+    const timedOut = err.name === 'TimeoutError' || err.name === 'AbortError';
+    res.status(timedOut ? 504 : 502).json({
+      error: timedOut ? 'Script generation timed out — please try again' : 'Could not generate a script right now',
+    });
   }
 });
 

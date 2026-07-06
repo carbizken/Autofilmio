@@ -58,7 +58,7 @@ router.post('/mux', async (req, res) => {
       if (uploadId) orClauses.unshift(`mux_upload_id.eq.${uploadId}`);
       let { data: videoRow } = await supabase
         .from('videos')
-        .select('id, short_code, mux_playback_id')
+        .select('id, short_code, mux_playback_id, type')
         .or(orClauses.join(','))
         .limit(1)
         .maybeSingle();
@@ -72,14 +72,19 @@ router.post('/mux', async (req, res) => {
 
         await storeThumbnails(supabase, videoRow.id, playbackId);
 
-        if (videoRow.short_code) {
+        // Only (re)write the generic player short link for standard sales
+        // videos. MPI inspections and VIN reels point their short link at
+        // their own pages; Mux can retry this event, so overwriting here
+        // would clobber those links back to the plain player.
+        const SELF_MANAGED_KV = new Set(['mpi', 'vin_reel', 'reply']);
+        if (videoRow.short_code && !SELF_MANAGED_KV.has(videoRow.type)) {
           await kvPut(
             `v_${videoRow.short_code}`,
             `https://autofilm.io/autofilm-player.html?code=${videoRow.short_code}&playback_id=${playbackId}`
           ).catch(e => console.warn('[webhooks] KV write failed:', e.message));
         }
 
-        console.log(`[webhooks] Mux asset ready — finalized video ${videoRow.id}`);
+        console.log(`[webhooks] Mux asset ready — finalized video ${videoRow.id} (${videoRow.type || 'sales'})`);
       }
     }
 

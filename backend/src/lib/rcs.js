@@ -16,6 +16,7 @@
  */
 
 import { twilioClient, TWILIO_FROM } from './twilio.js';
+import { canText } from './consent.js';
 
 /**
  * Send a video message via RCS with rich card.
@@ -44,6 +45,12 @@ export async function sendRichVideoMessage(opts) {
     thumbnailUrl,
     quickReplies = [],
   } = opts;
+
+  // TCPA: never message an opted-out number, on any channel (RCS or SMS).
+  if (!(await canText(to))) {
+    console.log('[rcs] Blocked outbound to opted-out number');
+    return { success: false, blocked: true, channel: 'none' };
+  }
 
   const firstName = customerName.split(' ')[0];
   const rcsSenderId = process.env.TWILIO_RCS_SENDER_ID;
@@ -130,6 +137,12 @@ async function sendViaRCS(opts) {
  */
 export async function sendFollowUp(opts) {
   const { to, message, rcsSenderId } = opts;
+
+  // TCPA: honor opt-outs on any channel.
+  if (!(await canText(to))) {
+    console.log('[rcs] Blocked follow-up to opted-out number');
+    return { blocked: true, channel: 'none' };
+  }
 
   if (rcsSenderId || process.env.TWILIO_RCS_SENDER_ID) {
     try {

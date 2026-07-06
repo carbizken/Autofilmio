@@ -340,6 +340,8 @@ async function apiCall(url, conn, body, opts = {}) {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
+    // External CRM; bound it so a slow provider can't stall the sync loop.
+    signal: AbortSignal.timeout(15_000),
   });
 
   if (!res.ok) {
@@ -360,7 +362,7 @@ async function apiGet(url, conn, opts = {}) {
     if (conn.api_secret) headers['X-Api-Secret'] = conn.api_secret;
   }
 
-  const res = await fetch(url, { headers });
+  const res = await fetch(url, { headers, signal: AbortSignal.timeout(15_000) });
 
   if (!res.ok) {
     const err = await res.text();
