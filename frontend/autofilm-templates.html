@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoFilm — Templates</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+  --af-bg:#0B0D12;--af-bg-soft:#10141B;--af-card:#151922;--af-card-soft:#1B202B;
+  --af-border:#252B36;--af-border-strong:#343B49;--af-text:#F8FAFC;--af-text-secondary:#AAB2C0;--af-text-muted:#6F7785;
+  --af-orange:#F97316;--af-orange-hover:#EA580C;--af-orange-soft:rgba(249,115,22,.12);
+  --autocurb:#7C3AED;--autocurb-soft:rgba(124,58,237,.16);--autolabels:#2563EB;--autolabels-soft:rgba(37,99,235,.16);
+  --success:#10B981;--warning:#F59E0B;--danger:#EF4444;--radius-card:18px;--radius-btn:12px;--shadow-card:0 18px 45px rgba(0,0,0,.32);
+  --ff:'Plus Jakarta Sans',-apple-system,system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}html{-webkit-text-size-adjust:100%}
+body{font-family:var(--ff);background:var(--af-bg);color:var(--af-text-secondary);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}svg{display:block}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:var(--af-border-strong);border-radius:6px}
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+.side{background:var(--af-bg-soft);border-right:1px solid var(--af-border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:11px;padding:20px 20px 18px}
+.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--af-orange),var(--af-orange-hover));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 18px rgba(249,115,22,.35)}
+.brand .nm{font-weight:800;font-size:16px;letter-spacing:.02em;color:#fff;line-height:1.1}.brand .tg{font-size:9.5px;font-weight:600;color:var(--af-orange);letter-spacing:.05em;margin-top:2px}
+.nav{flex:1;overflow-y:auto;padding:8px 12px}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;color:var(--af-text-muted);text-decoration:none;font-weight:600;font-size:13.5px;position:relative;margin-bottom:2px;transition:.12s}
+.nav a svg{width:18px;height:18px;flex-shrink:0;stroke:currentColor}.nav a:hover{background:var(--af-card);color:var(--af-text-secondary)}
+.nav a.on{background:var(--af-orange-soft);color:var(--af-text)}.nav a.on svg{stroke:var(--af-orange)}
+.nav a.on::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--af-orange)}
+.nav a .badge{margin-left:auto;background:var(--af-orange);color:#fff;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:20px}
+.side-foot{border-top:1px solid var(--af-border);padding:12px}
+.side-card{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:11px;background:var(--af-card);margin-bottom:8px}
+.side-card .ico{width:30px;height:30px;border-radius:8px;background:var(--af-card-soft);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--af-text);flex-shrink:0}
+.side-card .l1{font-size:9px;font-weight:700;color:var(--af-text-muted);letter-spacing:.06em;text-transform:uppercase}
+.side-card .l2{font-size:13px;font-weight:700;color:var(--af-text);line-height:1.2}.side-card .l3{font-size:11px;color:var(--af-text-muted)}
+.side-card .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#334,#556);flex-shrink:0}
+.collapse{display:flex;align-items:center;gap:8px;color:var(--af-text-muted);font-size:12px;font-weight:600;padding:6px 10px;background:none;border:none;width:100%;border-radius:8px}.collapse:hover{background:var(--af-card);color:var(--af-text-secondary)}
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:16px;padding:16px 26px;border-bottom:1px solid var(--af-border);background:rgba(11,13,18,.75);backdrop-filter:blur(8px);position:sticky;top:0;z-index:30}
+.topbar .tt{font-size:18px;font-weight:800;color:var(--af-text)}.topbar .ts{font-size:12.5px;color:var(--af-text-muted)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:10px;background:var(--af-card);border:1px solid var(--af-border);font-size:12.5px;font-weight:600;color:var(--af-text-secondary)}
+.pill.eco{cursor:pointer}.pill.eco:hover{border-color:var(--af-border-strong)}
+.chk{width:14px;height:14px;color:var(--success)}
+.mark{width:16px;height:16px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0}
+.mark.c{background:var(--autocurb)}.mark.l{background:var(--autolabels)}.mark.f{background:var(--af-orange)}
+.sync{display:flex;flex-direction:column;line-height:1.15}.sync .a{font-size:12px;font-weight:700;color:var(--success)}.sync .b{font-size:10.5px;color:var(--af-text-muted)}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:var(--radius-btn);font-weight:700;font-size:13px;border:1px solid var(--af-border);background:var(--af-card);color:var(--af-text);transition:.12s}
+.btn:hover{border-color:var(--af-border-strong)}.btn.pri{background:var(--af-orange);border-color:var(--af-orange);color:#fff}.btn.pri:hover{background:var(--af-orange-hover)}
+.btn.sm{padding:6px 11px;font-size:12px}.btn svg{width:15px;height:15px;stroke:currentColor}.btn.sm svg{width:13px;height:13px}
+.iconbtn{position:relative;width:38px;height:38px;border-radius:10px;background:var(--af-card);border:1px solid var(--af-border);display:flex;align-items:center;justify-content:center;color:var(--af-text-secondary)}
+.iconbtn:hover{border-color:var(--af-border-strong);color:var(--af-text)}.iconbtn svg{width:18px;height:18px;stroke:currentColor}
+.iconbtn .n{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;background:var(--danger);color:#fff;font-size:10px;font-weight:700;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--af-bg)}
+.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#3b4252,#5a6478);border:2px solid var(--af-border-strong);cursor:pointer;flex-shrink:0}
+.menu-sel{position:relative}
+.search{display:flex;align-items:center;gap:8px;background:var(--af-card);border:1px solid var(--af-border);border-radius:10px;padding:0 11px;height:38px;min-width:220px;color:var(--af-text-muted)}
+.search svg{width:15px;height:15px;stroke:currentColor;flex-shrink:0}.search input{background:none;border:none;outline:none;color:var(--af-text);font-family:inherit;font-size:13px;width:100%}.search input::placeholder{color:var(--af-text-muted)}
+.pop{position:absolute;top:calc(100% + 8px);right:0;width:300px;background:var(--af-card);border:1px solid var(--af-border-strong);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);padding:8px;z-index:50;display:none}
+.pop.show{display:block}.pop-h{padding:8px 10px 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--af-text-muted)}
+.app-row{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:11px;text-decoration:none;color:var(--af-text)}.app-row:hover{background:var(--af-bg-soft)}
+.app-row .mark{width:30px;height:30px;border-radius:9px;font-size:13px}.app-row .an{font-size:13.5px;font-weight:700;color:var(--af-text)}.app-row .ad{font-size:11px;color:var(--af-text-muted)}
+.app-row .tag{margin-left:auto;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:6px}
+.app-row .tag.cur{color:var(--af-orange);background:var(--af-orange-soft)}.app-row .tag.soon{color:var(--af-text-muted);background:var(--af-card-soft)}.app-row.locked{opacity:.55}
+.pop .divider{height:1px;background:var(--af-border);margin:6px 4px}
+.menu-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;color:var(--af-text-secondary);font-size:13px;font-weight:600;text-decoration:none}
+.menu-item:hover{background:var(--af-bg-soft);color:var(--af-text)}.menu-item svg{width:16px;height:16px;stroke:currentColor}.menu-item.danger{color:var(--danger)}
+.pop-foot{padding:8px 10px 4px;font-size:11px;color:var(--af-text-muted);text-align:center}
+.notif{display:flex;gap:10px;padding:10px;border-radius:10px}.notif:hover{background:var(--af-bg-soft)}.notif .nd{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}.notif p{font-size:12.5px;color:var(--af-text);line-height:1.35}.notif small{font-size:11px;color:var(--af-text-muted)}
+.content{padding:22px 26px 40px;display:flex;flex-direction:column;gap:18px}
+.qhead{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}.qhead h1{font-size:24px;font-weight:800;color:var(--af-text);letter-spacing:-.02em}.qhead p{font-size:13.5px;color:var(--af-text-muted);margin-top:3px}.qhead .cta{margin-left:auto;display:flex;gap:10px}
+.cats{display:flex;gap:6px;flex-wrap:wrap}
+.cat{padding:7px 13px;border-radius:20px;border:1px solid var(--af-border);background:var(--af-card);color:var(--af-text-muted);font-size:12.5px;font-weight:700}
+.cat:hover{border-color:var(--af-border-strong);color:var(--af-text-secondary)}
+.cat.on{background:var(--af-orange-soft);border-color:rgba(249,115,22,.4);color:var(--af-orange)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.tpl{background:var(--af-card);border:1px solid var(--af-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column;transition:.12s}
+.tpl:hover{transform:translateY(-3px);border-color:var(--af-border-strong)}
+.tpl .thumb{height:112px;position:relative;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1b2130,#11151d)}
+.tpl .thumb .play{width:44px;height:44px;border-radius:50%;background:rgba(249,115,22,.9);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(249,115,22,.4)}
+.tpl .thumb .dur{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:6px}
+.tpl .thumb .catbadge{position:absolute;top:8px;left:8px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:3px 8px;border-radius:6px;background:rgba(0,0,0,.45);color:#fff}
+.tpl .body{padding:14px 16px;flex:1;display:flex;flex-direction:column;gap:6px}
+.tpl .tn{font-size:14px;font-weight:800;color:var(--af-text)}
+.tpl .td{font-size:12px;color:var(--af-text-muted);line-height:1.45;flex:1}
+.tpl .meta{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--af-text-muted);font-weight:600;margin-top:4px}
+.tpl .meta .up{color:var(--success)}
+.tpl .foot{display:flex;gap:8px;padding:0 16px 16px}
+.tpl .foot .btn{flex:1;justify-content:center}
+.newtpl{border:1.5px dashed var(--af-border-strong);border-radius:var(--radius-card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--af-text-muted);min-height:220px;background:none;transition:.12s}
+.newtpl:hover{border-color:var(--af-orange);color:var(--af-orange);background:var(--af-orange-soft)}
+.newtpl svg{width:28px;height:28px;stroke:currentColor}.newtpl b{font-size:13px;font-weight:700}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--af-card-soft);border:1px solid var(--af-border-strong);border-radius:12px;padding:12px 18px;font-size:13px;font-weight:600;color:var(--af-text);box-shadow:0 16px 40px rgba(0,0,0,.5);opacity:0;transition:.25s;z-index:90;pointer-events:none}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.mobnav{display:none}
+@media (max-width:1180px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:900px){.app{grid-template-columns:74px 1fr}.brand .nm,.brand .tg,.nav a span,.nav a .badge,.side-foot .side-card>div,.collapse span{display:none}.brand{justify-content:center;padding:18px 0}.nav a{justify-content:center;padding:10px}.nav a.on::before{display:none}.side-card{justify-content:center}.search{min-width:0;width:40px}.search input{display:none}.invite-txt,.pill.eco .txt{display:none}}
+@media (max-width:680px){.app{grid-template-columns:1fr}.side{display:none}.topbar{padding:12px 16px}.titlewrap .ts{display:none}.content{padding:16px 14px 90px}.grid{grid-template-columns:1fr}.qhead .cta{margin-left:0;width:100%}.qhead .cta .btn{flex:1;justify-content:center}.tb-right .sync,.tb-right .pill.eco,.tb-right .search{display:none}.mobnav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--af-bg-soft);border-top:1px solid var(--af-border);z-index:40;padding:6px 4px}.mobnav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0;color:var(--af-text-muted);text-decoration:none;font-size:10px;font-weight:600}.mobnav a.on{color:var(--af-orange)}.mobnav a svg{width:20px;height:20px;stroke:currentColor}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div><div><div class="nm">AUTOFILM</div><div class="tg">Engage. Explain. Close.</div></div></div>
+    <nav class="nav">
+      <a href="autofilm-command.html"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg><span>Home</span></a>
+      <a href="autofilm-queue.html"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg><span>Video Queue</span><span class="badge">31</span></a>
+      <a href="#"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M16 3.5a4 4 0 010 7M3 20a6 6 0 0112 0"/><circle cx="9" cy="7" r="4"/></svg><span>Leads</span></a>
+      <a href="#"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M10 9l5 3-5 3z"/></svg><span>Sales Videos</span></a>
+      <a href="autofilm-service.html"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 005.4-5.4l-2.5 2.5-2-2z"/></svg><span>Service Videos</span></a>
+      <a href="#" class="on"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg><span>Templates</span></a>
+      <a href="#"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9zM19 15l.9 2.3L22 18l-2.1.7L19 21l-.9-2.3L16 18z"/></svg><span>AI Scripts</span></a>
+      <a href="autofilm-dashboard.html"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 5-7"/></svg><span>Analytics</span></a>
+      <a href="autofilm-group.html"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M23 21v-2a4 4 0 00-3-3.9"/><circle cx="9" cy="7" r="4"/></svg><span>Team Performance</span></a>
+      <a href="autofilm-settings.html"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 12h2M10 12h10M4 17h6M14 17h6"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="12" cy="17" r="2"/></svg><span>Integrations</span></a>
+      <a href="autofilm-settings.html"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8 2 2 0 11-2.8 2.8 1.6 1.6 0 00-2.7 1.1V21a2 2 0 01-4 0 1.6 1.6 0 00-2.6-1.1 2 2 0 11-2.8-2.8A1.6 1.6 0 003.3 14 2 2 0 013 10a1.6 1.6 0 001.5-1.6A2 2 0 017.3 5.6 1.6 1.6 0 0010 5.3 2 2 0 0114 5a1.6 1.6 0 002.7-.4 2 2 0 112.8 2.8A1.6 1.6 0 0021 10a2 2 0 010 4z"/></svg><span>Settings</span></a>
+    </nav>
+    <div class="side-foot">
+      <div class="side-card"><div class="ico">∞</div><div><div class="l1">Dealer</div><div class="l2">Harte INFINITI</div><div class="l3">Farmington, CT</div></div></div>
+      <div class="side-card"><div class="av"></div><div><div class="l2">Ken Harte</div><div class="l3">Administrator</div></div></div>
+      <button class="collapse"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg><span>Collapse</span></button>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <div class="titlewrap"><div class="tt">Templates</div><div class="ts">Proven video scripts and message flows your team can send in one tap.</div></div>
+      <div class="tb-right">
+        <div class="search"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="q" placeholder="Search templates…"></div>
+        <div class="sync"><span class="a">● Live</span><span class="b">Synced 2 min ago</span></div>
+        <div class="pill eco" data-app="autocurb"><span class="mark c">C</span><svg class="chk" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span class="txt">AutoCurb</span></div>
+        <div class="pill eco" data-app="autolabels"><span class="mark l">L</span><svg class="chk" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span class="txt">AutoLabels</span></div>
+        <div class="menu-sel"><button class="iconbtn" id="bellBtn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg><span class="n">5</span></button><div class="pop" id="bellPop" style="width:310px"></div></div>
+        <div class="menu-sel">
+          <div class="avatar" id="avatarBtn"></div>
+          <div class="pop" id="profilePop">
+            <div class="pop-h">Switch app</div>
+            <a class="app-row" href="#" data-app="autocurb"><span class="mark c">C</span><div><div class="an">AutoCurb</div><div class="ad">Acquire · Trade · Appraise</div></div><span class="tag" style="margin-left:auto;color:var(--autocurb);background:var(--autocurb-soft)">Open</span></a>
+            <a class="app-row" href="#" data-app="autolabels"><span class="mark l">L</span><div><div class="an">AutoLabels</div><div class="ad">Protect · Label · Comply</div></div><span class="tag" style="margin-left:auto;color:var(--autolabels);background:var(--autolabels-soft)">Open</span></a>
+            <a class="app-row" href="#"><span class="mark f">F</span><div><div class="an">AutoFilm</div><div class="ad">Engage · Explain · Close</div></div><span class="tag cur">Current</span></a>
+            <a class="app-row locked" href="#"><span class="mark" style="background:var(--af-card-soft);color:var(--af-text-muted)">◇</span><div><div class="an">AutoFrame</div><div class="ad">Inventory media</div></div><span class="tag soon">Soon</span></a>
+            <div class="pop-foot">3 of 4 products active</div>
+            <div class="divider"></div>
+            <a class="menu-item" href="autofilm-settings.html"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>My profile &amp; availability</a>
+            <a class="menu-item danger" href="autofilm-login.html"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>Sign out</a>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div class="content">
+      <div class="qhead">
+        <div><h1>Templates</h1><p>Pick a proven flow, personalize it, and record — reps using templates send <b style="color:var(--success)">3× more video.</b></p></div>
+        <div class="cta"><button class="btn pri" data-toast="Opening template builder…"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New Template</button></div>
+      </div>
+      <div class="cats" id="cats">
+        <button class="cat on" data-cat="all">All</button>
+        <button class="cat" data-cat="sales">Sales</button>
+        <button class="cat" data-cat="service">Service</button>
+        <button class="cat" data-cat="followup">Follow-Up</button>
+        <button class="cat" data-cat="trade">Trade-In</button>
+        <button class="cat" data-cat="csi">Thank-You</button>
+      </div>
+      <div class="grid" id="grid"></div>
+    </div>
+    <nav class="mobnav">
+      <a href="autofilm-command.html"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5M5 9.5V21h14V9.5"/></svg>Home</a>
+      <a href="autofilm-queue.html"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>Queue</a>
+      <a href="#" class="on"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>Templates</a>
+      <a href="autofilm-group.html"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M1 21a8 8 0 0116 0"/></svg>Team</a>
+      <a href="autofilm-settings.html"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3"/></svg>Settings</a>
+    </nav>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+var CATLBL={sales:'Sales',service:'Service',followup:'Follow-Up',trade:'Trade-In',csi:'Thank-You'};
+var TPL=[
+ {cat:'sales',n:'Internet Lead — First Touch',d:'Warm 45-second intro to a new internet lead. Personal, no pressure, ends with a clear next step.',dur:'0:45',uses:412,up:true},
+ {cat:'sales',n:'Vehicle Walk-Around',d:'Showcase the top 3 features of the exact vehicle a customer is looking at.',dur:'1:10',uses:388,up:true},
+ {cat:'followup',n:'48-Hour Unsold Follow-Up',d:'Re-open the conversation with someone who visited but didn’t buy. No pressure, all help.',dur:'0:35',uses:274,up:true},
+ {cat:'service',n:'MPI Video Walkthrough',d:'Explain recommended repairs with transparency — why each item matters for safety.',dur:'1:20',uses:203,up:false},
+ {cat:'trade',n:'Trade-In Outreach',d:'Reach a past customer about their current vehicle. Market conditions + free appraisal.',dur:'0:40',uses:167,up:true},
+ {cat:'sales',n:'Appointment Reminder',d:'Friendly confirmation the day before — excited tone, makes them feel welcome.',dur:'0:30',uses:341,up:true},
+ {cat:'csi',n:'Thank-You & CSI',d:'Genuine gratitude after purchase, ask for a Google review, offer continued support.',dur:'0:35',uses:158,up:false},
+ {cat:'service',n:'Service Reminder',d:'Reach a customer due for their next service — friendly, easy to schedule.',dur:'0:30',uses:129,up:true},
+];
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+var cat='all',search='';
+function render(){
+ var list=TPL.filter(function(t){
+  if(cat!=='all'&&t.cat!==cat)return false;
+  if(search&&(t.n+' '+t.d).toLowerCase().indexOf(search)<0)return false;return true;
+ });
+ var cards=list.map(function(t){
+  return '<div class="tpl">'+
+   '<div class="thumb"><span class="catbadge">'+esc(CATLBL[t.cat])+'</span><span class="play"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></span><span class="dur">'+esc(t.dur)+'</span></div>'+
+   '<div class="body"><div class="tn">'+esc(t.n)+'</div><div class="td">'+esc(t.d)+'</div>'+
+    '<div class="meta"><span class="up">▲ '+t.uses+' sends</span><span>'+esc(t.dur)+' avg</span></div></div>'+
+   '<div class="foot"><button class="btn pri sm" data-toast="Recording from “'+esc(t.n)+'”…">Use Template</button><button class="btn sm" data-toast="Editing “'+esc(t.n)+'”…">Edit</button></div>'+
+  '</div>';
+ }).join('');
+ cards+='<button class="newtpl" data-toast="Opening template builder…"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><b>New Template</b></button>';
+ document.getElementById('grid').innerHTML=cards;
+}
+render();
+document.getElementById('cats').addEventListener('click',function(e){var b=e.target.closest('.cat');if(!b)return;this.querySelectorAll('.cat').forEach(function(x){x.classList.remove('on');});b.classList.add('on');cat=b.dataset.cat;render();});
+document.getElementById('q').addEventListener('input',function(){search=this.value.trim().toLowerCase();render();});
+function closeAllPops(x){document.querySelectorAll('.pop').forEach(function(p){if(p!==x)p.classList.remove('show');});}
+function toggle(btn,pop){btn.addEventListener('click',function(e){e.stopPropagation();var o=pop.classList.contains('show');closeAllPops();if(!o)pop.classList.add('show');});}
+toggle(document.getElementById('avatarBtn'),document.getElementById('profilePop'));
+toggle(document.getElementById('bellBtn'),document.getElementById('bellPop'));
+document.addEventListener('click',function(){closeAllPops();});
+var NOTIFS=[['var(--af-orange)','Sarah Williams watched the QX60 video 3×','4 min ago'],['var(--warning)','Service RO #12345 waiting for approval','18 min ago'],['var(--autocurb)','AutoCurb lead Amanda Rivera saved an offer','32 min ago'],['var(--autolabels)','AutoLabels passport ready for QX60','1 hr ago']];
+document.getElementById('bellPop').innerHTML='<div class="pop-h">Notifications</div>'+NOTIFS.map(function(n){return '<div class="notif"><span class="nd" style="background:'+n[0]+'"></span><div><p>'+esc(n[1])+'</p><small>'+esc(n[2])+'</small></div></div>';}).join('');
+document.body.addEventListener('click',function(e){var app=e.target.closest('[data-app]');if(app){e.preventDefault();toast('Opening '+(app.dataset.app==='autocurb'?'AutoCurb':'AutoLabels')+'… (suite handoff)');return;}var t=e.target.closest('[data-toast]');if(t){toast(t.dataset.toast);}});
+var toastT;function toast(m){var el=document.getElementById('toast');el.textContent=m;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(function(){el.classList.remove('show');},2000);}
+</script>
+</body>
+</html>
