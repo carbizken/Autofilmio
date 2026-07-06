@@ -91,7 +91,7 @@ export async function renderVinReel(opts) {
       const filepath = join(workDir, filename);
 
       try {
-        const res = await fetch(photos[i]);
+        const res = await fetch(photos[i], { signal: AbortSignal.timeout(15000) });
         if (res.ok) {
           const buf = Buffer.from(await res.arrayBuffer());
           await writeFile(filepath, buf);
@@ -168,6 +168,7 @@ async function generateTTS(text, outputPath) {
             style: 0.3,
           },
         }),
+        signal: AbortSignal.timeout(30000),
       });
 
       if (res.ok) {
@@ -192,6 +193,7 @@ async function generateTTS(text, outputPath) {
           voice: { languageCode: 'en-US', name: 'en-US-Neural2-J', ssmlGender: 'MALE' },
           audioConfig: { audioEncoding: 'MP3', speakingRate: 1.0, pitch: 0 },
         }),
+        signal: AbortSignal.timeout(30000),
       });
 
       if (res.ok) {
@@ -309,6 +311,7 @@ export async function uploadToMux(muxVideo, filePath) {
     method: 'PUT',
     headers: { 'Content-Type': 'video/mp4' },
     body: fileBuffer,
+    signal: AbortSignal.timeout(120000),
   });
 
   if (!res.ok) {

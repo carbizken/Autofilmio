@@ -18,6 +18,37 @@ const MAX_CONCURRENT_RENDERS = 2;
 let activeRenders = 0;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// ── Stale render sweep ───────────────────────────────────────
+// A crash (or lost instance) can leave a reel row stuck in
+// render_status='rendering' forever, so it never resolves for the poller
+// and never gets retried. ffmpeg jobs cap at ~2 min, so anything still
+// 'rendering' after 30 min is dead — mark it failed. Runs once on boot
+// and every 10 min thereafter.
+const STALE_RENDER_MS = 30 * 60 * 1000;
+async function sweepStaleRenders() {
+  try {
+    const cutoff = new Date(Date.now() - STALE_RENDER_MS).toISOString();
+    const { data, error } = await supabase
+      .from('videos')
+      .update({ render_status: 'failed', render_error: 'Render timed out (stale >30min)' })
+      .eq('render_status', 'rendering')
+      .lt('created_at', cutoff)
+      .select('id');
+    if (error) {
+      console.error('[vin-reels] Stale sweep error:', error.message);
+      return;
+    }
+    if (data?.length) {
+      console.log(`[vin-reels] Stale sweep: marked ${data.length} render(s) failed`);
+    }
+  } catch (e) {
+    console.error('[vin-reels] Stale sweep exception:', e.message);
+  }
+}
+sweepStaleRenders();
+const _staleSweepTimer = setInterval(sweepStaleRenders, 10 * 60 * 1000);
+if (_staleSweepTimer.unref) _staleSweepTimer.unref();
+
 /**
  * Look up a vehicle by VIN: local inventory first, NHTSA decode fallback.
  * Returns null when neither source knows the VIN.
@@ -33,7 +64,8 @@ async function lookupVehicle(rooftop_id, vin) {
   if (invItem) return invItem;
 
   const nhtsaRes = await fetch(
-    `https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvaluesextended/${vin}?format=json`
+    `https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvaluesextended/${vin}?format=json`,
+    { signal: AbortSignal.timeout(10000) }
   );
   const nhtsaData = await nhtsaRes.json();
   const r = nhtsaData.Results?.[0];
@@ -170,7 +202,8 @@ router.get('/decode/:vin', async (req, res) => {
 
     // Fallback to NHTSA
     const nhtsaRes = await fetch(
-      `https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvaluesextended/${vin}?format=json`
+      `https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvaluesextended/${vin}?format=json`,
+      { signal: AbortSignal.timeout(10000) }
     );
     const data = await nhtsaRes.json();
     const r = data.Results?.[0];
@@ -240,6 +273,7 @@ Requirements:
         max_tokens: 300,
         messages: [{ role: 'user', content: prompt }],
       }),
+      signal: AbortSignal.timeout(20000),
     });
 
     const data = await response.json();
@@ -403,13 +437,15 @@ router.post('/render', requireAuth(), async (req, res) => {
       status: 'rendering',
     });
 
-    // 5. Fire-and-forget background render (fully caught inside)
+    // 5. Fire-and-forget background render (fully caught inside; extra
+    //    .catch is belt-and-suspenders so an unexpected throw can't become
+    //    an unhandled rejection).
     runRenderJob(reelRow, vehicle, {
       style,
       photos,
       dealerName: rooftop?.name || '',
       brandColor: rooftop?.brand_color || '#D94F00',
-    });
+    }).catch(e => console.error(`[vin-reels] Render job ${reelRow.id} crashed:`, e.message));
 
   } catch (err) {
     console.error('[vin-reels] Render error:', err.message);

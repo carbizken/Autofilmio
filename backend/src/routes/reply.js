@@ -102,6 +102,10 @@ router.post('/:id/complete', async (req, res) => {
     const { id } = req.params;
     const { mux_playback_id, duration } = req.body;
 
+    if (!mux_playback_id && !duration) {
+      return res.status(400).json({ error: 'mux_playback_id or duration required' });
+    }
+
     const update = {};
     if (mux_playback_id) update.mux_playback_id = mux_playback_id;
     if (duration) update.duration = parseInt(duration);
