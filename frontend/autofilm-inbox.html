@@ -420,14 +420,20 @@ async function sendMessage() {
 // ── Polling (paused while tab is hidden) ───────────────────
 function visible() { return document.visibilityState === 'visible'; }
 
-setInterval(() => { if (visible()) loadConversations(); }, 15000);
-setInterval(() => { if (visible() && activePhone) loadThread(); }, 5000);
+const convPollTimer = setInterval(() => { if (visible()) loadConversations(); }, 15000);
+const threadPollTimer = setInterval(() => { if (visible() && activePhone) loadThread(); }, 5000);
 
 document.addEventListener('visibilitychange', () => {
   if (visible()) {
     loadConversations();
     if (activePhone) loadThread();
   }
+});
+
+// Stop polling when the page is unloaded/backgrounded via bfcache.
+window.addEventListener('pagehide', () => {
+  clearInterval(convPollTimer);
+  clearInterval(threadPollTimer);
 });
 
 loadConversations();

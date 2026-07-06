@@ -19,6 +19,12 @@ router.post('/checkout', requireAuth(), requireRole('admin', 'manager'), async (
   try {
     const { plan = 'standard', return_to } = req.body;
 
+    // Whitelist the plan so the charged price and the plan we persist can't
+    // diverge (an arbitrary plan string would otherwise land in metadata).
+    if (!['standard', 'bundle'].includes(plan)) {
+      return res.status(400).json({ error: `Invalid plan: ${plan}` });
+    }
+
     // Only allow absolute paths on our own origin (no '//host', no query) —
     // anything else falls back to the settings page.
     const returnPath = (typeof return_to === 'string' && /^\/(?!\/)[\w./-]*$/.test(return_to))

@@ -84,6 +84,9 @@ async function checkForNewLeads() {
 
     for (const lead of pendingLeads) {
       if (processedLeads.has(lead.id)) continue;
+      // Bound the in-memory dedupe set so a long-lived process can't leak
+      // memory. The DB status claim below is the real duplicate guard.
+      if (processedLeads.size > 5000) processedLeads.clear();
       processedLeads.add(lead.id);
 
       // Atomic claim: only one worker may take a pending lead. Prevents
@@ -96,10 +99,13 @@ async function checkForNewLeads() {
         .select('id');
       if (!claimed?.length) continue;
 
-      // Process in background (non-blocking)
-      processLead(lead, conn).catch(
-        err => console.error(`[bdc] Lead ${lead.id} error:`, err.message)
-      );
+      // Process in background (non-blocking). An unexpected throw must not
+      // leave the lead stuck in 'processing' forever — mark it failed so it
+      // isn't silently dropped and can be surfaced/retried operationally.
+      processLead(lead, conn).catch(err => {
+        console.error(`[bdc] Lead ${lead.id} error:`, err.message);
+        markLeadStatus(lead.id, 'failed').catch(() => {});
+      });
     }
   }
 }
@@ -190,7 +196,7 @@ async function processLead(lead, conn) {
   }
 
   // 5. Send SMS
-  const firstName = lead.customer_name.split(' ')[0];
+  const firstName = (lead.customer_name || 'there').split(' ')[0];
   const shortUrl = videoReady ? `${CF_WORKER_URL}/v/${shortCode}` : null;
 
   let smsBody;

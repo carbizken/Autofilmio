@@ -73,7 +73,7 @@ router.post('/generate', requireAuth(), async (req, res) => {
 
     // Create video record
     const shortCode = nanoid(8);
-    const { data: videoRow } = await supabase
+    const { data: videoRow, error: vidErr } = await supabase
       .from('videos')
       .insert({
         rep_id: req.rep.id,
@@ -85,6 +85,8 @@ router.post('/generate', requireAuth(), async (req, res) => {
       })
       .select()
       .single();
+
+    if (vidErr || !videoRow) throw new Error(`Failed to create video record: ${vidErr?.message || 'no row'}`);
 
     // Poll for completion in background
     pollVideoCompletion(result.video_id, videoRow.id, shortCode).catch(
@@ -141,7 +143,7 @@ router.post('/auto-send', requireAuth(), async (req, res) => {
     });
 
     const shortCode = nanoid(8);
-    const { data: videoRow } = await supabase
+    const { data: videoRow, error: vidErr } = await supabase
       .from('videos')
       .insert({
         rep_id: req.rep.id,
@@ -153,6 +155,8 @@ router.post('/auto-send', requireAuth(), async (req, res) => {
       })
       .select()
       .single();
+
+    if (vidErr || !videoRow) throw new Error(`Failed to create video record: ${vidErr?.message || 'no row'}`);
 
     // Poll + auto-send when ready
     pollAndSend(result.video_id, videoRow.id, shortCode, {

@@ -48,6 +48,7 @@ export async function stripeRequest(method, path, params = null) {
       'Authorization': `Bearer ${process.env.STRIPE_SECRET_KEY}`,
       'Stripe-Version': '2024-06-20',
     },
+    signal: AbortSignal.timeout(15000),
   };
 
   let url = `${API}${path}`;

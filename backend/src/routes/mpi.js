@@ -29,12 +29,15 @@ const CF_WORKER_URL = process.env.CF_WORKER_URL || 'https://links.autofilm.io';
 router.post('/', requireAuth(), async (req, res) => {
   try {
     const {
-      rep_id, rooftop_id, customer_name, customer_phone, customer_email,
+      rep_id, customer_name, customer_phone, customer_email,
       ro_number, vin, vehicle, mileage, items, total_estimate,
     } = req.body;
 
+    // Tenant is derived from the authenticated rep, never trusted from the
+    // body — otherwise a rep could plant an inspection under another rooftop.
+    const rooftop_id = req.rep.rooftop_id;
+
     if (!rep_id) return res.status(400).json({ error: 'rep_id required' });
-    if (!rooftop_id) return res.status(400).json({ error: 'rooftop_id required' });
     if (!customer_name) return res.status(400).json({ error: 'customer_name required' });
 
     // 1. Create Mux upload for the inspection video
@@ -122,6 +125,11 @@ router.post('/:id/send', requireAuth(), async (req, res) => {
       .single();
 
     if (error || !inspection) {
+      return res.status(404).json({ error: 'Inspection not found' });
+    }
+
+    // Tenant isolation: a rep may only send inspections from their own rooftop
+    if (inspection.rooftop_id !== req.rep.rooftop_id) {
       return res.status(404).json({ error: 'Inspection not found' });
     }
 

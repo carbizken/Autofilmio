@@ -41,6 +41,7 @@ export async function createAvatar(repId, trainingVideoUrl, repName) {
       training_video_url: trainingVideoUrl,
       avatar_type: 'talking_photo',
     }),
+    signal: AbortSignal.timeout(20000),
   });
 
   if (!res.ok) {
@@ -106,6 +107,7 @@ export async function generateAvatarVideo(opts) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(30000),
   });
 
   if (!res.ok) {
@@ -135,6 +137,7 @@ export async function checkVideoStatus(videoId) {
 
   const res = await fetch(`${HEYGEN_API}/v1/video_status.get?video_id=${videoId}`, {
     headers: { 'X-Api-Key': process.env.HEYGEN_API_KEY },
+    signal: AbortSignal.timeout(15000),
   });
 
   if (!res.ok) {
@@ -190,6 +193,7 @@ export async function generateAvatarScript(opts) {
         max_tokens: 200,
         messages: [{ role: 'user', content: `${scenarios[scenario] || scenarios.welcome}\n\nRequirements:\n- Natural, conversational tone\n- First person (the rep is speaking)\n- No hashtags or emojis\n- Return ONLY the spoken script, no stage directions` }],
       }),
+      signal: AbortSignal.timeout(20000),
     });
 
     const data = await res.json();

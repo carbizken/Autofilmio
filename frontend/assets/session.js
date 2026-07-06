@@ -41,6 +41,12 @@
   function clear() {
     localStorage.removeItem(KEY);
     localStorage.removeItem(REP_KEY);
+    // Clear derived ids and the AppSwitcher entitlement caches so a signed-out
+    // browser can't leak a previous rep's rooftop or unlocked-product list.
+    localStorage.removeItem('af_rooftop_id');
+    localStorage.removeItem('af_rep_id');
+    localStorage.removeItem('af_products');
+    try { sessionStorage.removeItem('afsw_entitlements'); } catch { /* private mode */ }
   }
 
   function isExpired(session) {
@@ -94,6 +100,16 @@
       if (fresh?.access_token) {
         headers['Authorization'] = `Bearer ${fresh.access_token}`;
         res = await fetch(url, { ...opts, headers });
+      }
+    }
+
+    // Refresh failed (or there was never a session) → the token is dead and
+    // won't recover. Redirect to login cleanly instead of letting the page
+    // silently spin on repeated 401s.
+    if (res.status === 401 && !get()?.access_token) {
+      clear();
+      if (!/autofilm-login\.html$/.test(location.pathname)) {
+        location.replace('autofilm-login.html');
       }
     }
     return res;

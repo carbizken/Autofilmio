@@ -1,7 +1,20 @@
 import express from 'express';
+import crypto from 'crypto';
 import { supabase } from '../lib/supabase.js';
 
 const router = express.Router();
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Constant-time string comparison (both must be strings). */
+function safeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ba, bb);
+}
 
 /**
  * POST /api/onboard
@@ -27,6 +40,18 @@ router.post('/', async (req, res) => {
     if (!website_url) return res.status(400).json({ error: 'website_url required' });
     if (!admin_email) return res.status(400).json({ error: 'admin_email required' });
     if (!admin_name) return res.status(400).json({ error: 'admin_name required' });
+    if (typeof admin_email !== 'string' || !EMAIL_RE.test(admin_email) || admin_email.length > 254) {
+      return res.status(400).json({ error: 'Invalid admin_email' });
+    }
+    if (typeof admin_name !== 'string' || admin_name.length > 120) {
+      return res.status(400).json({ error: 'Invalid admin_name' });
+    }
+    if (dealer_name !== undefined && (typeof dealer_name !== 'string' || dealer_name.length > 120)) {
+      return res.status(400).json({ error: 'Invalid dealer_name' });
+    }
+    if (typeof website_url !== 'string' || website_url.length > 2048) {
+      return res.status(400).json({ error: 'Invalid website_url' });
+    }
 
     // Check if email already exists
     const { data: existingRep } = await supabase
@@ -123,6 +148,7 @@ router.post('/', async (req, res) => {
 router.post('/:rooftop_id/confirm', async (req, res) => {
   try {
     const { rooftop_id } = req.params;
+    if (!UUID_RE.test(rooftop_id)) return res.status(400).json({ error: 'Invalid rooftop_id' });
 
     if (!(await checkOnboardToken(rooftop_id, req))) {
       return res.status(403).json({ error: 'Invalid or expired onboarding token' });
@@ -172,11 +198,19 @@ router.post('/:rooftop_id/invite', async (req, res) => {
     const { rooftop_id } = req.params;
     const { name, email, role = 'sales', department = 'sales' } = req.body;
 
+    if (!UUID_RE.test(rooftop_id)) return res.status(400).json({ error: 'Invalid rooftop_id' });
+
     if (!(await checkOnboardToken(rooftop_id, req))) {
       return res.status(403).json({ error: 'Invalid or expired onboarding token' });
     }
 
     if (!name || !email) return res.status(400).json({ error: 'name and email required' });
+    if (typeof email !== 'string' || !EMAIL_RE.test(email) || email.length > 254) {
+      return res.status(400).json({ error: 'Invalid email' });
+    }
+    if (typeof name !== 'string' || name.length > 120) {
+      return res.status(400).json({ error: 'Invalid name' });
+    }
 
     const { data: rep, error } = await supabase
       .from('reps')
@@ -208,13 +242,13 @@ router.post('/:rooftop_id/invite', async (req, res) => {
  */
 async function checkOnboardToken(rooftopId, req) {
   const token = req.headers['x-onboard-token'] || req.body?.onboard_token;
-  if (!token) return false;
+  if (!token || typeof token !== 'string') return false;
   const { data } = await supabase
     .from('rooftops')
     .select('onboard_token, onboarded')
     .eq('id', rooftopId)
     .single();
-  return !!data && data.onboard_token === token;
+  return !!data && !!data.onboard_token && safeEqual(data.onboard_token, token);
 }
 
 // ── SCRAPER ─────────────────────────────────────────────────

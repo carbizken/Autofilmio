@@ -51,7 +51,7 @@ router.post('/webhook/inbound', express.urlencoded({ extended: true }), verifyTw
       .eq('customer_phone', From)
       .order('sent_at', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     // Store the inbound message
     const { data: msg } = await supabase

@@ -31,6 +31,11 @@ router.post('/', requireAuth(), async (req, res) => {
 
     if (error || !video) return res.status(404).json({ error: 'Video not found' });
 
+    // Tenant isolation: a rep may only distribute videos from their rooftop
+    if (video.rooftop_id !== req.rep.rooftop_id) {
+      return res.status(404).json({ error: 'Video not found' });
+    }
+
     const jobs = [];
 
     for (const platform of platforms) {
@@ -75,6 +80,7 @@ router.get('/status', requireAuth(), async (req, res) => {
       .from('distribution_jobs')
       .select('*')
       .eq('video_id', video_id)
+      .eq('rooftop_id', req.rep.rooftop_id)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
@@ -153,6 +159,7 @@ async function distributeYouTube(jobId, videoUrl, title, description, tags) {
         selfDeclaredMadeForKids: false,
       },
     }),
+    signal: AbortSignal.timeout(30000),
   });
 
   if (res.ok) {
@@ -183,6 +190,7 @@ async function distributeFacebook(jobId, videoUrl, title, description) {
       title,
       description,
     }),
+    signal: AbortSignal.timeout(30000),
   });
 
   if (res.ok) {

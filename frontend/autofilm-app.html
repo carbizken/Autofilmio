@@ -3495,10 +3495,20 @@ async function loadLeaderboard(){
 }
 
 // Poll watch stats every 30s while home or tracking is visible
-setInterval(function(){
+var watchPollTimer = setInterval(function(){
   if(document.visibilityState === 'hidden') return;
   if(curPage === 'tracking' || curPage === 'home') loadVideos();
 }, 30000);
+
+// Release the camera/mic, stop timers, and halt polling when the page is
+// hidden or unloaded — a live camera light left on is a real bug.
+window.addEventListener('pagehide', function(){
+  try { if(recorder && recorder.state !== 'inactive') recorder.stop(); } catch(e){}
+  if(camStream){ camStream.getTracks().forEach(function(t){ t.stop(); }); camStream=null; }
+  if(recTimer){ clearInterval(recTimer); recTimer=null; }
+  if(gifTimer){ clearInterval(gifTimer); gifTimer=null; }
+  clearInterval(watchPollTimer);
+});
 
 document.addEventListener('DOMContentLoaded', function(){
   refreshTradeLink();
@@ -3758,7 +3768,7 @@ function clearAll(){
 
 // CAMERA
 var camStream=null, recorder=null, chunks=[], blob=null;
-var recSecs=0, recTimer=null, recPaused=false;
+var recSecs=0, recTimer=null, recPaused=false, gifTimer=null;
 var tpOn=false, hdOn=false, camMode='selfie', facing='user';
 var lastScript='', secOpts={pw:false,exp:false,cap:false};
 var schedOn=false, viaMode='sms', musicMode='upbeat';
@@ -3786,6 +3796,7 @@ async function startCamera(){
 function stopCamBack(){
   if(camStream){ camStream.getTracks().forEach(function(t){t.stop();}); camStream=null; }
   if(recTimer){ clearInterval(recTimer); recTimer=null; }
+  if(gifTimer){ clearInterval(gifTimer); gifTimer=null; }
   if(recorder&&recorder.state!=='inactive') recorder.stop();
   document.getElementById('camVid').style.display='none';
   document.getElementById('camIdle').style.display='flex';
@@ -3875,13 +3886,14 @@ function buildGIF(){
   var canvas=document.getElementById('gifCv');
   var ctx=canvas.getContext('2d');
   var strip=document.getElementById('gifStrip');
+  clearInterval(gifTimer); gifTimer=null;   // tear down any prior preview loop
   function init(){
     canvas.width=v.videoWidth||320; canvas.height=56;
     strip.style.display='block';
     var frames=[],fi=0;
     var total=Math.min(18,Math.max(4,Math.floor((v.duration||recSecs)*2)));
     function cap(idx){
-      if(idx>=total){ var ci=0; setInterval(function(){ if(frames[ci%frames.length]) ctx.drawImage(frames[ci%frames.length],0,0,canvas.width,canvas.height); ci++; },100); return; }
+      if(idx>=total){ var ci=0; clearInterval(gifTimer); gifTimer=setInterval(function(){ if(frames[ci%frames.length]) ctx.drawImage(frames[ci%frames.length],0,0,canvas.width,canvas.height); ci++; },100); return; }
       v.currentTime=(idx/total)*(v.duration||recSecs);
       v.addEventListener('seeked',function s(){ v.removeEventListener('seeked',s); var fc=document.createElement('canvas'); fc.width=canvas.width; fc.height=canvas.height; fc.getContext('2d').drawImage(v,0,0,fc.width,fc.height); frames.push(fc); cap(idx+1); },{once:true});
     }
@@ -4015,7 +4027,7 @@ function setTradeLabel(el, label){
 }
 
 function cpTradeLink(){
-  navigator.clipboard.writeText(buildTradeLink()).then(function(){
+  copyText(buildTradeLink()).then(function(){
     toast('✓','Trade link copied!','rgba(16,185,129,.12)');
   });
 }
@@ -4177,10 +4189,11 @@ function buildSmsTemplate(name, veh, videoLink, tradeLink, tradeLabel){
       + 'Watch: ' + videoLink;
   }
 
-  // Render with orange highlights on the links
-  var display = msg
-    .replace(videoLink, '<em>' + videoLink + '</em>')
-    .replace(tradeLink || '___NONE___', '<em>' + (tradeLink||'') + '</em>');
+  // Render with orange highlights on the links. Escape the whole message
+  // first (it embeds customer name / vehicle), then wrap the escaped links.
+  var display = esc(msg)
+    .replace(esc(videoLink), '<em>' + esc(videoLink) + '</em>')
+    .replace(tradeLink ? esc(tradeLink) : '___NONE___', '<em>' + (tradeLink ? esc(tradeLink) : '') + '</em>');
   document.getElementById('svSmsBubble').innerHTML = display;
 
   // Character / segment counter
@@ -4196,7 +4209,7 @@ function buildSmsTemplate(name, veh, videoLink, tradeLink, tradeLabel){
 }
 
 function cpSms(){
-  navigator.clipboard.writeText(window._smsText || '').then(function(){
+  copyText(window._smsText || '').then(function(){
     toast('✓','SMS copied — paste into your texting app','rgba(16,185,129,.12)');
   });
 }
@@ -4209,13 +4222,13 @@ function openNativeSms(){
 }
 
 function cpLink(){
-  navigator.clipboard.writeText(
+  copyText(
     document.getElementById('svLink').textContent
   ).then(function(){ toast('✓','Video link copied!','rgba(16,185,129,.12)'); });
 }
 
 function cpTradeShort(){
-  navigator.clipboard.writeText(
+  copyText(
     document.getElementById('svTradeLink').textContent
   ).then(function(){ toast('✓','Trade link copied!','rgba(255,69,0,.12)'); });
 }
@@ -4434,7 +4447,7 @@ function renderTrackList(data){
   }).join('');
 }
 function cpTrackLink(code){
-  navigator.clipboard.writeText('https://links.autofilm.io/v/'+code).then(function(){ toast('🔗','Video link copied!','rgba(56,189,248,.12)'); });
+  copyText('https://links.autofilm.io/v/'+code).then(function(){ toast('🔗','Video link copied!','rgba(56,189,248,.12)'); });
 }
 function renderLeader(){
   var el=document.getElementById('lboard');
@@ -4485,6 +4498,27 @@ function toast(ico,msg,bg){
 
 // UTILS
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+// Clipboard copy with a fallback for non-secure contexts / older in-app
+// webviews where navigator.clipboard is unavailable or blocked. Always
+// returns a Promise so callers can chain a success toast.
+function legacyCopy(text){
+  try{
+    var ta=document.createElement('textarea');
+    ta.value=text; ta.setAttribute('readonly','');
+    ta.style.position='fixed'; ta.style.top='-1000px'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0,ta.value.length);
+    var ok=document.execCommand('copy'); document.body.removeChild(ta);
+    return ok;
+  }catch(e){ return false; }
+}
+function copyText(text){
+  text=text==null?'':String(text);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text).catch(function(){ return legacyCopy(text); });
+  }
+  return Promise.resolve(legacyCopy(text));
+}
 function ago(ts){
   var s=Math.floor((Date.now()-ts)/1000);
   if(s<60) return 'just now';
