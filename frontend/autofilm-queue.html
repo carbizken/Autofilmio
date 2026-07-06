@@ -28,7 +28,9 @@ svg{display:block}
 
 /* sidebar (shared with command center) */
 .side{background:var(--af-bg-soft);border-right:1px solid var(--af-border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
-.brand{display:flex;align-items:center;gap:11px;padding:20px 20px 18px}
+.brand{display:flex;flex-direction:column;align-items:flex-start;gap:0;padding:22px 20px 18px}
+.wm{font-size:25px;font-weight:800;letter-spacing:-.02em;color:var(--af-text);line-height:1}.wm span{color:var(--af-orange)}.wm-mini{display:none;font-size:20px;font-weight:800;letter-spacing:-.02em;color:var(--af-text);line-height:1}.wm-mini span{color:var(--af-orange)}.wm-tag{font-size:10px;font-weight:600;color:var(--af-text-muted);letter-spacing:.04em;margin-top:3px}
+
 .logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--af-orange),var(--af-orange-hover));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 18px rgba(249,115,22,.35)}
 .brand .nm{font-weight:800;font-size:16px;letter-spacing:.02em;color:#fff;line-height:1.1}
 .brand .tg{font-size:9.5px;font-weight:600;color:var(--af-orange);letter-spacing:.05em;margin-top:2px}
@@ -168,8 +170,8 @@ tbody tr.sel{background:rgba(249,115,22,.06)}
 
 @media (max-width:900px){
   .app{grid-template-columns:74px 1fr}
-  .brand .nm,.brand .tg,.nav a span,.nav a .badge,.side-foot .side-card>div,.collapse span{display:none}
-  .brand{justify-content:center;padding:18px 0}.nav a{justify-content:center;padding:10px}.nav a.on::before{display:none}.side-card{justify-content:center}
+  .wm,.wm-tag,.nav a span,.nav a .badge,.side-foot .side-card>div,.collapse span{display:none}
+  .brand{align-items:center;padding:18px 0}.wm-mini{display:block}.nav a{justify-content:center;padding:10px}.nav a.on::before{display:none}.side-card{justify-content:center}
   .search{min-width:0;width:40px}.search input{display:none}.invite-txt,.pill.eco .txt{display:none}
 }
 @media (max-width:680px){
@@ -189,8 +191,9 @@ tbody tr.sel{background:rgba(249,115,22,.06)}
 
   <aside class="side">
     <div class="brand">
-      <div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>
-      <div><div class="nm">AUTOFILM</div><div class="tg">Engage. Explain. Close.</div></div>
+      <div class="wm">auto<span>(FILM)</span></div>
+      <div class="wm-mini">a<span>(F)</span></div>
+      <div class="wm-tag">Engage. Explain. Close.</div>
     </div>
     <nav class="nav">
       <a href="autofilm-command.html"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg><span>Home</span></a>
