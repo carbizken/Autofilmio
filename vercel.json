@@ -40,6 +40,10 @@
       "dest": "/frontend/autofilm-login.html"
     },
     {
+      "src": "/sso",
+      "dest": "/frontend/autofilm-sso.html"
+    },
+    {
       "src": "/settings",
       "dest": "/frontend/autofilm-settings.html"
     },

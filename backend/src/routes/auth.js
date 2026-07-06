@@ -2,6 +2,7 @@ import express from 'express';
 import crypto from 'crypto';
 import { supabase } from '../lib/supabase.js';
 import { requireAuth, requireRole } from '../lib/auth.js';
+import { verifyJwt } from '../lib/tenant.js';
 
 const router = express.Router();
 
@@ -209,6 +210,104 @@ router.post('/refresh', async (req, res) => {
   } catch (err) {
     console.error('[auth] Refresh error:', err.message);
     res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/auth/sso
+ * AutoCurb → AutoFilm suite handoff. AutoCurb signs a short-lived HS256 JWT
+ * with the shared AUTOCURB_JWT_SECRET; we verify it, provision (or look up)
+ * the rooftop keyed to the AutoCurb tenant and the rep by email, then mint a
+ * real AutoFilm session so the rest of the app works unchanged.
+ * Body/query: { t: <jwt> }
+ * Expected claims: { tenant_id, rooftop_id, rep_id, email, name, plan?,
+ *                    dealer?, autofilm_entitled?, iat, exp }
+ */
+router.post('/sso', async (req, res) => {
+  try {
+    const token = req.body?.t || req.query?.t;
+    if (!token) return res.status(400).json({ error: 'Missing handoff token' });
+
+    const secret = process.env.AUTOCURB_JWT_SECRET;
+    if (!secret) return res.status(503).json({ error: 'Suite SSO is not configured' });
+
+    const payload = await verifyJwt(token, secret);
+    if (!payload || !isEmail(payload.email)) {
+      return res.status(401).json({ error: 'Invalid or expired handoff link' });
+    }
+    // AutoCurb asserts entitlement in the signed token; honor an explicit denial.
+    if (payload.autofilm_entitled === false) {
+      return res.status(403).json({ error: 'This dealership is not entitled to AutoFilm' });
+    }
+
+    const email = String(payload.email).toLowerCase();
+    const tenantId = payload.tenant_id ? String(payload.tenant_id) : null;
+    const plan = ['bundle', 'standard'].includes(payload.plan) ? payload.plan : 'standard';
+    const dealerName = (payload.dealer || payload.name || 'Dealership').toString().slice(0, 120);
+
+    // 1. Rooftop — one per AutoCurb tenant, provisioned on first switch.
+    let rooftop = null;
+    if (tenantId) {
+      const { data } = await supabase
+        .from('rooftops').select('id').eq('autocurb_tenant_id', tenantId).maybeSingle();
+      rooftop = data;
+    }
+    if (rooftop) {
+      await supabase.from('rooftops')
+        .update({ plan, subscription_status: 'active', active: true })
+        .eq('id', rooftop.id);
+    } else {
+      const { data: created, error: rErr } = await supabase.from('rooftops').insert({
+        name: dealerName, plan, subscription_status: 'active', active: true,
+        autocurb_tenant_id: tenantId,
+      }).select('id').single();
+      if (rErr) throw rErr;
+      rooftop = created;
+    }
+
+    // 2. Auth user + rep, keyed by email. createUser is idempotent-ish.
+    const { error: cuErr } = await supabase.auth.admin.createUser({ email, email_confirm: true });
+    if (cuErr && !/already|registered|exists/i.test(cuErr.message)) throw cuErr;
+
+    let { data: rep } = await supabase.from('reps')
+      .select('id, rooftop_id, name, nickname, role, department, photo_url')
+      .eq('email', email).maybeSingle();
+    if (!rep) {
+      const { data: newRep, error: repErr } = await supabase.from('reps').insert({
+        rooftop_id: rooftop.id,
+        email,
+        name: (payload.name || 'Dealer').toString().slice(0, 120),
+        role: 'admin',
+        onboarded: true,
+        active: true,
+      }).select('id, rooftop_id, name, nickname, role, department, photo_url').single();
+      if (repErr) throw repErr;
+      rep = newRep;
+    }
+
+    // 3. Mint a real AutoFilm session (magic-link exchange, no password).
+    const { data: linkData, error: linkErr } =
+      await supabase.auth.admin.generateLink({ type: 'magiclink', email });
+    if (linkErr) throw linkErr;
+    const tokenHash = linkData?.properties?.hashed_token;
+    if (!tokenHash) throw new Error('Could not establish a session');
+    const { data: verified, error: vErr } =
+      await supabase.auth.verifyOtp({ type: 'email', token_hash: tokenHash });
+    if (vErr || !verified?.session) throw (vErr || new Error('Session exchange failed'));
+
+    console.log(`[auth] SSO handoff from AutoCurb: ${email} → rooftop ${rooftop.id}`);
+    res.json({
+      success: true,
+      session: {
+        access_token: verified.session.access_token,
+        refresh_token: verified.session.refresh_token,
+        expires_at: verified.session.expires_at,
+      },
+      rep,
+    });
+  } catch (err) {
+    console.error('[auth] SSO error:', err.message);
+    res.status(500).json({ error: 'Sign-in failed' });
   }
 });
 
