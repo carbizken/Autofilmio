@@ -19,12 +19,18 @@ router.get('/:code/ping', async (req, res) => {
   try {
     const { code } = req.params;
     const pct = Math.min(100, Math.max(0, parseInt(req.query.pct) || 0));
-    const watchSeconds = parseInt(req.query.s) || 0;
+    const watchSeconds = Math.max(0, parseInt(req.query.s) || 0);   // furthest playback position
+    const engagedSeconds = Math.max(0, parseInt(req.query.es) || 0); // real seconds watched this session
+    const duration = Math.max(0, parseInt(req.query.dur) || 0);
+    // Discrete interaction type: 'heartbeat' (default watch ping) or a CTA
+    // like trade_tap / appt_booked / reply / call / cta_click / play / complete.
+    const eventType = String(req.query.e || 'heartbeat').slice(0, 32).replace(/[^a-z0-9_]/gi, '') || 'heartbeat';
+    const label = req.query.label ? String(req.query.label).slice(0, 120) : null;
 
     // 1. Find video by short_code
     const { data: videoRow, error: videoErr } = await supabase
       .from('videos')
-      .select('id, rep_id, rooftop_id, customer_name, customer_phone, customer_email, vehicle, short_code, max_watch_pct, reps(push_subscription, name, nickname)')
+      .select('id, rep_id, rooftop_id, customer_name, customer_phone, customer_email, vehicle, short_code, max_watch_pct, engaged_seconds, duration, completed_at, reps(push_subscription, name, nickname)')
       .eq('short_code', code)
       .single();
 
@@ -33,14 +39,44 @@ router.get('/:code/ping', async (req, res) => {
       return res.json({ ok: true, found: false });
     }
 
-    // 2. Insert watch event
+    // 2. Insert the interaction/watch event into the unified timeline
     await supabase.from('watch_events').insert({
-      video_id:      videoRow.id,
-      watch_pct:     pct,
-      watch_seconds: watchSeconds,
-      ip:            req.headers['x-forwarded-for'] || req.ip,
-      user_agent:    req.headers['user-agent'],
+      video_id:        videoRow.id,
+      event_type:      eventType,
+      watch_pct:       pct,
+      watch_seconds:   watchSeconds,
+      engaged_seconds: engagedSeconds || null,
+      meta:            label ? { label } : null,
+      ip:              req.headers['x-forwarded-for'] || req.ip,
+      user_agent:      req.headers['user-agent'],
     });
+
+    // 2b. Roll up to-the-second watch totals on the video. engaged_seconds
+    // is monotonic per session (client sends cumulative), so only advance it.
+    const videoUpdate = {};
+    if (engagedSeconds > (videoRow.engaged_seconds || 0)) videoUpdate.engaged_seconds = engagedSeconds;
+    if (duration && !videoRow.duration) videoUpdate.duration = duration;
+    if (eventType === 'play') videoUpdate.play_count = (videoRow.play_count || 0) + 1;
+    if (pct >= 98 && !videoRow.completed_at) videoUpdate.completed_at = new Date().toISOString();
+    if (Object.keys(videoUpdate).length) {
+      await supabase.from('videos').update(videoUpdate).eq('id', videoRow.id);
+    }
+
+    // Discrete CTA interactions don't drive the watch-milestone logic.
+    if (eventType !== 'heartbeat' && eventType !== 'complete') {
+      console.log(`[ping] ${code} interaction: ${eventType}${label ? ' (' + label + ')' : ''}`);
+      // Fire the CRM/workflow "engaged" signal for high-intent taps.
+      if ((eventType === 'trade_tap' || eventType === 'appt_booked') && videoRow.rooftop_id) {
+        syncVideoEvent(videoRow.rooftop_id, {
+          action: eventType,
+          video_id: videoRow.id,
+          short_code: code,
+          customer_phone: videoRow.customer_phone,
+          customer_email: videoRow.customer_email,
+        }).catch(e => console.error('[ping] CRM sync error:', e.message));
+      }
+      return res.json({ ok: true, event: eventType });
+    }
 
     // 3. Check if we've crossed a milestone. A single ping can jump past
     // several at once (the viewer seeks ahead, or pings were dropped), so

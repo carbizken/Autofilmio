@@ -90,7 +90,7 @@ router.get('/videos', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('videos')
-      .select('id, short_code, customer_name, vehicle, sent_at, last_watched_at, max_watch_pct, created_at, mux_playback_id')
+      .select('id, short_code, customer_name, vehicle, sent_at, last_watched_at, max_watch_pct, engaged_seconds, duration, play_count, completed_at, created_at, mux_playback_id')
       .eq('rep_id', req.rep.id)
       .order('created_at', { ascending: false })
       .limit(50);
@@ -165,6 +165,76 @@ router.get('/heatmap', async (req, res) => {
     res.json({ video_id, buckets, total_viewers, avg_max_pct });
   } catch (err) {
     console.error('[dashboard] Heatmap error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/dashboard/interactions?video_id=<uuid>[&limit=200]
+ * The full customer-interaction timeline for one video: every watch
+ * heartbeat and discrete tap (trade, appointment, reply, call, CTA),
+ * newest first, plus a to-the-second watch summary.
+ */
+router.get('/interactions', async (req, res) => {
+  try {
+    const { video_id } = req.query;
+    const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 200));
+    if (!video_id) return res.status(400).json({ error: 'video_id is required' });
+    if (!UUID_RE.test(video_id)) return res.status(400).json({ error: 'Invalid video_id' });
+
+    // Ownership: rep's own video, or same rooftop for admin/manager.
+    const { data: video, error: vErr } = await supabase
+      .from('videos')
+      .select('id, rep_id, rooftop_id, customer_name, customer_phone, vehicle, short_code, sent_at, max_watch_pct, engaged_seconds, duration, play_count, completed_at, last_watched_at')
+      .eq('id', video_id)
+      .maybeSingle();
+    if (vErr) throw vErr;
+    if (!video) return res.status(404).json({ error: 'Video not found' });
+
+    const isOwner = video.rep_id === req.rep.id;
+    const isManager = ['admin', 'manager'].includes(req.rep.role)
+      && video.rooftop_id === req.rep.rooftop_id;
+    if (!isOwner && !isManager) return res.status(403).json({ error: 'Access denied' });
+
+    // Full timeline. Discrete interactions matter most, so surface them all;
+    // heartbeats are capped by the limit (newest first).
+    const { data: events, error: eErr } = await supabase
+      .from('watch_events')
+      .select('event_type, watch_pct, watch_seconds, engaged_seconds, meta, created_at')
+      .eq('video_id', video_id)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (eErr) throw eErr;
+
+    const interactions = (events || []).filter(e => e.event_type && e.event_type !== 'heartbeat');
+    const engaged = video.engaged_seconds || 0;
+    const duration = video.duration || 0;
+
+    res.json({
+      video: {
+        id: video.id,
+        short_code: video.short_code,
+        customer_name: video.customer_name,
+        customer_phone: video.customer_phone,
+        vehicle: video.vehicle,
+        sent_at: video.sent_at,
+      },
+      summary: {
+        max_watch_pct: video.max_watch_pct || 0,
+        engaged_seconds: engaged,          // seconds actually watched
+        duration_seconds: duration,        // video length
+        completion_pct: duration ? Math.min(100, Math.round((engaged / duration) * 100)) : (video.max_watch_pct || 0),
+        play_count: video.play_count || 0,
+        completed: !!video.completed_at,
+        completed_at: video.completed_at,
+        last_watched_at: video.last_watched_at,
+        interaction_count: interactions.length,
+      },
+      interactions,     // discrete taps only (trade/appt/reply/call/cta)
+      timeline: events || [], // full stream incl. heartbeats, newest first
+    });
+  } catch (err) {
+    console.error('[dashboard] Interactions error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

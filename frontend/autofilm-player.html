@@ -1421,8 +1421,10 @@ function loadVideo(){
     return;
   }
 
+  var hasPlayed = false;
   vidEl.addEventListener('play', function(){
-    sendPing();
+    startEngagedClock();
+    if(!hasPlayed){ hasPlayed = true; sendPing(true, 'play'); } else { sendPing(); }
     clearInterval(watchTimer);
     watchTimer = setInterval(function(){
       if(!vidEl.duration) return;
@@ -1431,12 +1433,13 @@ function loadVideo(){
       sendPing();
     }, 5000);
   });
-  vidEl.addEventListener('pause', function(){ clearInterval(watchTimer); sendPing(); });
+  vidEl.addEventListener('pause', function(){ clearInterval(watchTimer); stopEngagedClock(); sendPing(); });
   vidEl.addEventListener('ended', function(){
     clearInterval(watchTimer);
+    stopEngagedClock();
     watchedPct = 100;
     document.getElementById('progressFill').style.width = '100%';
-    sendPing(true);
+    sendPing(true, 'complete');
   });
 }
 loadVideo();
@@ -1454,16 +1457,41 @@ function playVideo(){
 // forced sends (ended).
 var lastPingAt = 0;
 var lastPingPct = -1;
-function sendPing(force){
-  if(!vidCode) return;
-  var now = Date.now();
-  if(!force && now - lastPingAt < 4000 && watchedPct === lastPingPct) return;
-  lastPingAt = now; lastPingPct = watchedPct;
-  var secs = vidEl && vidEl.currentTime ? Math.round(vidEl.currentTime) : 0;
-  fetch(AF_API + '/v/' + encodeURIComponent(vidCode) + '/ping?pct=' + watchedPct + '&s=' + secs)
-    .catch(function(){});
+var engagedSecs = 0;      // real seconds watched — counted once per second while playing
+var engagedTimer = null;
+function startEngagedClock(){
+  clearInterval(engagedTimer);
+  engagedTimer = setInterval(function(){
+    if(vidEl && !vidEl.paused && !vidEl.ended) engagedSecs++;
+  }, 1000);
 }
-function pingEvent(){ sendPing(); }  // legacy call sites (trade tap etc.)
+function stopEngagedClock(){ clearInterval(engagedTimer); }
+
+// One endpoint carries both watch heartbeats and discrete interactions.
+// pct/s = furthest position, es = seconds actually watched, e = event type.
+function sendPing(force, eventType, label){
+  if(!vidCode) return;
+  var isEvent = eventType && eventType !== 'heartbeat';
+  var now = Date.now();
+  if(!force && !isEvent && now - lastPingAt < 4000 && watchedPct === lastPingPct) return;
+  if(!isEvent){ lastPingAt = now; lastPingPct = watchedPct; }
+  var secs = vidEl && vidEl.currentTime ? Math.round(vidEl.currentTime) : 0;
+  var dur  = vidEl && vidEl.duration ? Math.round(vidEl.duration) : 0;
+  var q = 'pct=' + watchedPct + '&s=' + secs + '&es=' + engagedSecs + '&dur=' + dur;
+  if(isEvent) q += '&e=' + encodeURIComponent(eventType);
+  if(label)   q += '&label=' + encodeURIComponent(label);
+  // keepalive so the final flush survives the page closing.
+  fetch(AF_API + '/v/' + encodeURIComponent(vidCode) + '/ping?' + q, { keepalive: true }).catch(function(){});
+}
+// Record a discrete customer interaction (trade tap, appointment, CTA…).
+function pingEvent(type, label){ sendPing(true, type || 'cta_click', label); }
+
+// Flush the session (engaged seconds + position) when the tab is hidden or
+// closed, so a partial watch isn't lost.
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState === 'hidden'){ stopEngagedClock(); sendPing(true); }
+  else if(vidEl && !vidEl.paused && !vidEl.ended){ startEngagedClock(); }
+});
 
 // ═══════════════════════════════════════════════════════════════
 //  TRADE
@@ -1685,6 +1713,7 @@ if(repId){
   document.getElementById('callLabel').textContent = 'Video Chat with ' + repDisplay;
 }
 function startLiveCall(){
+  pingEvent('call');
   var p = new URLSearchParams({ rep_id: repId, caller: 'player' });
   if(custName) p.set('name', custName);
   window.open('autofilm-call.html?' + p.toString(), 'af-call', 'width=480,height=720');
@@ -1694,6 +1723,7 @@ function startLiveCall(){
 var replyStream = null, replyRecorder = null, replyChunks = [], replyTimerIv = null, replyStart = 0;
 
 async function openReply(){
+  pingEvent('reply');
   var modal = document.getElementById('replyModal');
   modal.style.display = 'flex';
   try {
