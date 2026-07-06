@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoFilm — Video Queue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+  --af-bg:#0B0D12; --af-bg-soft:#10141B; --af-card:#151922; --af-card-soft:#1B202B;
+  --af-border:#252B36; --af-border-strong:#343B49;
+  --af-text:#F8FAFC; --af-text-secondary:#AAB2C0; --af-text-muted:#6F7785;
+  --af-orange:#F97316; --af-orange-hover:#EA580C; --af-orange-soft:rgba(249,115,22,.12);
+  --autocurb:#7C3AED; --autocurb-soft:rgba(124,58,237,.16);
+  --autolabels:#2563EB; --autolabels-soft:rgba(37,99,235,.16);
+  --success:#10B981; --warning:#F59E0B; --danger:#EF4444;
+  --radius-card:18px; --radius-btn:12px; --shadow-card:0 18px 45px rgba(0,0,0,.32);
+  --ff:'Plus Jakarta Sans',-apple-system,system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--ff);background:var(--af-bg);color:var(--af-text-secondary);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:var(--af-border-strong);border-radius:6px}
+svg{display:block}
+.app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+
+/* sidebar (shared with command center) */
+.side{background:var(--af-bg-soft);border-right:1px solid var(--af-border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:11px;padding:20px 20px 18px}
+.logo{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--af-orange),var(--af-orange-hover));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 6px 18px rgba(249,115,22,.35)}
+.brand .nm{font-weight:800;font-size:16px;letter-spacing:.02em;color:#fff;line-height:1.1}
+.brand .tg{font-size:9.5px;font-weight:600;color:var(--af-orange);letter-spacing:.05em;margin-top:2px}
+.nav{flex:1;overflow-y:auto;padding:8px 12px}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:10px;color:var(--af-text-muted);text-decoration:none;font-weight:600;font-size:13.5px;position:relative;margin-bottom:2px;transition:background .12s,color .12s}
+.nav a svg{width:18px;height:18px;flex-shrink:0;stroke:currentColor}
+.nav a:hover{background:var(--af-card);color:var(--af-text-secondary)}
+.nav a.on{background:var(--af-orange-soft);color:var(--af-text)}
+.nav a.on svg{stroke:var(--af-orange)}
+.nav a.on::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:0 3px 3px 0;background:var(--af-orange)}
+.nav a .badge{margin-left:auto;background:var(--af-orange);color:#fff;font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:20px}
+.side-foot{border-top:1px solid var(--af-border);padding:12px}
+.side-card{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:11px;background:var(--af-card);margin-bottom:8px}
+.side-card .ico{width:30px;height:30px;border-radius:8px;background:var(--af-card-soft);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--af-text);flex-shrink:0}
+.side-card .l1{font-size:9px;font-weight:700;color:var(--af-text-muted);letter-spacing:.06em;text-transform:uppercase}
+.side-card .l2{font-size:13px;font-weight:700;color:var(--af-text);line-height:1.2}
+.side-card .l3{font-size:11px;color:var(--af-text-muted)}
+.side-card .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#334,#556);flex-shrink:0}
+.collapse{display:flex;align-items:center;gap:8px;color:var(--af-text-muted);font-size:12px;font-weight:600;padding:6px 10px;background:none;border:none;width:100%;border-radius:8px}
+.collapse:hover{background:var(--af-card);color:var(--af-text-secondary)}
+
+/* topbar */
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:16px;padding:16px 26px;border-bottom:1px solid var(--af-border);background:rgba(11,13,18,.75);backdrop-filter:blur(8px);position:sticky;top:0;z-index:30}
+.topbar .tt{font-size:18px;font-weight:800;color:var(--af-text)}
+.topbar .ts{font-size:12.5px;color:var(--af-text-muted)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:10px;background:var(--af-card);border:1px solid var(--af-border);font-size:12.5px;font-weight:600;color:var(--af-text-secondary)}
+.pill.eco{cursor:pointer}.pill.eco:hover{border-color:var(--af-border-strong)}
+.chk{width:14px;height:14px;color:var(--success)}
+.mark{width:16px;height:16px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0}
+.mark.c{background:var(--autocurb)}.mark.l{background:var(--autolabels)}.mark.f{background:var(--af-orange)}
+.sync{display:flex;flex-direction:column;line-height:1.15}.sync .a{font-size:12px;font-weight:700;color:var(--success)}.sync .b{font-size:10.5px;color:var(--af-text-muted)}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:var(--radius-btn);font-weight:700;font-size:13px;border:1px solid var(--af-border);background:var(--af-card);color:var(--af-text);transition:.12s}
+.btn:hover{border-color:var(--af-border-strong)}
+.btn.pri{background:var(--af-orange);border-color:var(--af-orange);color:#fff}.btn.pri:hover{background:var(--af-orange-hover)}
+.btn.sm{padding:6px 11px;font-size:12px}
+.btn svg{width:15px;height:15px;stroke:currentColor}
+.btn.sm svg{width:13px;height:13px}
+.iconbtn{position:relative;width:38px;height:38px;border-radius:10px;background:var(--af-card);border:1px solid var(--af-border);display:flex;align-items:center;justify-content:center;color:var(--af-text-secondary)}
+.iconbtn:hover{border-color:var(--af-border-strong);color:var(--af-text)}.iconbtn svg{width:18px;height:18px;stroke:currentColor}
+.iconbtn .n{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;background:var(--danger);color:#fff;font-size:10px;font-weight:700;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;border:2px solid var(--af-bg)}
+.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#3b4252,#5a6478);border:2px solid var(--af-border-strong);cursor:pointer;flex-shrink:0}
+.menu-sel{position:relative}
+.search{display:flex;align-items:center;gap:8px;background:var(--af-card);border:1px solid var(--af-border);border-radius:10px;padding:0 11px;height:38px;min-width:220px;color:var(--af-text-muted)}
+.search svg{width:15px;height:15px;stroke:currentColor;flex-shrink:0}
+.search input{background:none;border:none;outline:none;color:var(--af-text);font-family:inherit;font-size:13px;width:100%}
+.search input::placeholder{color:var(--af-text-muted)}
+
+/* popovers (shared) */
+.pop{position:absolute;top:calc(100% + 8px);right:0;width:300px;background:var(--af-card);border:1px solid var(--af-border-strong);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);padding:8px;z-index:50;display:none}
+.pop.show{display:block}
+.pop-h{padding:8px 10px 6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--af-text-muted)}
+.app-row{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:11px;text-decoration:none;color:var(--af-text)}
+.app-row:hover{background:var(--af-bg-soft)}.app-row .mark{width:30px;height:30px;border-radius:9px;font-size:13px}
+.app-row .an{font-size:13.5px;font-weight:700;color:var(--af-text)}.app-row .ad{font-size:11px;color:var(--af-text-muted)}
+.app-row .tag{margin-left:auto;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:6px}
+.app-row .tag.cur{color:var(--af-orange);background:var(--af-orange-soft)}.app-row .tag.soon{color:var(--af-text-muted);background:var(--af-card-soft)}
+.app-row.locked{opacity:.55}
+.pop .divider{height:1px;background:var(--af-border);margin:6px 4px}
+.menu-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;color:var(--af-text-secondary);font-size:13px;font-weight:600;text-decoration:none}
+.menu-item:hover{background:var(--af-bg-soft);color:var(--af-text)}.menu-item svg{width:16px;height:16px;stroke:currentColor}
+.menu-item.danger{color:var(--danger)}
+.pop-foot{padding:8px 10px 4px;font-size:11px;color:var(--af-text-muted);text-align:center}
+.notif{display:flex;gap:10px;padding:10px;border-radius:10px}.notif:hover{background:var(--af-bg-soft)}
+.notif .nd{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}.notif p{font-size:12.5px;color:var(--af-text);line-height:1.35}.notif small{font-size:11px;color:var(--af-text-muted)}
+
+/* content */
+.content{padding:22px 26px 40px;display:flex;flex-direction:column;gap:18px}
+.qhead{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.qhead h1{font-size:24px;font-weight:800;color:var(--af-text);letter-spacing:-.02em}
+.qhead p{font-size:13.5px;color:var(--af-text-muted);margin-top:3px}
+.qhead .cta{margin-left:auto;display:flex;gap:10px}
+
+/* filter tabs */
+.ftabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--af-border);padding-bottom:2px}
+.ftab{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border:none;background:none;color:var(--af-text-muted);font-size:13px;font-weight:700;border-bottom:2px solid transparent;margin-bottom:-3px}
+.ftab:hover{color:var(--af-text-secondary)}
+.ftab.on{color:var(--af-text);border-bottom-color:var(--af-orange)}
+.ftab .c{font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px;background:var(--af-card-soft);color:var(--af-text-secondary)}
+.ftab.on .c{background:var(--af-orange-soft);color:var(--af-orange)}
+
+/* toolbar */
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.toolbar .grow{flex:1;min-width:180px}
+.sel-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;background:var(--af-card);border:1px solid var(--af-border);color:var(--af-text-secondary);font-size:12.5px;font-weight:600}
+.sel-btn svg{width:13px;height:13px;stroke:currentColor}
+
+/* table */
+.tablecard{background:var(--af-card);border:1px solid var(--af-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card);overflow:hidden}
+.tscroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:920px}
+thead th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--af-text-muted);text-align:left;padding:12px 16px;background:var(--af-bg-soft);border-bottom:1px solid var(--af-border);white-space:nowrap}
+tbody td{padding:13px 16px;border-bottom:1px solid var(--af-border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--af-bg-soft)}
+tbody tr.sel{background:rgba(249,115,22,.06)}
+.cust{display:flex;align-items:center;gap:10px}
+.cust .cav{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3b4252,#5a6478);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
+.cust .cn{font-size:13.5px;font-weight:700;color:var(--af-text)}
+.cust .cp{font-size:11px;color:var(--af-text-muted)}
+.veh{font-size:13px;color:var(--af-text);font-weight:600}
+.veh small{display:block;font-size:11px;color:var(--af-text-muted);font-weight:500}
+.src{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:8px}
+.src.c{color:#a97bff;background:var(--autocurb-soft)}.src.l{color:#6fa0ff;background:var(--autolabels-soft)}
+.src.s{color:var(--warning);background:rgba(245,158,11,.14)}.src.w{color:var(--af-text-secondary);background:var(--af-card-soft)}
+.rep{display:flex;align-items:center;gap:8px}.rep .rav{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#3b4252,#5a6478);flex-shrink:0}.rep span{font-size:12.5px;font-weight:600;color:var(--af-text-secondary)}
+.status{display:flex;flex-direction:column;gap:5px;min-width:120px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;width:fit-content}
+.chip.need{color:var(--af-orange);background:var(--af-orange-soft)}
+.chip.sent{color:var(--af-text-secondary);background:var(--af-card-soft)}
+.chip.watch{color:var(--success);background:rgba(16,185,129,.13)}
+.chip.hot{color:var(--danger);background:rgba(239,68,68,.14)}
+.chip.appr{color:var(--warning);background:rgba(245,158,11,.14)}
+.wbar{height:5px;border-radius:3px;background:var(--af-card-soft);overflow:hidden}.wbar span{display:block;height:100%;background:var(--af-orange);border-radius:3px}
+.age{font-size:12px;color:var(--af-text-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.prio{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 8px;border-radius:6px}
+.prio.high{color:var(--danger);background:rgba(239,68,68,.14)}.prio.med{color:var(--warning);background:rgba(245,158,11,.14)}.prio.low{color:var(--af-text-muted);background:var(--af-card-soft)}
+.rowact{display:flex;gap:6px;justify-content:flex-end}
+.ck{width:17px;height:17px;border-radius:5px;border:1.5px solid var(--af-border-strong);background:var(--af-card);cursor:pointer;flex-shrink:0;appearance:none;-webkit-appearance:none;position:relative}
+.ck:checked{background:var(--af-orange);border-color:var(--af-orange)}
+.ck:checked::after{content:"";position:absolute;left:5px;top:2px;width:4px;height:8px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+
+/* bulk bar */
+.bulkbar{display:none;align-items:center;gap:12px;padding:11px 18px;background:var(--af-orange-soft);border:1px solid rgba(249,115,22,.4);border-radius:12px}
+.bulkbar.show{display:flex}
+.bulkbar .lb{font-size:13px;font-weight:700;color:var(--af-text)}
+.bulkbar .sp{margin-left:auto;display:flex;gap:8px}
+
+.empty{padding:48px 20px;text-align:center;color:var(--af-text-muted)}
+.empty .ei{font-size:34px;margin-bottom:10px;opacity:.6}
+.empty .et{font-size:14px;font-weight:600;color:var(--af-text-secondary)}
+
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(12px);background:var(--af-card-soft);border:1px solid var(--af-border-strong);border-radius:12px;padding:12px 18px;font-size:13px;font-weight:600;color:var(--af-text);box-shadow:0 16px 40px rgba(0,0,0,.5);opacity:0;transition:.25s;z-index:90;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.mobnav{display:none}
+
+@media (max-width:900px){
+  .app{grid-template-columns:74px 1fr}
+  .brand .nm,.brand .tg,.nav a span,.nav a .badge,.side-foot .side-card>div,.collapse span{display:none}
+  .brand{justify-content:center;padding:18px 0}.nav a{justify-content:center;padding:10px}.nav a.on::before{display:none}.side-card{justify-content:center}
+  .search{min-width:0;width:40px}.search input{display:none}.invite-txt,.pill.eco .txt{display:none}
+}
+@media (max-width:680px){
+  .app{grid-template-columns:1fr}.side{display:none}
+  .topbar{padding:12px 16px}.titlewrap .ts{display:none}.content{padding:16px 14px 90px}
+  .qhead .cta{margin-left:0;width:100%}.qhead .cta .btn{flex:1;justify-content:center}
+  .tb-right .sync,.tb-right .pill.eco,.tb-right .search{display:none}
+  .mobnav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--af-bg-soft);border-top:1px solid var(--af-border);z-index:40;padding:6px 4px}
+  .mobnav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0;color:var(--af-text-muted);text-decoration:none;font-size:10px;font-weight:600}
+  .mobnav a.on{color:var(--af-orange)}.mobnav a svg{width:20px;height:20px;stroke:currentColor}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M8 5v14l11-7z"/></svg></div>
+      <div><div class="nm">AUTOFILM</div><div class="tg">Engage. Explain. Close.</div></div>
+    </div>
+    <nav class="nav">
+      <a href="autofilm-command.html"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg><span>Home</span></a>
+      <a href="#" class="on"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg><span>Video Queue</span><span class="badge">31</span></a>
+      <a href="#"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M16 3.5a4 4 0 010 7M3 20a6 6 0 0112 0"/><circle cx="9" cy="7" r="4"/></svg><span>Leads</span></a>
+      <a href="#"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M10 9l5 3-5 3z"/></svg><span>Sales Videos</span></a>
+      <a href="autofilm-service.html"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 005.4-5.4l-2.5 2.5-2-2z"/></svg><span>Service Videos</span></a>
+      <a href="autofilm-templates.html"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg><span>Templates</span></a>
+      <a href="#"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9zM19 15l.9 2.3L22 18l-2.1.7L19 21l-.9-2.3L16 18z"/></svg><span>AI Scripts</span></a>
+      <a href="autofilm-dashboard.html"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 5-7"/></svg><span>Analytics</span></a>
+      <a href="autofilm-group.html"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M23 21v-2a4 4 0 00-3-3.9"/><circle cx="9" cy="7" r="4"/></svg><span>Team Performance</span></a>
+      <a href="autofilm-settings.html"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 12h2M10 12h10M4 17h6M14 17h6"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="12" cy="17" r="2"/></svg><span>Integrations</span></a>
+      <a href="autofilm-settings.html"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-2.7 1.1V21a2 2 0 01-4 0v-.1A1.6 1.6 0 006 19.4l-.1.1a2 2 0 11-2.8-2.8l.1-.1A1.6 1.6 0 003.3 14H3a2 2 0 010-4h.1A1.6 1.6 0 004.6 6l-.1-.1a2 2 0 112.8-2.8l.1.1A1.6 1.6 0 0010 3.3V3a2 2 0 014 0v.1a1.6 1.6 0 002.7 1.1l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 001.1 2.7H21a2 2 0 010 4h-.1a1.6 1.6 0 00-1.5 1z"/></svg><span>Settings</span></a>
+    </nav>
+    <div class="side-foot">
+      <div class="side-card"><div class="ico">∞</div><div><div class="l1">Dealer</div><div class="l2">Harte INFINITI</div><div class="l3">Farmington, CT</div></div></div>
+      <div class="side-card"><div class="av"></div><div><div class="l2">Ken Harte</div><div class="l3">Administrator</div></div></div>
+      <button class="collapse"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg><span>Collapse</span></button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="titlewrap"><div class="tt">Video Queue</div><div class="ts">Every customer waiting for a personal video, in priority order.</div></div>
+      <div class="tb-right">
+        <div class="search"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><input id="q" placeholder="Search customer, VIN, rep…"></div>
+        <div class="sync"><span class="a">● Live</span><span class="b">Synced 2 min ago</span></div>
+        <div class="pill eco" data-app="autocurb"><span class="mark c">C</span><svg class="chk" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span class="txt">AutoCurb</span></div>
+        <div class="pill eco" data-app="autolabels"><span class="mark l">L</span><svg class="chk" fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span class="txt">AutoLabels</span></div>
+        <div class="menu-sel"><button class="iconbtn" id="bellBtn"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg><span class="n">5</span></button><div class="pop" id="bellPop" style="width:310px"></div></div>
+        <div class="menu-sel">
+          <div class="avatar" id="avatarBtn"></div>
+          <div class="pop" id="profilePop">
+            <div class="pop-h">Switch app</div>
+            <a class="app-row" href="#" data-app="autocurb"><span class="mark c">C</span><div><div class="an">AutoCurb</div><div class="ad">Acquire · Trade · Appraise</div></div><span class="tag" style="margin-left:auto;color:var(--autocurb);background:var(--autocurb-soft)">Open</span></a>
+            <a class="app-row" href="#" data-app="autolabels"><span class="mark l">L</span><div><div class="an">AutoLabels</div><div class="ad">Protect · Label · Comply</div></div><span class="tag" style="margin-left:auto;color:var(--autolabels);background:var(--autolabels-soft)">Open</span></a>
+            <a class="app-row" href="#"><span class="mark f">F</span><div><div class="an">AutoFilm</div><div class="ad">Engage · Explain · Close</div></div><span class="tag cur">Current</span></a>
+            <a class="app-row locked" href="#"><span class="mark" style="background:var(--af-card-soft);color:var(--af-text-muted)">◇</span><div><div class="an">AutoFrame</div><div class="ad">Inventory media</div></div><span class="tag soon">Soon</span></a>
+            <div class="pop-foot">3 of 4 products active</div>
+            <div class="divider"></div>
+            <a class="menu-item" href="autofilm-settings.html"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>My profile &amp; availability</a>
+            <a class="menu-item danger" href="autofilm-login.html"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>Sign out</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="qhead">
+        <div><h1>Video Queue</h1><p><b id="qcount" style="color:var(--af-text-secondary)">31 opportunities</b> waiting for a personal video.</p></div>
+        <div class="cta">
+          <button class="btn" data-toast="Bulk assign to reps…"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2M20 8v6M23 11h-6"/><circle cx="9" cy="7" r="4"/></svg>Bulk Assign</button>
+          <button class="btn pri" data-toast="Opening new video task…"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Create Video Task</button>
+        </div>
+      </div>
+
+      <div class="ftabs" id="ftabs">
+        <button class="ftab on" data-f="all">All <span class="c" data-c="all">0</span></button>
+        <button class="ftab" data-f="need">Needs Video <span class="c" data-c="need">0</span></button>
+        <button class="ftab" data-f="sent">Sent <span class="c" data-c="sent">0</span></button>
+        <button class="ftab" data-f="watch">Watched <span class="c" data-c="watch">0</span></button>
+        <button class="ftab" data-f="hot">Hot Leads <span class="c" data-c="hot">0</span></button>
+        <button class="ftab" data-f="appr">Service <span class="c" data-c="appr">0</span></button>
+      </div>
+
+      <div class="toolbar">
+        <div class="grow"></div>
+        <div class="menu-sel"><button class="sel-btn" id="srcBtn">All sources<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+          <div class="pop" id="srcPop" style="width:170px;left:auto;right:0"><a class="menu-item" data-src="all">All sources</a><a class="menu-item" data-src="c">AutoCurb</a><a class="menu-item" data-src="l">AutoLabels</a><a class="menu-item" data-src="s">Service</a><a class="menu-item" data-src="w">Website</a></div>
+        </div>
+        <div class="menu-sel"><button class="sel-btn" id="sortBtn">Priority<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+          <div class="pop" id="sortPop" style="width:150px;left:auto;right:0"><a class="menu-item" data-sort="prio">Priority</a><a class="menu-item" data-sort="age">Newest</a><a class="menu-item" data-sort="name">Customer</a></div>
+        </div>
+      </div>
+
+      <div class="bulkbar" id="bulkbar">
+        <span class="lb"><b id="bulkN">0</b> selected</span>
+        <div class="sp">
+          <button class="btn sm" data-toast="Assigning selected…">Assign</button>
+          <button class="btn sm" data-toast="Sending reminders…">Remind</button>
+          <button class="btn sm pri" data-toast="Bulk-recording flow…">Record All</button>
+        </div>
+      </div>
+
+      <div class="tablecard">
+        <div class="tscroll">
+          <table>
+            <thead><tr>
+              <th style="width:38px"><input type="checkbox" class="ck" id="ckAll"></th>
+              <th>Customer</th><th>Vehicle</th><th>Source</th><th>Assigned</th><th>Status</th><th>Age</th><th>Priority</th><th style="text-align:right">Actions</th>
+            </tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="empty" style="display:none"><div class="ei">🎬</div><div class="et">Nothing here — every customer in this view has their video.</div></div>
+      </div>
+    </div>
+
+    <nav class="mobnav">
+      <a href="autofilm-command.html"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5M5 9.5V21h14V9.5"/></svg>Home</a>
+      <a href="#" class="on"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>Queue</a>
+      <a href="autofilm-dashboard.html"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 3v18h18M7 14l3-4 3 3 5-7"/></svg>Analytics</a>
+      <a href="autofilm-group.html"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M1 21a8 8 0 0116 0"/></svg>Team</a>
+      <a href="autofilm-settings.html"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>Settings</a>
+    </nav>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var SRC={c:['c','AutoCurb'],l:['l','AutoLabels'],s:['s','Service'],w:['w','Website']};
+var Q=[
+ {name:'Sarah Williams',phone:'(860) 555-0142',veh:'2022 INFINITI QX60',stk:'#IN2214',src:'c',rep:'Ken Harte',st:'hot',pct:82,age:'12m',prio:'high'},
+ {name:'Michael Johnson',phone:'(860) 555-0188',veh:'2021 Nissan Rogue',stk:'#N1180',src:'w',rep:'Jessica Miller',st:'watch',pct:64,age:'48m',prio:'high'},
+ {name:'Amanda Rivera',phone:'(203) 555-0173',veh:'2024 Hyundai Tucson',stk:'#H4402',src:'c',rep:'Mike Johnson',st:'need',pct:0,age:'1h',prio:'high'},
+ {name:'James Smith',phone:'(860) 555-0119',veh:'2020 INFINITI Q50',stk:'#IN2051',src:'l',rep:'Ken Harte',st:'need',pct:0,age:'2h',prio:'med'},
+ {name:'Robert Taylor',phone:'(203) 555-0166',veh:'2023 Toyota Camry',stk:'#T2309',src:'w',rep:'Sarah Jones',st:'sent',pct:0,age:'3h',prio:'med'},
+ {name:'Emily Carter',phone:'(860) 555-0107',veh:'2022 INFINITI QX50',stk:'#IN2250',src:'s',rep:'David Lee',st:'appr',pct:0,age:'4h',prio:'high'},
+ {name:'Daniel Brooks',phone:'(203) 555-0154',veh:'2019 Honda Accord',stk:'#U8891',src:'c',rep:'Jessica Miller',st:'watch',pct:41,age:'5h',prio:'med'},
+ {name:'Olivia Nguyen',phone:'(860) 555-0132',veh:'2021 INFINITI QX80',stk:'#IN2080',src:'l',rep:'Mike Johnson',st:'need',pct:0,age:'6h',prio:'med'},
+ {name:'Marcus Reed',phone:'(203) 555-0148',veh:'2023 Kia Sportage',stk:'#K3310',src:'s',rep:'David Lee',st:'appr',pct:0,age:'8h',prio:'low'},
+ {name:'Priya Shah',phone:'(860) 555-0125',veh:'2020 Nissan Altima',stk:'#N2044',src:'w',rep:'Sarah Jones',st:'need',pct:0,age:'1d',prio:'low'}
+];
+var ST={need:['need','Needs Video'],sent:['sent','Sent · unopened'],watch:['watch','Watched'],hot:['hot','Hot lead'],appr:['appr','Awaiting approval']};
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function initials(n){return n.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();}
+
+var filter='all',srcFilter='all',sortBy='prio',search='';
+
+function actions(st){
+  if(st==='need') return '<button class="btn sm pri" data-toast="Recording…"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/></svg>Record</button>';
+  if(st==='appr') return '<button class="btn sm pri" data-toast="Opening inspection…">Record MPI</button>';
+  if(st==='sent') return '<button class="btn sm" data-toast="Resending…">Nudge</button><button class="btn sm" data-toast="Opening…">View</button>';
+  if(st==='watch'||st==='hot') return '<button class="btn sm pri" data-toast="Opening follow-up…">Follow Up</button><button class="btn sm" data-toast="Opening…">View</button>';
+  return '<button class="btn sm" data-toast="Opening…">View</button>';
+}
+var PW={high:0,med:1,low:2};
+function visible(){
+  var list=Q.filter(function(r){
+    if(filter!=='all' && r.st!==filter) return false;
+    if(srcFilter!=='all' && r.src!==srcFilter) return false;
+    if(search){var h=(r.name+' '+r.veh+' '+r.stk+' '+r.rep).toLowerCase();if(h.indexOf(search)<0)return false;}
+    return true;
+  });
+  list.sort(function(a,b){
+    if(sortBy==='prio')return PW[a.prio]-PW[b.prio];
+    if(sortBy==='name')return a.name.localeCompare(b.name);
+    return 0;
+  });
+  return list;
+}
+function render(){
+  var list=visible();
+  document.getElementById('rows').innerHTML=list.map(function(r,i){
+    var s=ST[r.st];
+    var status='<span class="chip '+s[0]+'">'+esc(s[1])+(r.pct?' '+r.pct+'%':'')+'</span>'+(r.pct?'<div class="wbar"><span style="width:'+r.pct+'%"></span></div>':'');
+    return '<tr data-i="'+i+'">'+
+      '<td><input type="checkbox" class="ck rowck"></td>'+
+      '<td><div class="cust"><div class="cav">'+esc(initials(r.name))+'</div><div><div class="cn">'+esc(r.name)+'</div><div class="cp">'+esc(r.phone)+'</div></div></div></td>'+
+      '<td><div class="veh">'+esc(r.veh)+'<small>'+esc(r.stk)+'</small></div></td>'+
+      '<td><span class="src '+r.src+'">'+esc(SRC[r.src][1])+'</span></td>'+
+      '<td><div class="rep"><span class="rav"></span><span>'+esc(r.rep)+'</span></div></td>'+
+      '<td><div class="status">'+status+'</div></td>'+
+      '<td><span class="age">'+esc(r.age)+'</span></td>'+
+      '<td><span class="prio '+r.prio+'">'+r.prio+'</span></td>'+
+      '<td><div class="rowact">'+actions(r.st)+'</div></td>'+
+    '</tr>';
+  }).join('');
+  document.getElementById('empty').style.display=list.length?'none':'block';
+  document.getElementById('qcount').textContent=Q.filter(function(r){return r.st==='need';}).length+' opportunities';
+  document.getElementById('ckAll').checked=false; updateBulk();
+}
+// tab counts
+function counts(){
+  var map={all:Q.length,need:0,sent:0,watch:0,hot:0,appr:0};
+  Q.forEach(function(r){if(map[r.st]!=null)map[r.st]++;});
+  document.querySelectorAll('[data-c]').forEach(function(el){el.textContent=map[el.dataset.c];});
+}
+counts(); render();
+
+// filter tabs
+document.getElementById('ftabs').addEventListener('click',function(e){
+  var b=e.target.closest('.ftab');if(!b)return;
+  this.querySelectorAll('.ftab').forEach(function(x){x.classList.remove('on');});b.classList.add('on');
+  filter=b.dataset.f; render();
+});
+// search
+document.getElementById('q').addEventListener('input',function(){search=this.value.trim().toLowerCase();render();});
+
+// dropdowns
+function closeAllPops(x){document.querySelectorAll('.pop').forEach(function(p){if(p!==x)p.classList.remove('show');});}
+function toggle(btn,pop){btn.addEventListener('click',function(e){e.stopPropagation();var o=pop.classList.contains('show');closeAllPops();if(!o)pop.classList.add('show');});}
+toggle(document.getElementById('srcBtn'),document.getElementById('srcPop'));
+toggle(document.getElementById('sortBtn'),document.getElementById('sortPop'));
+toggle(document.getElementById('avatarBtn'),document.getElementById('profilePop'));
+toggle(document.getElementById('bellBtn'),document.getElementById('bellPop'));
+document.addEventListener('click',function(){closeAllPops();});
+document.getElementById('srcPop').addEventListener('click',function(e){var a=e.target.closest('[data-src]');if(!a)return;srcFilter=a.dataset.src;document.getElementById('srcBtn').childNodes[0].nodeValue=a.textContent;render();closeAllPops();});
+document.getElementById('sortPop').addEventListener('click',function(e){var a=e.target.closest('[data-sort]');if(!a)return;sortBy=a.dataset.sort;document.getElementById('sortBtn').childNodes[0].nodeValue=a.textContent;render();closeAllPops();});
+
+// bell
+var NOTIFS=[['var(--af-orange)','Sarah Williams watched the QX60 video 3×','4 min ago'],['var(--warning)','Service RO #12345 waiting for approval','18 min ago'],['var(--autocurb)','AutoCurb lead Amanda Rivera saved an offer','32 min ago'],['var(--autolabels)','AutoLabels passport ready for QX60','1 hr ago']];
+document.getElementById('bellPop').innerHTML='<div class="pop-h">Notifications</div>'+NOTIFS.map(function(n){return '<div class="notif"><span class="nd" style="background:'+n[0]+'"></span><div><p>'+esc(n[1])+'</p><small>'+esc(n[2])+'</small></div></div>';}).join('');
+
+// selection / bulk
+function updateBulk(){
+  var sel=document.querySelectorAll('.rowck:checked').length;
+  var bar=document.getElementById('bulkbar');
+  document.getElementById('bulkN').textContent=sel;
+  bar.classList.toggle('show',sel>0);
+}
+document.getElementById('rows').addEventListener('change',function(e){
+  if(!e.target.classList.contains('rowck'))return;
+  e.target.closest('tr').classList.toggle('sel',e.target.checked);updateBulk();
+});
+document.getElementById('ckAll').addEventListener('change',function(){
+  var on=this.checked;
+  document.querySelectorAll('.rowck').forEach(function(c){c.checked=on;c.closest('tr').classList.toggle('sel',on);});updateBulk();
+});
+
+// app switch + toasts
+document.body.addEventListener('click',function(e){
+  var app=e.target.closest('[data-app]');if(app){e.preventDefault();toast('Opening '+(app.dataset.app==='autocurb'?'AutoCurb':'AutoLabels')+'… (suite handoff)');return;}
+  var t=e.target.closest('[data-toast]');if(t){toast(t.dataset.toast);}
+});
+var toastT;function toast(m){var el=document.getElementById('toast');el.textContent=m;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(function(){el.classList.remove('show');},2000);}
+</script>
+</body>
+</html>
