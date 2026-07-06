@@ -98,6 +98,16 @@ h1{font-size:24px;font-weight:900;letter-spacing:-.5px;margin-bottom:6px}
 .hm-bar.zero{background:var(--bg3)}
 .hm-x{display:flex;justify-content:space-between;padding:6px 20px 16px;font-size:10px;color:var(--t4);font-family:var(--fm)}
 .hm-tip{position:absolute;display:none;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--b2);border-radius:8px;padding:5px 9px;font-size:10px;font-family:var(--fm);font-weight:600;color:var(--t1);white-space:nowrap;pointer-events:none;z-index:5}
+/* Interaction timeline */
+.tl{margin:20px 20px 4px;border-top:1px solid var(--b1);padding-top:16px}
+.tl-h{font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.tl-row{display:flex;align-items:baseline;gap:12px;padding:8px 0;border-bottom:1px solid var(--b0)}
+.tl-row:last-child{border-bottom:none}
+.tl-ico{font-size:14px;width:20px;text-align:center;flex-shrink:0}
+.tl-main{flex:1;font-size:13px;color:var(--t1)}
+.tl-sub{font-size:11px;color:var(--t3);margin-top:1px}
+.tl-when{font-family:var(--fm);font-size:11px;color:var(--t4);white-space:nowrap;flex-shrink:0}
+.tl-empty{font-size:12px;color:var(--t4);padding:4px 0}
 
 /* Empty state */
 .empty{padding:48px 24px;text-align:center}
@@ -340,7 +350,9 @@ async function loadHeatmap() {
         </div>
         <div class="hm-tip" id="hmTip"></div>
       </div>
-      <div class="hm-x"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>`;
+      <div class="hm-x"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+      <div id="hmTimeline"></div>`;
+    loadInteractions(id);
     const tip = document.getElementById('hmTip');
     body.querySelectorAll('.hm-bar').forEach(bar => {
       bar.addEventListener('mouseenter', () => {
@@ -354,6 +366,60 @@ async function loadHeatmap() {
       bar.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
     });
   } catch (e) { console.error('[dashboard] Heatmap error:', e); }
+}
+
+// ── Customer interaction timeline (to-the-second watch tracking) ──
+const EVENT_META = {
+  play:       { ico: '▶️', label: 'Started watching' },
+  complete:   { ico: '🏁', label: 'Watched to the end' },
+  trade_tap:  { ico: '💰', label: 'Tapped the trade-in offer' },
+  appt_booked:{ ico: '📅', label: 'Booked an appointment' },
+  reply:      { ico: '🎥', label: 'Started a video reply' },
+  call:       { ico: '📞', label: 'Requested a live call' },
+  cta_click:  { ico: '👆', label: 'Clicked a call-to-action' },
+};
+function fmtSecs(s) {
+  s = Math.max(0, Math.round(s || 0));
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60), r = s % 60;
+  return m + ':' + String(r).padStart(2, '0');
+}
+function whenStr(d) {
+  try { return new Date(d).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+  catch (e) { return ''; }
+}
+async function loadInteractions(id) {
+  const el = document.getElementById('hmTimeline');
+  if (!el) return;
+  try {
+    const res = await authed(`${API}/api/dashboard/interactions?video_id=${encodeURIComponent(id)}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const s = data.summary || {};
+    const watched = fmtSecs(s.engaged_seconds);
+    const total = s.duration_seconds ? fmtSecs(s.duration_seconds) : '—';
+    const rows = (data.interactions || []).map(ev => {
+      const m = EVENT_META[ev.event_type] || { ico: '•', label: ev.event_type };
+      const at = ev.watch_seconds ? `at ${fmtSecs(ev.watch_seconds)} in` : '';
+      const lbl = ev.meta && ev.meta.label ? ' · ' + esc(ev.meta.label) : '';
+      return `<div class="tl-row">
+        <div class="tl-ico">${m.ico}</div>
+        <div class="tl-main">${esc(m.label)}${lbl}${at ? `<div class="tl-sub">${at}</div>` : ''}</div>
+        <div class="tl-when">${whenStr(ev.created_at)}</div>
+      </div>`;
+    }).join('');
+    el.innerHTML = `
+      <div class="tl">
+        <div class="hm-stats" style="padding:0 0 14px">
+          <div><div class="hm-stat-n">${watched}<span style="font-size:13px;color:var(--t3);font-weight:600"> / ${total}</span></div><div class="hm-stat-l">Seconds Watched</div></div>
+          <div><div class="hm-stat-n" style="color:var(--fire2)">${s.completion_pct || 0}%</div><div class="hm-stat-l">Completion</div></div>
+          <div><div class="hm-stat-n">${s.play_count || 0}</div><div class="hm-stat-l">Plays</div></div>
+          <div><div class="hm-stat-n">${s.interaction_count || 0}</div><div class="hm-stat-l">Actions</div></div>
+        </div>
+        <div class="tl-h">Interaction timeline</div>
+        ${rows || '<div class="tl-empty">No taps yet — just watch activity.</div>'}
+      </div>`;
+  } catch (e) { console.error('[dashboard] Interactions error:', e); }
 }
 
 function timeAgo(d) {
