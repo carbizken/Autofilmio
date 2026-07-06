@@ -1,10 +1,22 @@
 import express from 'express';
+import crypto from 'crypto';
 import { supabase } from '../lib/supabase.js';
 import { requireAuth, requireRole } from '../lib/auth.js';
 
 const router = express.Router();
 
 const APP_URL = process.env.APP_URL || 'https://autofilm.io';
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const isEmail = (v) => typeof v === 'string' && v.length <= 254 && EMAIL_RE.test(v);
+
+/** Constant-time string comparison (both must be strings). */
+function safeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ba, bb);
+}
 
 /**
  * POST /api/auth/signup
@@ -15,6 +27,7 @@ router.post('/signup', async (req, res) => {
   try {
     const { email, password, name, rooftop_id, onboard_token } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'email and password required' });
+    if (!isEmail(email)) return res.status(400).json({ error: 'Invalid email' });
 
     // Onboarding handoff: claim the pending admin rep created during the
     // website-scan step, gated by the one-time onboarding token.
@@ -25,7 +38,7 @@ router.post('/signup', async (req, res) => {
         .select('id, onboard_token')
         .eq('id', rooftop_id)
         .single();
-      if (rt?.onboard_token === onboard_token) onboardRooftop = rt;
+      if (rt?.onboard_token && safeEqual(rt.onboard_token, onboard_token)) onboardRooftop = rt;
     }
 
     // Create Supabase Auth user
@@ -261,6 +274,8 @@ router.post('/invite', requireAuth(), requireRole('admin', 'manager'), async (re
   try {
     const { email, name, role = 'sales', department = 'sales' } = req.body;
     if (!email || !name) return res.status(400).json({ error: 'email and name required' });
+    if (!isEmail(email)) return res.status(400).json({ error: 'Invalid email' });
+    if (typeof name !== 'string' || name.length > 120) return res.status(400).json({ error: 'Invalid name' });
 
     // Check if already exists
     const { data: existing } = await supabase

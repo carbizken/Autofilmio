@@ -222,6 +222,9 @@ router.get('/kpis', async (req, res) => {
 router.get('/account/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+      return res.status(400).json({ error: 'Invalid account id' });
+    }
     const now = Date.now();
     const since30 = new Date(now - SEND_WINDOW_DAYS * DAY_MS).toISOString();
 

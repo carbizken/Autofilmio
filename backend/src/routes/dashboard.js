@@ -4,6 +4,8 @@ import { requireAuth } from '../lib/auth.js';
 
 const router = express.Router();
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // All dashboard data is tenant-scoped PII — auth required,
 // and the rooftop always comes from the authenticated rep.
 router.use(requireAuth());
@@ -62,13 +64,14 @@ router.get('/activity', async (req, res) => {
   try {
     const rooftop_id = req.rep.rooftop_id;
     const { limit = 50 } = req.query;
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 50, 1), 200);
 
     const { data, error } = await supabase
       .from('videos')
       .select('id, short_code, customer_name, customer_phone, vehicle, type, sent_at, last_watched_at, max_watch_pct, thumbnail_url, reps(name, photo_url)')
       .eq('rooftop_id', rooftop_id)
       .order('created_at', { ascending: false })
-      .limit(parseInt(limit));
+      .limit(safeLimit);
 
     if (error) throw error;
 
@@ -112,6 +115,7 @@ router.get('/heatmap', async (req, res) => {
   try {
     const { video_id } = req.query;
     if (!video_id) return res.status(400).json({ error: 'video_id is required' });
+    if (!UUID_RE.test(video_id)) return res.status(400).json({ error: 'Invalid video_id' });
 
     // Ownership: rep's own video, or same rooftop for admin/manager.
     const { data: videoRow, error: vErr } = await supabase

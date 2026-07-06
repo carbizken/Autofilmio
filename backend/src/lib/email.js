@@ -34,7 +34,7 @@ export async function sendVideoEmail(opts) {
     brandColor = '#D94F00',
   } = opts;
 
-  const firstName = customerName.split(' ')[0];
+  const firstName = String(customerName || '').split(' ')[0] || 'there';
   const subject = vehicle
     ? `${repName} recorded a personal video about the ${vehicle} for you`
     : `${repName} from ${dealerName} recorded a personal video for you`;
@@ -71,14 +71,20 @@ export async function sendVideoEmail(opts) {
     },
   };
 
-  const res = await fetch(SENDGRID_API, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
+  let res;
+  try {
+    res = await fetch(SENDGRID_API, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch (err) {
+    throw new Error(`SendGrid request failed: ${err.message}`);
+  }
 
   if (!res.ok) {
     const err = await res.text();

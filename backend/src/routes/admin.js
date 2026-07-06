@@ -5,6 +5,9 @@ import { testConnection } from '../lib/crm.js';
 
 const router = express.Router();
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (v) => typeof v === 'string' && UUID_RE.test(v);
+
 // All admin routes require auth + admin/manager role
 router.use(requireAuth());
 router.use(requireRole('admin', 'manager'));
@@ -29,6 +32,7 @@ router.get('/reps', async (req, res) => {
 /** PUT /api/admin/reps/:id — update a rep */
 router.put('/reps/:id', async (req, res) => {
   try {
+    if (!isUuid(req.params.id)) return res.status(400).json({ error: 'Invalid rep id' });
     const allowed = ['name', 'nickname', 'title', 'email', 'role', 'department', 'phone', 'active', 'photo_url'];
     const updates = {};
     for (const k of allowed) if (req.body[k] !== undefined) updates[k] = req.body[k];
@@ -50,6 +54,7 @@ router.put('/reps/:id', async (req, res) => {
 /** DELETE /api/admin/reps/:id — deactivate a rep */
 router.delete('/reps/:id', async (req, res) => {
   try {
+    if (!isUuid(req.params.id)) return res.status(400).json({ error: 'Invalid rep id' });
     await supabase
       .from('reps')
       .update({ active: false })
@@ -149,6 +154,7 @@ router.post('/crm/test', async (req, res) => {
 
     let connection;
     if (id) {
+      if (!isUuid(id)) return res.status(400).json({ error: 'Invalid connection id' });
       const { data, error } = await supabase
         .from('crm_connections')
         .select('*')
@@ -180,6 +186,7 @@ router.post('/crm/test', async (req, res) => {
 /** DELETE /api/admin/crm/:id — remove a CRM connection */
 router.delete('/crm/:id', async (req, res) => {
   try {
+    if (!isUuid(req.params.id)) return res.status(400).json({ error: 'Invalid connection id' });
     await supabase
       .from('crm_connections')
       .delete()
@@ -237,13 +244,14 @@ router.post('/overlays', async (req, res) => {
 router.get('/inventory', async (req, res) => {
   try {
     const { status = 'available', limit = 100 } = req.query;
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 100, 1), 500);
     const { data, error } = await supabase
       .from('inventory')
       .select('*')
       .eq('rooftop_id', req.rep.rooftop_id)
       .eq('status', status)
       .order('created_at', { ascending: false })
-      .limit(parseInt(limit));
+      .limit(safeLimit);
     if (error) throw error;
     res.json({ inventory: data || [] });
   } catch (err) {
