@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Signing you in — AutoFilm</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700;900&display=swap">
+<style>
+:root{--bg:#0a0a0d;--panel:#111116;--b1:rgba(255,255,255,.09);--t1:rgba(255,255,255,.94);--t2:rgba(255,255,255,.6);--fire:#E85A0A;--rose:#ec5e56;--ff:'Geist',-apple-system,system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff);background:var(--bg);color:var(--t2);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{max-width:380px;width:100%;text-align:center}
+.logo{width:52px;height:52px;border-radius:14px;background:var(--fire);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;font-weight:900;font-size:26px;color:#fff}
+.spin{width:34px;height:34px;border:3px solid var(--b1);border-top-color:var(--fire);border-radius:50%;margin:0 auto 20px;animation:s .8s linear infinite}
+@keyframes s{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+h1{font-size:19px;font-weight:700;color:var(--t1);letter-spacing:-.02em;margin-bottom:8px}
+p{font-size:14px;line-height:1.55}
+.btn{display:inline-block;margin-top:22px;background:var(--fire);color:#fff;font-weight:700;font-size:14px;text-decoration:none;padding:11px 22px;border-radius:10px}
+.err h1{color:var(--rose)}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">▲</div>
+  <div id="loading">
+    <div class="spin"></div>
+    <h1>Signing you in…</h1>
+    <p>Verifying your AutoCurb account.</p>
+  </div>
+  <div id="error" class="hide err">
+    <h1>Couldn't sign you in</h1>
+    <p id="errMsg">This sign-in link is invalid or has expired.</p>
+    <a class="btn" href="autofilm-login.html">Go to login</a>
+  </div>
+</div>
+<script src="assets/session.js"></script>
+<script>
+(function () {
+  'use strict';
+  var API = window.AF_API || ((location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://localhost:3001' : 'https://api.autofilm.io');
+
+  function fail(msg) {
+    document.getElementById('loading').classList.add('hide');
+    var e = document.getElementById('error');
+    if (msg) document.getElementById('errMsg').textContent = msg;
+    e.classList.remove('hide');
+  }
+
+  var params = new URLSearchParams(location.search);
+  var t = params.get('t');
+  if (!t) { fail('No sign-in token was provided.'); return; }
+
+  fetch(API + '/api/auth/sso', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ t: t })
+  })
+  .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+  .then(function (res) {
+    if (!res.ok || !res.d.session) { fail(res.d.error || 'Verification failed.'); return; }
+    // Store the AutoFilm session + rep, then drop the token from the URL history.
+    AFSession.set(res.d.session, res.d.rep);
+    location.replace('autofilm-app.html');
+  })
+  .catch(function () { fail('We couldn’t reach AutoFilm. Please try again.'); });
+})();
+</script>
+</body>
+</html>

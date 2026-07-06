@@ -131,7 +131,7 @@ export function requireRole(...roles) {
 /**
  * Verify a HS256 JWT using the Web Crypto API (Node 20+).
  */
-async function verifyJwt(token, secret) {
+export async function verifyJwt(token, secret) {
   try {
     const [headerB64, payloadB64, signatureB64] = token.split('.');
     if (!headerB64 || !payloadB64 || !signatureB64) return null;
