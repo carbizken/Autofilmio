@@ -369,11 +369,15 @@ function timeAgo(d) {
   return dy + 'd ago';
 }
 
-function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 
 loadAll();
 loadHeatmapVideos(); // once — not in loadAll(), so refreshes keep the selected video
-setInterval(loadAll, 30000);
+
+// Poll only while the tab is visible, and clear on pagehide so a backgrounded
+// dashboard doesn't keep hammering the API.
+let pollTimer = setInterval(() => { if (document.visibilityState === 'visible') loadAll(); }, 30000);
+window.addEventListener('pagehide', () => clearInterval(pollTimer));
 </script>
 </body>
 </html>

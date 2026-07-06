@@ -430,6 +430,15 @@ async function sendVideo() {
     btn.textContent = 'Send Video →';
   }
 }
+
+// Release the camera/mic and stop timers when the page is hidden or unloaded
+// (back navigation, tab close, app backgrounding) — never leave the light on.
+window.addEventListener('pagehide', () => {
+  try { if (recorder && recorder.state !== 'inactive') recorder.stop(); } catch (e) {}
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  clearInterval(timerInterval);
+  clearInterval(teleInterval);
+});
 </script>
 
 <!-- PWA: idempotent service worker registration (Sprint-3D) -->

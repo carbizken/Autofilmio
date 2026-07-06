@@ -1248,6 +1248,11 @@ var AF_API     = (location.hostname === 'localhost' || location.hostname === '12
 
 var hasVehicle = custVeh.length > 0;
 
+// Escape URL-param / customer data before it ever touches innerHTML.
+// (Most fields use textContent, but the greeting, slot list and reply
+// status build HTML strings — those must be escaped.)
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
 // ═══════════════════════════════════════════════════════════════
 //  BRAND COLOR
 // ═══════════════════════════════════════════════════════════════
@@ -1313,10 +1318,10 @@ if(hasVehicle){
   document.getElementById('greetLabel').textContent = 'A personal video for you';
   if(custFirst){
     document.getElementById('greetHeading').innerHTML =
-      'Hey <em>'+custFirst+'</em> —<br>watch this.';
+      'Hey <em>'+esc(custFirst)+'</em> —<br>watch this.';
   } else {
     document.getElementById('greetHeading').innerHTML =
-      'A message from<br><em>'+repDisplay+'</em>.';
+      'A message from<br><em>'+esc(repDisplay)+'</em>.';
   }
   var tag = document.getElementById('vehicleTag');
   tag.classList.remove('hide');
@@ -1327,7 +1332,7 @@ if(hasVehicle){
   document.getElementById('greetLabel').textContent = 'A personal introduction';
   if(custFirst){
     document.getElementById('greetHeading').innerHTML =
-      'Hey <em>'+custFirst+'</em>,<br>good to meet you.';
+      'Hey <em>'+esc(custFirst)+'</em>,<br>good to meet you.';
   } else {
     document.getElementById('greetHeading').innerHTML =
       'Meet your<br><em>personal advisor.</em>';
@@ -1526,12 +1531,12 @@ function openModal(){
   var slots = buildSlots();
   document.getElementById('slotGrid').innerHTML = slots.map(function(s,i){
     var full = s.day+', '+s.date+' at '+s.time+' · '+repDealer;
-    return '<div class="slot" data-idx="'+i+'" data-full="'+full+
-      '" data-month="'+s.month+'" data-day="'+s.dayNum+'" data-time="'+s.time+
+    return '<div class="slot" data-idx="'+i+'" data-full="'+esc(full)+
+      '" data-month="'+s.month+'" data-day="'+s.dayNum+'" data-time="'+esc(s.time)+
       '" onclick="pickSlot(this)">'+
       '<div class="slot-day">'+s.day+' '+s.date+'</div>'+
       '<div class="slot-time">'+s.time+'</div>'+
-      '<div class="slot-dealer">'+repDealer+'</div>'+
+      '<div class="slot-dealer">'+esc(repDealer)+'</div>'+
       '</div>';
   }).join('');
 
@@ -1755,7 +1760,7 @@ async function uploadReply(){
     if(!put.ok) throw new Error('Upload failed — try again');
 
     if(replyStream) replyStream.getTracks().forEach(function(t){ t.stop(); });
-    status.innerHTML = '✅ <strong style="color:#fff">Reply sent!</strong><br>' + repDisplay + ' just got a notification.';
+    status.innerHTML = '✅ <strong style="color:#fff">Reply sent!</strong><br>' + esc(repDisplay) + ' just got a notification.';
     document.getElementById('replySub').textContent = 'Reply sent — ' + repDisplay + ' will see it right away';
     setTimeout(closeReply, 2600);
   } catch(e) {
@@ -1764,6 +1769,14 @@ async function uploadReply(){
     document.getElementById('replyControls').style.display = 'flex';
   }
 }
+
+// Never leave the reply camera running when the page is hidden/unloaded.
+window.addEventListener('pagehide', function(){
+  try { if(replyRecorder && replyRecorder.state !== 'inactive') replyRecorder.stop(); } catch(e){}
+  if(replyStream){ replyStream.getTracks().forEach(function(t){ t.stop(); }); replyStream = null; }
+  clearInterval(replyTimerIv);
+  clearInterval(watchTimer);
+});
 </script>
 </body>
 </html>
