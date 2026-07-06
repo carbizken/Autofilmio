@@ -388,7 +388,20 @@ function chipFor(r) {
   return '<span class="chip rendering"><span class="spinner"></span>Rendering</span>';
 }
 
+let reelActionsWired = false;
+function wireReelActions() {
+  if (reelActionsWired) return;
+  reelActionsWired = true;
+  const list = document.getElementById('reelList');
+  if (!list) return;
+  list.addEventListener('click', e => {
+    const b = e.target.closest('[data-act="copylink"]'); if (!b) return;
+    copyLink(b.dataset.code);
+  });
+}
+
 function renderList() {
+  wireReelActions();
   const list = document.getElementById('reelList');
   const anyActive = Object.keys(pollTimers).length > 0;
   document.getElementById('liveBadge').style.display = anyActive ? '' : 'none';
@@ -401,10 +414,10 @@ function renderList() {
   list.innerHTML = reels.map(r => {
     const done = r.status === 'ready' && r.playback_id;
     const actions = done
-      ? `<button class="btn btn-sm" onclick="copyLink('${esc(r.short_code)}')">🔗 Copy Link</button>
+      ? `<button class="btn btn-sm" data-act="copylink" data-code="${esc(r.short_code)}">🔗 Copy Link</button>
          <a class="btn btn-sm" style="text-decoration:none" href="autofilm-player.html?code=${encodeURIComponent(r.short_code)}&playback_id=${encodeURIComponent(r.playback_id)}" target="_blank">▶ Preview</a>`
       : (r.status === 'ready'
-        ? `<button class="btn btn-sm" onclick="copyLink('${esc(r.short_code)}')">🔗 Copy Link</button>`
+        ? `<button class="btn btn-sm" data-act="copylink" data-code="${esc(r.short_code)}">🔗 Copy Link</button>`
         : '');
     return `<div class="reel">
       <div class="reel-ico">🎬</div>

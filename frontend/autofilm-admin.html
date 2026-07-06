@@ -540,8 +540,8 @@ function planChip(p){
 }
 function acctBtn(a){
   return a.churn_risk
-    ? '<button class="tbtn tbd" onclick="openChurn(\''+a.id+'\')">Intervene</button>'
-    : '<button class="tbtn tbg" onclick="openAcct(\''+a.id+'\')">View</button>';
+    ? '<button class="tbtn tbd" data-act="churn" data-id="'+esc(a.id)+'">Intervene</button>'
+    : '<button class="tbtn tbg" data-act="acct" data-id="'+esc(a.id)+'">View</button>';
 }
 
 // ── SIDEBAR PIPS ─────────────────────────────────────────────
@@ -701,7 +701,7 @@ function renderChurn(){
     var ds=daysSince(a.last_send_at);
     var dsTxt=ds==null?'60+':String(ds);
     var critical=ds==null||ds>=21;
-    return '<tr><td class="strong">'+esc(a.name)+'</td><td class="mono" style="color:var(--green)">'+money(a.mrr_estimate)+'</td><td class="mono" style="color:'+(critical?'var(--rose)':'var(--amber)')+';font-weight:700">'+dsTxt+' days</td><td class="mono">'+fmtDate(a.last_send_at)+'</td><td class="mono">'+a.videos_30d+'</td><td class="mono">'+a.rep_count+'</td><td><span class="chip '+(critical?'cr':'ca')+'">'+(critical?'Critical':'High')+'</span></td><td><button class="btnd" style="font-size:11px;padding:6px 12px" onclick="openChurn(\''+a.id+'\')">Intervene</button></td></tr>';
+    return '<tr><td class="strong">'+esc(a.name)+'</td><td class="mono" style="color:var(--green)">'+money(a.mrr_estimate)+'</td><td class="mono" style="color:'+(critical?'var(--rose)':'var(--amber)')+';font-weight:700">'+dsTxt+' days</td><td class="mono">'+fmtDate(a.last_send_at)+'</td><td class="mono">'+a.videos_30d+'</td><td class="mono">'+a.rep_count+'</td><td><span class="chip '+(critical?'cr':'ca')+'">'+(critical?'Critical':'High')+'</span></td><td><button class="btnd" style="font-size:11px;padding:6px 12px" data-act="churn" data-id="'+esc(a.id)+'">Intervene</button></td></tr>';
   }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:24px">No accounts at churn risk 🎉</td></tr>';
 }
 
@@ -749,7 +749,7 @@ function renderFlags(){
   wrap.innerHTML=FLAGS.map(function(f){
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--b0)">'+
       '<div style="display:flex;align-items:center;gap:10px;flex:1">'+
-        '<div class="tog'+(f.on?' on':'')+'" onclick="toggleFlag(\''+f.k+'\',this)"></div>'+
+        '<div class="tog'+(f.on?' on':'')+'" data-act="flag" data-k="'+esc(f.k)+'"></div>'+
         '<div><div style="font-size:12px;font-weight:600">'+f.l+'</div><div style="font-size:11px;color:var(--t3);margin-top:1px">'+f.d+'</div></div>'+
       '</div>'+
       '<div style="margin-left:16px">'+(f.on?'<span class="chip cg">On</span>':'<span class="chip cd">Off</span>')+'</div>'+
@@ -795,7 +795,7 @@ async function openAcct(id,intervene){
       html+=reps.map(function(r){
         var btns='';
         if(r.email)btns+='<a class="tbtn tbp" style="text-decoration:none" href="mailto:'+esc(r.email)+'">Email</a>';
-        if(r.phone)btns+='<button class="tbtn tbg" onclick="copyText(\''+esc(r.phone)+'\')">Copy phone</button>';
+        if(r.phone)btns+='<button class="tbtn tbg" data-act="copy" data-v="'+esc(r.phone)+'">Copy phone</button>';
         return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--b1);border-radius:10px">'
           +'<div><div style="font-size:12px;font-weight:700">'+esc(r.name)+'</div><div style="font-size:11px;color:var(--t3)">'+esc(r.role||'')+(r.email?' · '+esc(r.email):'')+'</div></div>'
           +'<div style="display:flex;gap:6px;flex-shrink:0">'+btns+'</div></div>';
@@ -838,6 +838,19 @@ function toast(msg){
   clearTimeout(toastTimer);
   toastTimer=setTimeout(function(){t.classList.remove('show');},2400);
 }
+
+// Delegated row actions. Account names/phones live in data-* attributes
+// (esc() escapes quotes) instead of inline onclick JS strings, so free-text
+// like a phone or an O'Brien-style name can't break out of the handler.
+document.addEventListener('click', function(e){
+  var el = e.target.closest('[data-act]'); if(!el) return;
+  switch(el.dataset.act){
+    case 'churn': openChurn(el.dataset.id); break;
+    case 'acct':  openAcct(el.dataset.id); break;
+    case 'flag':  toggleFlag(el.dataset.k, el); break;
+    case 'copy':  copyText(el.dataset.v); break;
+  }
+});
 
 // ── INIT (after all definitions above have executed) ─────────
 if (AUTHED) { renderFlags(); loadData(); }

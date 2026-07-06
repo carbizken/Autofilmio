@@ -307,7 +307,37 @@ async function load() {
   applyRoleGates();
   await loadProfile(); // refreshes role from the server, re-applies gates
   if (canManage) {
+    wireRowActions();
     loadRooftop(); loadTeam(); loadCrm(); loadBilling();
+  }
+}
+
+// Delegated row actions. Names/phones live in data-* attributes (HTML
+// context, esc() escapes quotes) instead of inline onclick JS strings —
+// a rep named O'Brien can no longer break out of the handler.
+let rowActionsWired = false;
+function wireRowActions() {
+  if (rowActionsWired) return;
+  rowActionsWired = true;
+  const team = document.getElementById('teamList');
+  const crm = document.getElementById('crmList');
+  if (team) {
+    team.addEventListener('click', e => {
+      const b = e.target.closest('[data-act]'); if (!b) return;
+      if (b.dataset.act === 'deactivate') deactivate(b.dataset.id, b.dataset.name);
+      else if (b.dataset.act === 'reactivate') reactivate(b.dataset.id, b.dataset.name);
+    });
+    team.addEventListener('change', e => {
+      const s = e.target.closest('[data-act="role"]'); if (!s) return;
+      changeRole(s.dataset.id, s.value, s.dataset.name);
+    });
+  }
+  if (crm) {
+    crm.addEventListener('click', e => {
+      const b = e.target.closest('[data-act]'); if (!b) return;
+      if (b.dataset.act === 'testcrm') testCrmById(b.dataset.id, b);
+      else if (b.dataset.act === 'removecrm') removeCrm(b.dataset.id);
+    });
   }
 }
 function setVal(id, v) { document.getElementById(id).value = v || ''; }
@@ -373,12 +403,12 @@ async function loadTeam() {
       const self = r.id === me.id;
       let actions = '';
       if (isAdmin && !self) {
-        const roleSel = `<select class="role-sel" onchange="changeRole('${r.id}', this.value, '${esc(r.name)}')">
+        const roleSel = `<select class="role-sel" data-act="role" data-id="${esc(r.id)}" data-name="${esc(r.name)}">
           ${['sales', 'manager', 'admin'].map(x => `<option value="${x}" ${r.role === x ? 'selected' : ''}>${x}</option>`).join('')}
         </select>`;
         const toggle = r.active !== false
-          ? `<button class="btn btn-danger btn-sm" onclick="deactivate('${r.id}','${esc(r.name)}')">Deactivate</button>`
-          : `<button class="btn btn-ghost btn-sm" onclick="reactivate('${r.id}','${esc(r.name)}')">Reactivate</button>`;
+          ? `<button class="btn btn-danger btn-sm" data-act="deactivate" data-id="${esc(r.id)}" data-name="${esc(r.name)}">Deactivate</button>`
+          : `<button class="btn btn-ghost btn-sm" data-act="reactivate" data-id="${esc(r.id)}" data-name="${esc(r.name)}">Reactivate</button>`;
         actions = roleSel + toggle;
       }
       return `<div class="team-row">
@@ -463,8 +493,8 @@ async function loadCrm() {
       <div class="crm-dot" style="background:${c.active ? 'var(--green)' : 'var(--rose)'}"></div>
       <div class="crm-name">${esc(c.provider)}</div>
       <div class="crm-meta">${c.last_sync_at ? 'synced ' + timeAgo(c.last_sync_at) : 'never synced'}</div>
-      <button class="btn btn-ghost btn-sm" onclick="testCrmById('${c.id}', this)">Test</button>
-      <button class="btn btn-danger btn-sm" onclick="removeCrm('${c.id}')">Remove</button>
+      <button class="btn btn-ghost btn-sm" data-act="testcrm" data-id="${esc(c.id)}">Test</button>
+      <button class="btn btn-danger btn-sm" data-act="removecrm" data-id="${esc(c.id)}">Remove</button>
     </div>`).join('');
   } catch (e) { document.getElementById('crmList').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
 }
