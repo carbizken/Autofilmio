@@ -56,6 +56,38 @@
       "dest": "/frontend/autofilm-onboard.html"
     },
     {
+      "src": "/inbox",
+      "dest": "/frontend/autofilm-inbox.html"
+    },
+    {
+      "src": "/workflows",
+      "dest": "/frontend/autofilm-workflows.html"
+    },
+    {
+      "src": "/reels",
+      "dest": "/frontend/autofilm-reels.html"
+    },
+    {
+      "src": "/group",
+      "dest": "/frontend/autofilm-group.html"
+    },
+    {
+      "src": "/mpi",
+      "dest": "/frontend/autofilm-mpi.html"
+    },
+    {
+      "src": "/call",
+      "dest": "/frontend/autofilm-call.html"
+    },
+    {
+      "src": "/service",
+      "dest": "/frontend/autofilm-service.html"
+    },
+    {
+      "src": "/spin",
+      "dest": "/frontend/autofilm-spin.html"
+    },
+    {
       "src": "/terms",
       "dest": "/frontend/terms.html"
     },

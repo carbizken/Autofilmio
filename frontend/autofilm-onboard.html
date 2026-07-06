@@ -203,7 +203,7 @@ function renderStep2(card) {
     <div class="field"><label class="field-label">Dealership Name</label><input class="field-inp" id="fName" value="${esc(scraped.name || '')}"></div>
     <div class="row2">
       <div class="field"><label class="field-label">Phone</label><input class="field-inp" id="fPhone" value="${esc(scraped.phone || '')}"></div>
-      <div class="field"><label class="field-label">Brand Color</label><input class="field-inp" id="fColor" type="color" value="${scraped.brand_color || '#D94F00'}" style="height:42px;padding:4px"></div>
+      <div class="field"><label class="field-label">Brand Color</label><input class="field-inp" id="fColor" type="color" value="${esc(scraped.brand_color || '#D94F00')}" style="height:42px;padding:4px"></div>
     </div>
     <div class="field"><label class="field-label">Address</label><input class="field-inp" id="fAddr" value="${esc(scraped.address || '')}"></div>
     <div class="row2">

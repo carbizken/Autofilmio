@@ -30,13 +30,18 @@ jobs:
         run: node --check src/index.js src/routes/*.js src/lib/*.js
 
   validate-frontend:
-    name: Validate frontend files
+    name: Validate frontend & config
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check all HTML files exist
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check required files exist
         run: |
           files=(
             "frontend/autofilm-app.html"
@@ -45,8 +50,24 @@ jobs:
             "frontend/autofilm-command.html"
             "frontend/autofilm-admin.html"
             "frontend/autofilm-pitch.html"
-            "frontend/autofilm-worker.js"
+            "frontend/autofilm-login.html"
+            "frontend/autofilm-onboard.html"
+            "frontend/autofilm-settings.html"
+            "frontend/autofilm-mpi.html"
+            "frontend/autofilm-reels.html"
+            "frontend/autofilm-group.html"
+            "frontend/autofilm-workflows.html"
+            "frontend/autofilm-inbox.html"
+            "frontend/autofilm-call.html"
+            "frontend/autofilm-service.html"
+            "frontend/autofilm-spin.html"
             "frontend/hartecash-trade.html"
+            "frontend/sw.js"
+            "frontend/autofilm-worker.js"
+            "frontend/autofilm-widget.js"
+            "frontend/assets/session.js"
+            "frontend/manifest.webmanifest"
+            "chrome-extension/manifest.json"
           )
           for f in "${files[@]}"; do
             if [ ! -f "$f" ]; then
@@ -55,6 +76,58 @@ jobs:
             fi
             size=$(wc -c < "$f")
             echo "OK: $f ($size bytes)"
+          done
+
+      - name: Syntax-check standalone JS (SW, worker, widget, shared, extension)
+        run: |
+          set -e
+          for f in \
+            frontend/sw.js \
+            frontend/autofilm-worker.js \
+            frontend/autofilm-widget.js \
+            frontend/assets/session.js \
+            frontend/assets/appswitcher.js \
+            chrome-extension/background.js \
+            chrome-extension/content.js; do
+            node --check "$f" && echo "OK: $f"
+          done
+
+      - name: Extract & syntax-check inline <script> blocks in HTML
+        run: |
+          cat > "$RUNNER_TEMP/check-inline.mjs" <<'EOF'
+          import fs from 'fs';
+          import { execSync } from 'child_process';
+          import path from 'path';
+          import os from 'os';
+          const dir = 'frontend';
+          const files = fs.readdirSync(dir).filter(f => f.endsWith('.html')).map(f => dir + '/' + f);
+          let fail = 0, checked = 0;
+          for (const file of files) {
+            const html = fs.readFileSync(file, 'utf8');
+            const re = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+            let m, idx = 0;
+            while ((m = re.exec(html))) {
+              const attrs = m[1] || '';
+              if (/\bsrc\s*=/.test(attrs)) continue;                                   // external script
+              if (/type\s*=\s*["'](application\/json|text\/|application\/ld)/i.test(attrs)) continue; // data blocks
+              const code = m[2];
+              if (!code.trim()) continue;
+              const tmp = path.join(os.tmpdir(), 'inline_' + path.basename(file) + '_' + (idx++) + '.js');
+              fs.writeFileSync(tmp, code);
+              try { execSync('node --check ' + JSON.stringify(tmp), { stdio: 'pipe' }); checked++; }
+              catch (e) { console.error('SYNTAX ERROR in ' + file + ' (inline #' + idx + '):\n' + e.stderr.toString()); fail++; }
+            }
+          }
+          console.log('Checked ' + checked + ' inline script blocks across ' + files.length + ' HTML files.');
+          if (fail) { console.error(fail + ' inline block(s) failed.'); process.exit(1); }
+          EOF
+          node "$RUNNER_TEMP/check-inline.mjs"
+
+      - name: Validate JSON configs (manifest, vercel, extension)
+        run: |
+          set -e
+          for j in frontend/manifest.webmanifest vercel.json chrome-extension/manifest.json; do
+            node -e "JSON.parse(require('fs').readFileSync('$j','utf8'))" && echo "OK: $j"
           done
 
       - name: Check file sizes (warn if > 300KB)
