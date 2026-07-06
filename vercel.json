@@ -24,6 +24,10 @@
       "dest": "/frontend/autofilm-command.html"
     },
     {
+      "src": "/queue",
+      "dest": "/frontend/autofilm-queue.html"
+    },
+    {
       "src": "/admin",
       "dest": "/frontend/autofilm-admin.html"
     },
