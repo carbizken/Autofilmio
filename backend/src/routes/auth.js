@@ -10,6 +10,29 @@ const APP_URL = process.env.APP_URL || 'https://autofilm.io';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const isEmail = (v) => typeof v === 'string' && v.length <= 254 && EMAIL_RE.test(v);
 
+/**
+ * Mint a real Supabase session for an existing user without a password,
+ * via the admin magic-link exchange. supabase-js v2 has documented the
+ * verifyOtp `type` for a magic-link token hash as both 'email' and
+ * 'magiclink' across releases, so try both — with a FRESH link per attempt,
+ * since a token hash is single-use and a failed verify may consume it.
+ * @returns {{access_token, refresh_token, expires_at}}
+ */
+async function mintUserSession(email) {
+  let lastErr = new Error('Session exchange failed');
+  for (const type of ['email', 'magiclink']) {
+    const { data: link, error: linkErr } =
+      await supabase.auth.admin.generateLink({ type: 'magiclink', email });
+    if (linkErr) { lastErr = linkErr; continue; }
+    const tokenHash = link?.properties?.hashed_token;
+    if (!tokenHash) { lastErr = new Error('No token hash from generateLink'); continue; }
+    const { data, error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
+    if (!error && data?.session) return data.session;
+    lastErr = error || new Error('verifyOtp returned no session');
+  }
+  throw lastErr;
+}
+
 /** Constant-time string comparison (both must be strings). */
 function safeEqual(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string') return false;
@@ -285,23 +308,16 @@ router.post('/sso', async (req, res) => {
       rep = newRep;
     }
 
-    // 3. Mint a real AutoFilm session (magic-link exchange, no password).
-    const { data: linkData, error: linkErr } =
-      await supabase.auth.admin.generateLink({ type: 'magiclink', email });
-    if (linkErr) throw linkErr;
-    const tokenHash = linkData?.properties?.hashed_token;
-    if (!tokenHash) throw new Error('Could not establish a session');
-    const { data: verified, error: vErr } =
-      await supabase.auth.verifyOtp({ type: 'email', token_hash: tokenHash });
-    if (vErr || !verified?.session) throw (vErr || new Error('Session exchange failed'));
+    // 3. Mint a real AutoFilm session, no password (magic-link exchange).
+    const session = await mintUserSession(email);
 
     console.log(`[auth] SSO handoff from AutoCurb: ${email} → rooftop ${rooftop.id}`);
     res.json({
       success: true,
       session: {
-        access_token: verified.session.access_token,
-        refresh_token: verified.session.refresh_token,
-        expires_at: verified.session.expires_at,
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        expires_at: session.expires_at,
       },
       rep,
     });
