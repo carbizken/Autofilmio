@@ -1,0 +1,50 @@
+/* ============================================================
+   auto( ) PLATFORM — OFFICIAL BRAND COLOR TOKENS
+   Single source of truth for logo/wordmark colors.
+   Derived from the shipped dark-theme palette + WCAG contrast
+   math (ratios verified 2026-07-13). Do not eyeball new values —
+   edit here and propagate.
+
+   THE RULE: the accent color SWAPS by background.
+   Soft/bright accents are for dark surfaces only; core (deep)
+   accents are for white/light surfaces only. Never use a
+   dark-surface accent on white — every one of them fails AA.
+
+   App           On dark (#0A0A0D)          On white (#FFFFFF)
+   ------------  -------------------------  -------------------------
+   auto(FILM)    auto #F1F4F8 (17.9:1)      auto #0A0A0D (19.8:1)
+                 (FILM) #F97316 (7.1:1)     (FILM) #D94F00 (4.1:1 AA-large)
+   auto(CURB)    auto #F1F4F8               auto #0A0A0D
+                 (CURB) #A98AF0 (7.1:1)     (CURB) #7C3AED (5.7:1 AA)
+   auto(LABELS)  auto #F1F4F8               auto #0A0A0D
+                 (LABELS) #6EA0F5 (7.5:1)   (LABELS) #2563EB (5.2:1 AA)
+
+   Small text / print on white (need ≥7:1): FILM use #C2410C-family,
+   CURB use #6D28D9 (7.1:1), LABELS use #1D4ED8 (6.7:1).
+
+   Known aliases already shipped: #D94F00 is the player-URL
+   &color= brand param; #E85A0A (--fire2) is the app-page hover
+   tint of the FILM family; #7C3AED is --curb-purple; #2563EB is
+   --labels-blue. All remain valid within their family.
+   ============================================================ */
+
+:root {
+  /* Neutral wordmark base */
+  --brand-ink: #0A0A0D;        /* "auto" on white; also the brand dark bg */
+  --brand-paper: #F1F4F8;      /* "auto" on dark */
+
+  /* auto(FILM) — orange family */
+  --film-on-dark: #F97316;     /* bright orange, dark surfaces only */
+  --film-on-white: #D94F00;    /* deep fire, white surfaces; = player &color= param */
+  --film-hover-dark: #E85A0A;  /* app-page hover tint */
+
+  /* auto(CURB) — purple family */
+  --curb-on-dark: #A98AF0;     /* soft purple, dark surfaces only */
+  --curb-on-white: #7C3AED;    /* core curb purple (= --curb-purple) */
+  --curb-deep: #6D28D9;        /* small text / print on white */
+
+  /* auto(LABELS) — blue family */
+  --labels-on-dark: #6EA0F5;   /* soft blue, dark surfaces only */
+  --labels-on-white: #2563EB;  /* core labels blue (= --labels-blue) */
+  --labels-deep: #1D4ED8;      /* small text / print on white */
+}
