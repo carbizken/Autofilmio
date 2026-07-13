@@ -22,7 +22,7 @@ const DAY_MS = 86_400_000;
 const SEND_WINDOW_DAYS = 30;      // "videos_30d" aggregation window
 const LOOKBACK_DAYS = 60;         // how far back we look for last_send_at
 const CHURN_SILENT_DAYS = 14;     // active sub + no sends this long = churn risk
-const PLAN_MRR = { standard: 299, bundle: 599 };
+const PLAN_MRR = { standard: 999, bundle: 3999 }; // catalog: autofilm_full $999, all_apps_unlimited $3,999
 
 // ── Platform-operator allowlist (fail closed) ───────────────
 const PLATFORM_ADMIN_EMAILS = (process.env.PLATFORM_ADMIN_EMAILS || '')
