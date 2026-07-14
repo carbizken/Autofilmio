@@ -8,8 +8,8 @@
  * Env:
  *   STRIPE_SECRET_KEY      sk_live_... / sk_test_...
  *   STRIPE_WEBHOOK_SECRET  whsec_...
- *   STRIPE_PRICE_STANDARD  price id for AutoFilm standalone ($299/rooftop/mo)
- *   STRIPE_PRICE_BUNDLE    price id for suite bundle ($599/rooftop/mo)
+ *   STRIPE_PRICE_STANDARD  price id for AutoFilm full (autofilm_full, $999/rooftop/mo)
+ *   STRIPE_PRICE_BUNDLE    price id for All-Apps Unlimited (all_apps_unlimited, $3,999/mo)
  */
 
 import crypto from 'crypto';

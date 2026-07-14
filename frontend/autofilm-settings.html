@@ -78,7 +78,7 @@ h1{font-size:22px;font-weight:900;letter-spacing:-.4px;margin-bottom:4px}
 .bill-txt{font-size:13px;font-weight:700}
 .bill-sub{font-size:11px;color:var(--t3);margin-top:2px}
 
-.plans{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-top:14px}
 @media(max-width:600px){.plans{grid-template-columns:1fr}}
 .plan{border:1px solid var(--b1);border-radius:14px;padding:20px;transition:border-color .15s}
 .plan:hover{border-color:var(--fireb)}
@@ -240,14 +240,26 @@ h1{font-size:22px;font-weight:900;letter-spacing:-.4px;margin-bottom:4px}
       <div id="billActions"></div>
       <div class="plans" id="billPlans" style="display:none">
         <div class="plan">
-          <div class="plan-name">AutoFilm</div>
-          <div class="plan-price">$299<span>/rooftop/mo</span></div>
-          <div class="plan-feats">Unlimited users & videos<br>SMS + email + push<br>AI scripts & VIN Reels<br>Service MPI video<br>CRM sync</div>
-          <button class="btn btn-primary" style="width:100%" onclick="checkout('standard')">Start 30-Day Free Trial</button>
+          <div class="plan-name">Sales</div>
+          <div class="plan-price">$399<span>/rooftop/mo · $349/mo billed annually</span></div>
+          <div class="plan-feats">Personalized sales videos<br>Inventory walkarounds<br>AI sales scripts<br>Vehicle attachment<br>Branded customer pages<br>Viewer engagement<br>Sales analytics</div>
+          <button class="btn btn-primary" style="width:100%" onclick="checkout('sales')">Start 30-Day Free Trial</button>
+        </div>
+        <div class="plan">
+          <div class="plan-name">Service</div>
+          <div class="plan-price">$599<span>/rooftop/mo · $499/mo billed annually</span></div>
+          <div class="plan-feats">Technician video MPI<br>AI transcription<br>Timestamped repair findings<br>Customer approvals<br>Declined-service tracking<br>Technician analytics<br>Vehicle-value offer</div>
+          <button class="btn btn-primary" style="width:100%" onclick="checkout('service')">Start 30-Day Free Trial</button>
         </div>
         <div class="plan featured">
-          <div class="plan-name">Suite Bundle <span class="tag admin" style="margin-left:6px">Best value</span></div>
-          <div class="plan-price">$599<span>/rooftop/mo</span></div>
+          <div class="plan-name">Complete <span class="tag admin" style="margin-left:6px">Best value — save $99/mo vs. Sales + Service separately</span></div>
+          <div class="plan-price">$899<span>/rooftop/mo · $799/mo billed annually</span></div>
+          <div class="plan-feats">Everything in Sales + Everything in Service<br>Unified management<br>Shared vehicle records<br>Cross-department analytics<br>Priority onboarding<br>Priority support</div>
+          <button class="btn btn-primary" style="width:100%" onclick="checkout('complete')">Start 30-Day Free Trial</button>
+        </div>
+        <div class="plan featured">
+          <div class="plan-name">All-Apps Unlimited <span class="tag admin" style="margin-left:6px">Best value</span></div>
+          <div class="plan-price">$3,497<span>/mo</span></div>
           <div class="plan-feats">Everything in AutoFilm<br>+ AutoCurb trade & acquisition<br>+ AutoLabels vehicle passport<br>+ Priority support</div>
           <button class="btn btn-primary" style="width:100%" onclick="checkout('bundle')">Start 30-Day Free Trial</button>
         </div>

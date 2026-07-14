@@ -678,6 +678,7 @@ footer{
   .mpi-split{grid-template-columns:1fr}
   .svc-flow{grid-template-columns:repeat(3,1fr)}
   .roi-grid{grid-template-columns:1fr}
+  .tier-grid{grid-template-columns:1fr}
   .footer-inner{flex-direction:column}
   .comp-tbl{display:none}
   .nav-links{display:none}
@@ -832,11 +833,11 @@ footer{
           </a>
         </div>
         <div class="hero-trust">
-          <span>$299 / rooftop / month</span>
+          <span>Plans from $399/mo — per rooftop</span>
           <div class="ht-sep"></div>
           <span>Unlimited users</span>
           <div class="ht-sep"></div>
-          <span>Full product — no tiers</span>
+          <span>Sales · Service · Complete</span>
           <div class="ht-sep"></div>
           <span>Cancel anytime</span>
         </div>
@@ -1203,27 +1204,68 @@ footer{
 <section id="pricing">
   <div class="wrap">
     <div class="section-eyebrow" style="justify-content:center;display:flex">Pricing</div>
-    <h2 style="margin-top:14px;text-align:center">One price.<br><em>Everything included.</em></h2>
-    <p style="font-size:16px;color:var(--t2);text-align:center;margin-top:14px;line-height:1.65">No tiers. No per-user fees. No feature gates. Every rep at every rooftop gets the full product from day one.</p>
+    <h2 style="margin-top:14px;text-align:center">Pick your department.<br><em>Or run the whole store.</em></h2>
+    <p style="font-size:16px;color:var(--t2);text-align:center;margin-top:14px;line-height:1.65">Three plans, all per rooftop with unlimited users. Sales from $399/mo, Service from $599/mo, or Complete at $899/mo — no per-user fees, no feature gates.</p>
 
-    <div class="price-card reveal">
-      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:10px">AutoFilm Rooftop Plan</div>
-      <div class="price-amount">$299</div>
-      <div class="price-period">per rooftop · per month · unlimited users</div>
-      <div class="price-tag">The same full product for your GM and your newest rep. No starter plans, no feature walls, no gotchas.</div>
-      <div class="price-feats">
-        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Unlimited video recording and sending</div>
-        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>SMS · Email · WhatsApp · QR code delivery</div>
-        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Full Claude AI — 10 script purposes, all templates</div>
-        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Service Drive · MPI video · RO Approval</div>
-        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Real-time tracking · lead scoring · watch heatmaps</div>
-        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Revenue attribution — front gross linked per video</div>
-        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Command admin panel · KPI benchmarks · training center</div>
-        <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>iOS + Android app · streak gamification · leaderboard</div>
+    <div class="tier-grid reveal" style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;max-width:1120px;margin:48px auto 0;align-items:stretch">
+
+      <!-- Sales -->
+      <div class="tier-card" style="display:flex;flex-direction:column;background:linear-gradient(160deg,rgba(217,79,0,.06) 0%,var(--bg1) 55%);border:1px solid rgba(217,79,0,.22);border-radius:20px;padding:34px 30px;position:relative;overflow:hidden">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:12px">Sales</div>
+        <div class="price-amount" style="font-size:52px;letter-spacing:-2px;color:#F97316">$399<span style="font-size:17px;font-weight:700;color:var(--t3);letter-spacing:0">/mo</span></div>
+        <div class="price-period" style="font-size:14px">$349/mo billed annually · $4,188/yr</div>
+        <div class="price-tag" style="font-size:14px;margin:14px 0 22px">Per rooftop · unlimited users. Personal video that turns internet leads into showroom appointments.</div>
+        <div class="price-feats" style="margin-bottom:28px;gap:11px">
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Personalized sales videos</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Inventory walkarounds</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>AI sales scripts</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Vehicle attachment</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Branded customer pages</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Viewer engagement</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Sales analytics</div>
+        </div>
+        <a href="#" onclick="openModal('trial');return false" class="price-btn" style="margin-top:auto;padding:14px;font-size:15px">Start Free 30-Day Trial</a>
       </div>
-      <a href="#" onclick="openModal('trial');return false" class="price-btn">Start Free 30-Day Trial — No Credit Card Required</a>
-      <div class="price-note">Volume pricing available for 4+ rooftops · White label for dealer groups · Cancel anytime</div>
+
+      <!-- Service -->
+      <div class="tier-card" style="display:flex;flex-direction:column;background:linear-gradient(160deg,rgba(217,79,0,.06) 0%,var(--bg1) 55%);border:1px solid rgba(217,79,0,.22);border-radius:20px;padding:34px 30px;position:relative;overflow:hidden">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin-bottom:12px">Service</div>
+        <div class="price-amount" style="font-size:52px;letter-spacing:-2px;color:#F97316">$599<span style="font-size:17px;font-weight:700;color:var(--t3);letter-spacing:0">/mo</span></div>
+        <div class="price-period" style="font-size:14px">$499/mo billed annually · $5,988/yr</div>
+        <div class="price-tag" style="font-size:14px;margin:14px 0 22px">Per rooftop · unlimited users. Technician video MPI that lifts approvals and recovers declined work.</div>
+        <div class="price-feats" style="margin-bottom:28px;gap:11px">
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Technician video MPI</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>AI transcription</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Timestamped repair findings</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Customer approvals</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Declined-service tracking</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Technician analytics</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Vehicle-value offer</div>
+        </div>
+        <a href="#" onclick="openModal('trial');return false" class="price-btn" style="margin-top:auto;padding:14px;font-size:15px">Start Free 30-Day Trial</a>
+      </div>
+
+      <!-- Complete -->
+      <div class="tier-card" style="display:flex;flex-direction:column;background:linear-gradient(160deg,rgba(217,79,0,.11) 0%,var(--bg1) 60%);border:1.5px solid rgba(249,115,22,.55);border-radius:20px;padding:34px 30px;position:relative;overflow:hidden">
+        <div style="position:absolute;top:0;left:0;right:0;background:#F97316;color:#0a0a0a;font-size:11px;font-weight:800;letter-spacing:.02em;text-align:center;padding:7px 10px;line-height:1.35">Best value — save $99/mo vs. Sales + Service separately</div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t3);margin:34px 0 12px 0">Complete</div>
+        <div class="price-amount" style="font-size:52px;letter-spacing:-2px;color:#F97316">$899<span style="font-size:17px;font-weight:700;color:var(--t3);letter-spacing:0">/mo</span></div>
+        <div class="price-period" style="font-size:14px">$799/mo billed annually · $9,588/yr</div>
+        <div class="price-tag" style="font-size:14px;margin:14px 0 22px">Per rooftop · unlimited users. Sales and Service on one platform — the whole store, one bill.</div>
+        <div class="price-feats" style="margin-bottom:28px;gap:11px">
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Everything in Sales</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Everything in Service</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Unified management</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Shared vehicle records</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Cross-department analytics</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Priority onboarding</div>
+          <div class="pf"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Priority support</div>
+        </div>
+        <a href="#" onclick="openModal('trial');return false" class="price-btn" style="margin-top:auto;padding:14px;font-size:15px">Start Free 30-Day Trial</a>
+      </div>
+
     </div>
+    <div class="price-note" style="text-align:center;max-width:760px;margin:18px auto 0;font-size:12px;color:var(--t4)">Every plan is per rooftop with unlimited users · Volume pricing for 4+ rooftops · White label for dealer groups · Cancel anytime</div>
   </div>
 </section>
 
@@ -1244,9 +1286,9 @@ footer{
       </thead>
       <tbody>
         <tr class="sec-row"><td colspan="4">Pricing</td></tr>
-        <tr><td>Price model</td><td class="us-col cx">$299/rooftop · unlimited users</td><td class="cu">$49/user/month</td><td class="cu">$495/rooftop/month</td></tr>
-        <tr><td>10-user store annual</td><td class="us-col cx">$3,588/yr</td><td class="cn">$5,880/yr</td><td class="cn">$5,940/yr</td></tr>
-        <tr><td>Annual savings</td><td class="us-col" style="color:var(--green);font-weight:700">—</td><td class="cn">You pay $2,292 more</td><td class="cn">You pay $2,352 more</td></tr>
+        <tr><td>Price model</td><td class="us-col cx">$899/rooftop (Complete) · Sales $399 / Service $599 · unlimited users</td><td class="cu">$49/user/month</td><td class="cu">$495/rooftop/month</td></tr>
+        <tr><td>To match AutoFilm you would also need</td><td class="us-col cx">Nothing — service MPI is included</td><td class="cn">A separate MPI/DVI platform</td><td class="cn">A separate MPI/DVI platform</td></tr>
+        <tr><td>Comparable sales + service platforms (myKaarma / Xtime class)</td><td class="us-col cx">$899/mo flat (Complete)</td><td class="cn" colspan="2" style="text-align:center">$1,500–$3,000/mo — before per-user fees</td></tr>
         <tr class="sec-row"><td colspan="4">Features</td></tr>
         <tr><td>AI script generation</td><td class="us-col cx">10 purposes (Claude)</td><td class="cu">VIN only</td><td class="cn">None</td></tr>
         <tr><td>WhatsApp + QR delivery</td><td class="us-col cx">Exclusive</td><td class="cn">—</td><td class="cn">—</td></tr>
@@ -1326,7 +1368,7 @@ footer{
         </div>
         <div class="nav-wordmark" style="font-size:16px">Auto<em>Film</em></div>
       </div>
-      <div class="footer-copy">© 2026 AutoFilm · $299/rooftop · Built for automotive retail</div>
+      <div class="footer-copy">© 2026 AutoFilm · Plans from $399/rooftop · Built for automotive retail</div>
       <div class="footer-copy" style="margin-top:4px">
         <a href="#" onclick="openModal('rep');return false" style="color:rgba(255,255,255,.28);transition:color .14s" onmouseover="this.style.color='rgba(255,255,255,.6)'" onmouseout="this.style.color='rgba(255,255,255,.28)'">Rep Login</a>
         &nbsp;·&nbsp;
@@ -1575,7 +1617,7 @@ function calcROI(){
   var afDeals=leads*afSet*afShow*afClose;
   var delta=afDeals-cur;
   var addRev=delta*gross*roofs;
-  var cost=roofs*299;
+  var cost=roofs*899; // AutoFilm Complete tier — $899/rooftop/mo
   var net=addRev-cost;
   var roi=cost>0?Math.round(net/cost):0;
 
