@@ -72,7 +72,7 @@ body{font-family:var(--ff);background:var(--bg);color:var(--t1);-webkit-font-smo
 .invited-dept{font-size:9px;font-weight:700;padding:2px 7px;border-radius:12px;background:var(--bg3);color:var(--t3)}
 
 /* Billing plans */
-.plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px}
+.plan-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:4px}
 @media(max-width:520px){.plan-grid{grid-template-columns:1fr}}
 .plan-card{position:relative;background:var(--bg2);border:1px solid var(--b1);border-radius:14px;padding:20px 16px;cursor:pointer;transition:border-color .14s,transform .14s;text-align:left}
 .plan-card:hover{border-color:var(--fire);transform:translateY(-1px)}
@@ -241,24 +241,55 @@ function renderStep4(card) {
   card.innerHTML = `<div class="card-inner">
     <div class="step-eyebrow">Step 4 of 6</div>
     <div class="step-title">Pick Your Plan</div>
-    <div class="step-sub">Both plans start with a 14-day free trial. You won't be charged until the trial ends &mdash; cancel anytime.</div>
+    <div class="step-sub">All plans start with a 14-day free trial. You won't be charged until the trial ends &mdash; cancel anytime.</div>
     ${billingNotice ? `<div class="billing-note">${esc(billingNotice)}</div>` : ''}
     <div class="plan-grid">
-      <div class="plan-card" onclick="startCheckout('standard', this)">
-        <div class="plan-name">AutoFilm</div>
-        <div class="plan-price">$999<span> /rooftop/mo</span></div>
+      <div class="plan-card" onclick="startCheckout('sales', this)">
+        <div class="plan-name">Sales</div>
+        <div class="plan-price">$399<span> /rooftop/mo</span></div>
         <ul class="plan-feats">
-          <li>Unlimited users &amp; videos</li>
-          <li>Sales walkarounds + service MPI — both departments</li>
-          <li>SMS delivery + branded player</li>
-          <li>Real-time watch notifications</li>
+          <li>Personalized sales videos</li>
+          <li>Inventory walkarounds</li>
+          <li>AI sales scripts</li>
+          <li>Vehicle attachment</li>
+          <li>Branded customer pages</li>
+          <li>Viewer engagement</li>
+          <li>Sales analytics</li>
         </ul>
-        <div class="plan-trial">14-day free trial &middot; cancel anytime</div>
+        <div class="plan-trial">$349/mo billed annually &middot; 14-day free trial</div>
+      </div>
+      <div class="plan-card" onclick="startCheckout('service', this)">
+        <div class="plan-name">Service</div>
+        <div class="plan-price">$599<span> /rooftop/mo</span></div>
+        <ul class="plan-feats">
+          <li>Technician video MPI</li>
+          <li>AI transcription</li>
+          <li>Timestamped repair findings</li>
+          <li>Customer approvals</li>
+          <li>Declined-service tracking</li>
+          <li>Technician analytics</li>
+          <li>Vehicle-value offer</li>
+        </ul>
+        <div class="plan-trial">$499/mo billed annually &middot; 14-day free trial</div>
+      </div>
+      <div class="plan-card featured" onclick="startCheckout('complete', this)">
+        <div class="plan-badge" style="position:static;display:inline-block;margin-bottom:8px;white-space:normal">Best value — save $99/mo vs. Sales + Service separately</div>
+        <div class="plan-name">Complete</div>
+        <div class="plan-price">$899<span> /rooftop/mo</span></div>
+        <ul class="plan-feats">
+          <li>Everything in Sales + Everything in Service</li>
+          <li>Unified management</li>
+          <li>Shared vehicle records</li>
+          <li>Cross-department analytics</li>
+          <li>Priority onboarding</li>
+          <li>Priority support</li>
+        </ul>
+        <div class="plan-trial">$799/mo billed annually &middot; 14-day free trial</div>
       </div>
       <div class="plan-card featured" onclick="startCheckout('bundle', this)">
         <div class="plan-badge">Best Value</div>
         <div class="plan-name">All-Apps Unlimited</div>
-        <div class="plan-price">$3,999<span> /mo</span></div>
+        <div class="plan-price">$3,794<span> /mo</span></div>
         <ul class="plan-feats">
           <li>Everything in AutoFilm</li>
           <li>+ AutoCurb, AutoLabels &amp; AutoFrame — every app at top tier</li>
@@ -307,7 +338,8 @@ function renderStep6(card) {
 }
 
 function planLabel(plan) {
-  return plan === 'bundle' ? 'Suite Bundle' : 'AutoFilm';
+  const map = { sales: 'AutoFilm Sales', service: 'AutoFilm Service', complete: 'AutoFilm Complete', bundle: 'Suite Bundle' };
+  return map[plan] || 'AutoFilm';
 }
 
 function fmtDate(iso) {

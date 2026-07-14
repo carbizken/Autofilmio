@@ -340,7 +340,7 @@ body{font-family:var(--ff);background:var(--bg);color:var(--t1);-webkit-font-smo
 
   <!-- MRR -->
   <div id="p-mrr" class="page">
-    <div class="ph"><div class="pt">Billing & MRR</div><div class="ps">Estimated from Stripe subscription status · Standard $999 · All-Apps Unlimited $3,999</div></div>
+    <div class="ph"><div class="pt">Billing & MRR</div><div class="ps">Estimated from Stripe subscription status · Sales $399 · Service $599 · Complete $899 · All-Apps Unlimited $3,794</div></div>
     <div class="g4" style="margin-bottom:20px">
       <div class="sc" style="--sc:var(--green)"><div class="scl">MRR (estimated)</div><div class="scv" style="color:var(--green)" id="mMrr">—</div><div class="scs" id="mMrrSub">Active subscriptions only</div></div>
       <div class="sc" style="--sc:var(--fire)"><div class="scl">ARR Run Rate</div><div class="scv" id="mArr">—</div><div class="scs">MRR × 12</div></div>
@@ -354,9 +354,9 @@ body{font-family:var(--ff);background:var(--bg);color:var(--t1);-webkit-font-smo
       <div class="card"><div class="ch"><div class="ct">Road to $1M ARR</div></div><div class="cb">
         <div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px"><span style="color:var(--t3)">Current ARR</span><span style="font-family:var(--fm);font-weight:700" id="mGoalArr">—</span></div><div class="pb" style="height:8px"><div class="pf" id="mGoalBar" style="width:0%;background:linear-gradient(90deg,var(--fire),var(--green))"></div></div><div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px;color:var(--t4)"><span>$0</span><span style="color:var(--green)" id="mGoalPct">—</span><span>$1M</span></div></div>
         <div style="display:flex;flex-direction:column;gap:8px">
-          <div style="display:flex;justify-content:space-between;font-size:12px;padding:8px 0;border-bottom:1px solid var(--b0)"><span style="color:var(--t3)">Standard rooftops at $1M ARR</span><span class="mono" style="font-weight:700">279</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;padding:8px 0;border-bottom:1px solid var(--b0)"><span style="color:var(--t3)">Sales rooftops at $1M ARR</span><span class="mono" style="font-weight:700">209</span></div>
           <div style="display:flex;justify-content:space-between;font-size:12px;padding:8px 0;border-bottom:1px solid var(--b0)"><span style="color:var(--t3)">Paying now</span><span class="mono" style="font-weight:700" id="mGoalNow">—</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:12px;padding:8px 0"><span style="color:var(--t3)">Needed (at $999 each)</span><span class="mono" style="font-weight:700;color:var(--amber)" id="mGoalNeed">—</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;padding:8px 0"><span style="color:var(--t3)">Needed (at $399 each)</span><span class="mono" style="font-weight:700;color:var(--amber)" id="mGoalNeed">—</span></div>
         </div>
       </div></div>
     </div>
@@ -535,7 +535,9 @@ function statusChip(a){
 }
 function planChip(p){
   if(p==='bundle')return '<span class="chip cf">Bundle</span>';
-  if(p==='standard')return '<span class="chip cs">Standard</span>';
+  if(p==='complete')return '<span class="chip cf">Complete</span>';
+  if(p==='sales')return '<span class="chip cs">Sales</span>';
+  if(p==='service')return '<span class="chip cs">Service</span>';
   return '<span class="chip cd">'+esc(p||'—')+'</span>';
 }
 function acctBtn(a){
@@ -689,7 +691,7 @@ function renderMrr(){
   document.getElementById('mGoalBar').style.width=pct+'%';
   document.getElementById('mGoalPct').textContent=pct+'% to goal';
   document.getElementById('mGoalNow').textContent=k.accounts_active;
-  document.getElementById('mGoalNeed').textContent=arr>=1000000?'0 — done':Math.ceil((1000000-arr)/12/999)+' more';
+  document.getElementById('mGoalNeed').textContent=arr>=1000000?'0 — done':Math.ceil((1000000-arr)/12/399)+' more';
 }
 
 // ── CHURN ────────────────────────────────────────────────────
