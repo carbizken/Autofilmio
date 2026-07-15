@@ -8,8 +8,23 @@
  * Env:
  *   STRIPE_SECRET_KEY      sk_live_... / sk_test_...
  *   STRIPE_WEBHOOK_SECRET  whsec_...
- *   STRIPE_PRICE_STANDARD  price id for AutoFilm standalone ($299/rooftop/mo)
- *   STRIPE_PRICE_BUNDLE    price id for suite bundle ($599/rooftop/mo)
+ *
+ *   Three-tier ladder (per rooftop · unlimited users). Each tier has a
+ *   monthly price and a discounted price billed annually:
+ *     STRIPE_PRICE_SALES_MONTHLY      Sales    $399/mo
+ *     STRIPE_PRICE_SALES_ANNUAL       Sales    $349/mo billed annually ($4,188/yr)
+ *     STRIPE_PRICE_SERVICE_MONTHLY    Service  $599/mo
+ *     STRIPE_PRICE_SERVICE_ANNUAL     Service  $499/mo billed annually ($5,988/yr)
+ *     STRIPE_PRICE_COMPLETE_MONTHLY   Complete $899/mo
+ *     STRIPE_PRICE_COMPLETE_ANNUAL    Complete $799/mo billed annually ($9,588/yr)
+ *     STRIPE_PRICE_BUNDLE             All-Apps Unlimited suite bundle ($3,794/mo)
+ *     STRIPE_PRICE_BUNDLE_ANNUAL      optional annual bundle price
+ *
+ *   Legacy (kept so already-subscribed rooftops keep resolving):
+ *     STRIPE_PRICE_STANDARD  retired flat AutoFilm plan
+ *
+ *   Run `node scripts/stripe-setup-prices.mjs` with STRIPE_SECRET_KEY set to
+ *   create these products/prices in Stripe and print the env var lines.
  */
 
 import crypto from 'crypto';
@@ -110,13 +125,64 @@ export function verifyStripeSignature(rawBody, sigHeader, toleranceSecs = 300) {
   }
 }
 
-/** Plan catalog — maps friendly plan names to Stripe price env vars. */
-export function getPriceId(plan) {
-  const prices = {
-    standard: process.env.STRIPE_PRICE_STANDARD,
-    bundle: process.env.STRIPE_PRICE_BUNDLE,
+/**
+ * Plans a rooftop can subscribe to through checkout. `standard` is legacy —
+ * not offered to new rooftops, but kept so existing subscriptions resolve.
+ */
+export const SUBSCRIBABLE_PLANS = ['sales', 'service', 'complete', 'bundle'];
+
+/**
+ * Plan catalog — maps a plan + billing period to its Stripe price env var.
+ * Monthly is the default (it's the headline price under each plan button);
+ * pass period 'annual' for the discounted billed-yearly price.
+ *
+ * Returns undefined when no price is configured for the requested plan —
+ * callers must treat that as "not available" (a clean error), never fall
+ * back to a different plan's price, so a rooftop is never charged the wrong
+ * amount for the plan it picked.
+ */
+export function getPriceId(plan, period = 'monthly') {
+  const annual = period === 'annual';
+  const map = {
+    sales:    annual ? process.env.STRIPE_PRICE_SALES_ANNUAL    : process.env.STRIPE_PRICE_SALES_MONTHLY,
+    service:  annual ? process.env.STRIPE_PRICE_SERVICE_ANNUAL  : process.env.STRIPE_PRICE_SERVICE_MONTHLY,
+    complete: annual ? process.env.STRIPE_PRICE_COMPLETE_ANNUAL : process.env.STRIPE_PRICE_COMPLETE_MONTHLY,
+    bundle:   annual ? process.env.STRIPE_PRICE_BUNDLE_ANNUAL   : process.env.STRIPE_PRICE_BUNDLE,
+    standard: process.env.STRIPE_PRICE_STANDARD, // legacy — monthly only
   };
-  return prices[plan] || prices.standard;
+  // Fall back to the monthly price if a plan has no annual price configured,
+  // so a half-configured annual option degrades to monthly rather than
+  // resolving to a different plan.
+  if (annual && map[plan] === undefined && plan !== 'standard') {
+    return getPriceId(plan, 'monthly');
+  }
+  return map[plan];
+}
+
+/**
+ * Reverse lookup — resolve a Stripe price id back to our plan name, used by
+ * the webhook to keep `rooftops.plan` in sync when a subscription's price
+ * changes (upgrade/downgrade via the billing portal). Returns null when the
+ * price id matches nothing configured.
+ */
+export function getPlanFromPriceId(priceId) {
+  if (!priceId) return null;
+  const env = process.env;
+  const byPrice = {
+    [env.STRIPE_PRICE_SALES_MONTHLY]:    'sales',
+    [env.STRIPE_PRICE_SALES_ANNUAL]:     'sales',
+    [env.STRIPE_PRICE_SERVICE_MONTHLY]:  'service',
+    [env.STRIPE_PRICE_SERVICE_ANNUAL]:   'service',
+    [env.STRIPE_PRICE_COMPLETE_MONTHLY]: 'complete',
+    [env.STRIPE_PRICE_COMPLETE_ANNUAL]:  'complete',
+    [env.STRIPE_PRICE_BUNDLE]:           'bundle',
+    [env.STRIPE_PRICE_BUNDLE_ANNUAL]:    'bundle',
+    [env.STRIPE_PRICE_STANDARD]:         'standard',
+  };
+  // An unset env var keys `undefined` in the object — guard against a stray
+  // undefined price id matching it.
+  delete byPrice.undefined;
+  return byPrice[priceId] || null;
 }
 
 export const TRIAL_DAYS = parseInt(process.env.STRIPE_TRIAL_DAYS || '30', 10);
