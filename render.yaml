@@ -34,3 +34,7 @@ services:
       # APP_URL / AUTOCURB_JWT_SECRET / SENTRY_DSN
       # PLATFORM_ADMIN_EMAILS — comma-separated vendor-operator allowlist;
       #   empty/unset = all /api/platform routes 403 (fail closed)
+      # Vehicle stock imagery (MPI header / Passport card):
+      #   MARKETCHECK_API_KEY — marketcheck.com listings API
+      #   VEHICLE_IMAGE_PROVIDER — marketcheck (default) | evox | none
+      #   EVOX_API_KEY — only when VEHICLE_IMAGE_PROVIDER=evox

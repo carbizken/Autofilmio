@@ -10,6 +10,7 @@ import { sendVideoEmail } from '../lib/email.js';
 import { kvPut } from '../lib/cloudflare.js';
 import { storeThumbnails } from '../lib/thumbnail.js';
 import { syncVideoEvent } from '../lib/crm.js';
+import { attachVehicleImage } from '../lib/vehicleImage.js';
 
 const router = express.Router();
 
@@ -92,6 +93,16 @@ router.post('/', requireAuth(), async (req, res) => {
     if (mpiErr) throw mpiErr;
 
     console.log(`[mpi] Created inspection ${inspection.id} for RO# ${ro_number || 'N/A'}`);
+
+    // Fire-and-forget: resolve a stock photo for this vehicle and persist it.
+    // Must never delay or fail RO creation — the frontend falls back to its
+    // placeholder until vehicle_image_url lands.
+    attachVehicleImage(supabase, {
+      inspectionId: inspection.id,
+      videoId: videoRow.id,
+      vin,
+      vehicle,
+    });
 
     res.json({
       success: true,
@@ -305,7 +316,7 @@ router.get('/:id/public', async (req, res) => {
 
     const { data: inspection } = await supabase
       .from('mpi_inspections')
-      .select('id, status, customer_name, vehicle, mileage, ro_number, items, total_estimate, approved_amount, approved_at, videos(short_code, mux_playback_id, reps(name, nickname, title, photo_url, rooftops(name)))')
+      .select('id, status, customer_name, vehicle, vehicle_image_url, mileage, ro_number, items, total_estimate, approved_amount, approved_at, videos(short_code, mux_playback_id, reps(name, nickname, title, photo_url, rooftops(name)))')
       .eq('id', id)
       .single();
 
@@ -324,6 +335,7 @@ router.get('/:id/public', async (req, res) => {
         status: inspection.status,
         customer_name: inspection.customer_name,
         vehicle: inspection.vehicle,
+        vehicle_image_url: inspection.vehicle_image_url || null,
         mileage: inspection.mileage,
         ro_number: inspection.ro_number,
         total_estimate: inspection.total_estimate || 0,

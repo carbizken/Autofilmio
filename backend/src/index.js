@@ -37,6 +37,9 @@ import avatarRoute from './routes/avatar.js';
 import messagingRoute from './routes/messaging.js';
 import distributeRoute from './routes/distribute.js';
 
+// Vehicle stock imagery (MPI header / Passport card)
+import vehicleImageRoute from './routes/vehicleImage.js';
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 const VERSION = '3.6.0';
@@ -140,6 +143,7 @@ app.use('/api/onboard', authLimiter, onboardRoute);
 app.use('/api/admin', generalLimiter, adminRoute);
 app.use('/api/avatar', generalLimiter, avatarRoute);
 app.use('/api/distribute', generalLimiter, distributeRoute);
+app.use('/api/vehicle-image', generalLimiter, vehicleImageRoute);
 
 // 404
 app.use((req, res) => {
