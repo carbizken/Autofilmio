@@ -1,7 +1,7 @@
 import express from 'express';
 import { requireAuth } from '../lib/auth.js';
 import { supabase } from '../lib/supabase.js';
-import { resolveVehicle, recordEvent } from '../lib/passport.js';
+import { resolveVehicle, recordEvent, ensurePassportCode } from '../lib/passport.js';
 
 const router = express.Router();
 
@@ -167,6 +167,135 @@ function vehicleSummary(vehicle, latestOdometer) {
 }
 
 /**
+ * Compose the CUSTOMER-SAFE passport payload — shared by the code-gated
+ * per-video public variant and the stable /by-code/:code link.
+ *
+ * - Estimates are visible only for inspection ids in ownInspectionIds
+ *   (the requesting customer's own quotes); everything else is redacted.
+ * - Rooftop-private events/documents never reach the customer surface;
+ *   event actor ids stay internal.
+ * - ownerName is the only PII that renders, and callers pass only what
+ *   the requester already knows about themselves (or null).
+ */
+/**
+ * Whitelist of ledger payload keys that may reach the UNAUTHENTICATED
+ * customer surfaces. Payloads carry capability tokens and internal
+ * identifiers — a video short_code plus the event's subject_id
+ * (inspection id) is exactly the credential pair for the public
+ * /api/mpi view/approve/decline endpoints, and ro_number / customer
+ * ids are dealer-internal. Anything not listed here is stripped.
+ */
+const PUBLIC_PAYLOAD_KEYS = new Set([
+  // findings trigger (finding_recommended / finding_<status>)
+  'name', 'severity', 'old_status', 'new_status', 'supersedes_finding_id',
+  // inspection_created / inspection_sent
+  'vehicle', 'mileage', 'item_count', 'via',
+  // video_attached / odometer
+  'kind', 'duration_s', 'miles',
+  // reminder events (rooftop-visibility today, safe if that ever changes)
+  'finding_id', 'finding_name', 'due_at', 'due_miles',
+]);
+
+/** Strip a ledger event payload down to customer-safe keys. */
+function publicEventPayload(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return {};
+  return Object.fromEntries(
+    Object.entries(payload).filter(([k]) => PUBLIC_PAYLOAD_KEYS.has(k))
+  );
+}
+
+function customerSafePayload(vehicle, data, { ownInspectionIds = new Set(), ownerName = null } = {}) {
+  const customerFinding = (f) => ({
+    id: f.id,
+    inspection_id: f.inspection_id,
+    name: f.name,
+    severity: f.severity,
+    note: f.note,
+    measurements: f.measurements,
+    status: f.status,
+    estimate: ownInspectionIds.has(f.inspection_id) ? f.estimate : null,
+    approved_at: f.approved_at,
+    deferred_until: f.deferred_until,
+    completed_at: f.completed_at,
+    supersedes_finding_id: f.supersedes_finding_id,
+    created_at: f.created_at,
+  });
+
+  const findings = data.findings.map(customerFinding);
+  const openFindings = findings.filter(f => OPEN_STATUSES.includes(f.status));
+
+  const timeline = data.timeline
+    .filter(e => e.visibility !== 'rooftop')
+    .map(e => ({
+      id: e.id,
+      event_type: e.event_type,
+      occurred_at: e.occurred_at,
+      subject_table: e.subject_table,
+      subject_id: e.subject_id,
+      payload: publicEventPayload(e.payload),
+    }));
+  const documents = data.documents
+    .filter(d => d.visibility === 'customer')
+    .map(({ rooftop_id, ...doc }) => doc);
+
+  const owner = data.ownership
+    ? { name: ownerName, since: data.ownership.started_at }
+    : null;
+
+  return {
+    vehicle: vehicleSummary(vehicle, data.latestOdometer),
+    owner,
+    health: deriveHealth(data.findings),
+    open_findings: openFindings,
+    timeline,
+    documents,
+    values: data.values,
+    reminders: data.reminders.map(({ customer_id, rooftop_id, ...r }) => r),
+  };
+}
+
+/**
+ * GET /api/passport/by-code/:code
+ * The STABLE per-vehicle passport short link target (public, no session).
+ * The passport_code itself is the capability token: it is minted lazily
+ * (migration 014), handed to the vehicle's current owner, and never
+ * rotates. Unlike the per-video public variant there is no customer
+ * context, so EVERY estimate is redacted and no owner PII is returned —
+ * the strictly customer-safe payload.
+ */
+router.get('/by-code/:code', async (req, res) => {
+  try {
+    const { code } = req.params;
+    // Same shape the CF worker route matches — reject junk before the DB.
+    if (!code || !/^[a-zA-Z0-9]{4,12}$/.test(code)) {
+      return res.status(403).json({ error: 'Invalid passport link' });
+    }
+
+    const { data: byCode } = await supabase
+      .from('vehicles')
+      .select('id')
+      .eq('passport_code', code)
+      .maybeSingle();
+    if (!byCode) return res.status(403).json({ error: 'Invalid passport link' });
+
+    // Follow merges: a code minted pre-merge must keep opening the
+    // canonical record.
+    const vehicle = await resolveVehicle(byCode.id);
+    if (!vehicle) return res.status(403).json({ error: 'Invalid passport link' });
+
+    const data = await fetchPassportData(vehicle.id);
+
+    console.log(`[passport] Public view of vehicle ${vehicle.id} via passport code ${code}`);
+
+    res.json(customerSafePayload(vehicle, data));
+
+  } catch (err) {
+    console.error('[passport] By-code fetch error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * GET /api/passport/:vehicle_id
  * The single composed passport payload (B1: one endpoint, one truth —
  * mobile and desktop differ only in how much of it they render).
@@ -231,6 +360,10 @@ router.get('/:vehicle_id', requireAuth(), async (req, res) => {
     // never shown to other rooftops.
     const reminders = data.reminders.filter(r => r.rooftop_id === myRooftop);
 
+    // Lazily mint (or fetch) the stable per-vehicle short link on first
+    // passport access — { code, short_url, page_url } or null, never throws.
+    const passportLink = await ensurePassportCode(vehicle.id);
+
     console.log(`[passport] Composed passport for vehicle ${vehicle.id} (rep ${req.rep.id})`);
 
     res.json({
@@ -242,6 +375,7 @@ router.get('/:vehicle_id', requireAuth(), async (req, res) => {
       documents,
       values: data.values,
       reminders,
+      passport_link: passportLink,
     });
 
   } catch (err) {
@@ -314,61 +448,16 @@ router.get('/:vehicle_id/public', async (req, res) => {
       .eq('video_id', video.id);
     const ownInspectionIds = new Set((ownInspections || []).map(i => i.id));
 
-    const customerFinding = (f) => ({
-      id: f.id,
-      inspection_id: f.inspection_id,
-      name: f.name,
-      severity: f.severity,
-      note: f.note,
-      measurements: f.measurements,
-      status: f.status,
-      // Only THIS customer's own quotes: estimates from other rooftops /
-      // prior owners stay private regardless of finding status.
-      estimate: ownInspectionIds.has(f.inspection_id) ? f.estimate : null,
-      approved_at: f.approved_at,
-      deferred_until: f.deferred_until,
-      completed_at: f.completed_at,
-      supersedes_finding_id: f.supersedes_finding_id,
-      created_at: f.created_at,
-    });
-
-    const findings = data.findings.map(customerFinding);
-    const openFindings = findings.filter(f => OPEN_STATUSES.includes(f.status));
-
-    // Rooftop-private events/documents never reach the customer surface,
-    // and event actor ids stay internal.
-    const timeline = data.timeline
-      .filter(e => e.visibility !== 'rooftop')
-      .map(e => ({
-        id: e.id,
-        event_type: e.event_type,
-        occurred_at: e.occurred_at,
-        subject_table: e.subject_table,
-        subject_id: e.subject_id,
-        payload: e.payload,
-      }));
-    const documents = data.documents
-      .filter(d => d.visibility === 'customer')
-      .map(({ rooftop_id, ...doc }) => doc);
-
-    // Owner block carries only the recipient's own name (from their video)
-    // — never another owner's PII.
-    const owner = data.ownership
-      ? { name: video.customer_name || null, since: data.ownership.started_at }
-      : null;
-
     console.log(`[passport] Public view of vehicle ${vehicle.id} via code ${code}`);
 
-    res.json({
-      vehicle: vehicleSummary(vehicle, data.latestOdometer),
-      owner,
-      health: deriveHealth(data.findings),
-      open_findings: openFindings,
-      timeline,
-      documents,
-      values: data.values,
-      reminders: data.reminders.map(({ customer_id, rooftop_id, ...r }) => r),
-    });
+    // Customer-safe composition (shared with /by-code/:code). Only THIS
+    // customer's own quotes render (estimates gated by ownInspectionIds),
+    // and the owner block carries only the recipient's own name (from
+    // their video) — never another owner's PII.
+    res.json(customerSafePayload(vehicle, data, {
+      ownInspectionIds,
+      ownerName: video.customer_name || null,
+    }));
 
   } catch (err) {
     console.error('[passport] Public fetch error:', err.message);

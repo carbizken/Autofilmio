@@ -38,3 +38,10 @@ services:
       #   MARKETCHECK_API_KEY — marketcheck.com listings API
       #   VEHICLE_IMAGE_PROVIDER — marketcheck (default) | evox | none
       #   EVOX_API_KEY — only when VEHICLE_IMAGE_PROVIDER=evox
+      # Feature flags (default OFF — set in the dashboard to enable):
+      #   REMINDERS_ENABLED=true — start the vehicle_reminders SMS delivery
+      #     worker (requires migration 015; REMINDER_WORKER_INTERVAL_MS
+      #     optionally overrides the hourly tick)
+      #   LIFETIME_OFFERS_ENABLED=true — allow rooftops to save lifetime
+      #     pricing configs (tier_plus_lifetime / lifetime_enabled);
+      #     off pending legal review

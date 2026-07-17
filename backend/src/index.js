@@ -5,6 +5,7 @@ import { resolveTenant } from './lib/tenant.js';
 import { rateLimit } from './lib/ratelimit.js';
 import { startBDCAssistant } from './lib/bdc.js';
 import { startWorkflowEngine } from './lib/workflows.js';
+import { startReminderWorker } from './lib/reminders.js';
 
 // Core routes
 import uploadRoute from './routes/upload.js';
@@ -178,6 +179,14 @@ const server = app.listen(PORT, () => {
   // Background services
   startBDCAssistant();
   startWorkflowEngine();
+
+  // Reminder delivery is opt-in (REMINDERS_ENABLED=true) so a deploy
+  // never starts texting customers before the flag is deliberately set.
+  if (process.env.REMINDERS_ENABLED === 'true') {
+    startReminderWorker();
+  } else {
+    console.log('[reminders] Worker disabled — set REMINDERS_ENABLED=true to enable');
+  }
 });
 
 // A single crashing background job (workflow tick, BDC poll, render) must not

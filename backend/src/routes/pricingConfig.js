@@ -196,6 +196,17 @@ router.put('/', requireAuth(), requireRole('admin', 'manager'), async (req, res)
       }
     }
 
+    // Platform-wide kill switch: no rooftop may SAVE a config with
+    // lifetime offers in play unless LIFETIME_OFFERS_ENABLED=true.
+    // Gated on the MERGED result so an already-enabled row can't be
+    // kept alive through unrelated partial writes either.
+    const lifetimeRequested = merged.mode === 'tier_plus_lifetime' || !!merged.lifetime_enabled;
+    if (lifetimeRequested && process.env.LIFETIME_OFFERS_ENABLED !== 'true') {
+      return res.status(403).json({
+        error: 'Lifetime offers are disabled platform-wide pending legal review',
+      });
+    }
+
     const invalid = validateConfig(merged);
     if (invalid) return res.status(400).json({ error: invalid });
 

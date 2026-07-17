@@ -11,7 +11,7 @@ import { kvPut } from '../lib/cloudflare.js';
 import { storeThumbnails } from '../lib/thumbnail.js';
 import { syncVideoEvent } from '../lib/crm.js';
 import { attachVehicleImage } from '../lib/vehicleImage.js';
-import { attachPassport, applyFindingDispositions, recordEvent } from '../lib/passport.js';
+import { attachPassport, applyFindingDispositions, recordEvent, ensurePassportCode } from '../lib/passport.js';
 import { getPricingRenderBlock } from './pricingConfig.js';
 
 const router = express.Router();
@@ -111,7 +111,11 @@ async function writeApprovalRender(inspectionId, payload) {
  * Body: {
  *   rep_id, rooftop_id, customer_name, customer_phone, customer_email?,
  *   ro_number?, vin?, vehicle?, mileage?,
- *   items: [{ name, status, note }],
+ *   items: [{ name, status, note,
+ *             video_ts_start?, video_ts_end? }],  // optional seconds into the
+ *                                                 // walkaround video — persisted
+ *                                                 // onto findings for
+ *                                                 // clip-per-finding deep links
  *   total_estimate?
  * }
  */
@@ -348,6 +352,11 @@ router.post('/:id/send', requireAuth(), async (req, res) => {
         subject_id: inspection.id,
         payload: { via, short_code: shortCode, ro_number: inspection.ro_number || null },
       });
+
+      // Lazily mint the vehicle's STABLE passport short link on first
+      // send (fire-and-forget — ensurePassportCode never throws, and the
+      // link is also minted on first passport access).
+      ensurePassportCode(inspection.vehicle_id);
     }
 
     res.json({ success: true, short_url: shortUrl, ...results });
