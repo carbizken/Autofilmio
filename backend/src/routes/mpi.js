@@ -11,12 +11,98 @@ import { kvPut } from '../lib/cloudflare.js';
 import { storeThumbnails } from '../lib/thumbnail.js';
 import { syncVideoEvent } from '../lib/crm.js';
 import { attachVehicleImage } from '../lib/vehicleImage.js';
-import { attachPassport } from '../lib/passport.js';
+import { attachPassport, applyFindingDispositions, recordEvent } from '../lib/passport.js';
 import { getPricingRenderBlock } from './pricingConfig.js';
 
 const router = express.Router();
 
 const CF_WORKER_URL = process.env.CF_WORKER_URL || 'https://links.autofilm.io';
+
+const DECISIONS = new Set(['approved', 'declined', 'deferred']);
+
+/** Sanitized per-item tier selection from customer-controlled input. */
+function cleanTier(src) {
+  const tier = typeof src?.selected_tier === 'string' ? src.selected_tier.trim().slice(0, 64) : '';
+  const price = Number(src?.selected_tier_price ?? src?.tier_price);
+  return {
+    selected_tier: tier || null,
+    selected_tier_price: Number.isFinite(price) && price >= 0 ? price : null,
+  };
+}
+
+/**
+ * Normalize customer-controlled per-item decisions to a safe, uniform shape:
+ *   [{ index, name, decision, selected_tier, selected_tier_price, deferred_until }]
+ *
+ * Prefers the explicit `dispositions` array (the forward contract); falls
+ * back to the legacy `approved_items` shape (strings or { name, ... }),
+ * where every listed item means "approved". Entries with no usable
+ * index/name or an unknown decision are dropped — this feeds unauthenticated
+ * input into the findings lifecycle and the compliance archive.
+ */
+function normalizeDispositions({ dispositions, approved_items }) {
+  const out = [];
+  const push = (raw, decision) => {
+    if (!DECISIONS.has(decision)) return;
+    const idx = Number(raw?.index ?? raw?.source_item_index);
+    const index = Number.isInteger(idx) && idx >= 0 ? idx : null;
+    const rawName = typeof raw === 'string' ? raw : raw?.name;
+    const name = typeof rawName === 'string' && rawName.trim() ? rawName.trim() : null;
+    if (index === null && !name) return;
+    const deferred_until =
+      typeof raw?.deferred_until === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.deferred_until)
+        ? raw.deferred_until
+        : null;
+    out.push({ index, name, decision, deferred_until, ...cleanTier(typeof raw === 'object' ? raw : {}) });
+  };
+
+  if (Array.isArray(dispositions)) {
+    for (const d of dispositions) {
+      if (d && typeof d === 'object') push(d, d.decision);
+    }
+    return out;
+  }
+  if (Array.isArray(approved_items)) {
+    for (const it of approved_items) push(it, 'approved');
+  }
+  return out;
+}
+
+/** Match a normalized disposition to the SERVER-SIDE item it refers to. */
+function matchServerItem(serverItems, d) {
+  if (d.index !== null && d.index < serverItems.length && serverItems[d.index]) {
+    return serverItems[d.index];
+  }
+  if (!d.name) return null;
+  const key = d.name.toLowerCase();
+  return serverItems.find(it => typeof it?.name === 'string' && it.name.trim().toLowerCase() === key) || null;
+}
+
+/**
+ * Append the immutable approval snapshot (research §4/§5, CA BAR retention).
+ * approval_renders is append-only (migration 011) — this row is the legal
+ * proof of exactly what the customer saw and chose. One retry on failure;
+ * a final failure is a compliance incident and is logged as loudly as this
+ * process can log, with the full payload so it can be replayed by hand.
+ */
+async function writeApprovalRender(inspectionId, payload) {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const { error } = await supabase
+      .from('approval_renders')
+      .insert({ inspection_id: inspectionId, rendered_payload: payload });
+    if (!error) {
+      console.log(`[mpi] Approval render archived for inspection ${inspectionId}`);
+      return true;
+    }
+    console.error(`[mpi] Approval archive attempt ${attempt}/2 failed for inspection ${inspectionId}:`, error.message);
+  }
+  console.error(
+    `[mpi] ARCHIVE WRITE FAILED — compliance: approval_renders insert lost for inspection ${inspectionId}. ` +
+    `Manual replay payload follows:`,
+    JSON.stringify(payload)
+  );
+  return false;
+}
 
 /**
  * POST /api/mpi
@@ -249,6 +335,21 @@ router.post('/:id/send', requireAuth(), async (req, res) => {
       customer_email: inspection.customer_email,
     }).catch(err => console.error('[mpi] CRM sync error:', err.message));
 
+    // Passport ledger (fire-and-forget, recordEvent never throws).
+    // vehicle_id can be null if attachPassport is still racing this
+    // request — best-effort, never blocks the send.
+    if (inspection.vehicle_id) {
+      recordEvent(inspection.vehicle_id, {
+        event_type: 'inspection_sent',
+        rooftop_id: inspection.rooftop_id,
+        actor_type: 'rep',
+        actor_id: inspection.rep_id || null,
+        subject_table: 'mpi_inspections',
+        subject_id: inspection.id,
+        payload: { via, short_code: shortCode, ro_number: inspection.ro_number || null },
+      });
+    }
+
     res.json({ success: true, short_url: shortUrl, ...results });
 
   } catch (err) {
@@ -260,11 +361,27 @@ router.post('/:id/send', requireAuth(), async (req, res) => {
 /**
  * POST /api/mpi/:id/approve
  * Customer approves the recommended service.
+ *
+ * Body: {
+ *   code,                        // capability token (video short_code)
+ *   approved_amount,
+ *   approved_items?: [{ name, price, urgency, status,
+ *                       index?, selected_tier?, selected_tier_price? }],
+ *   dispositions?:   [{ index?, name?,
+ *                       decision: 'approved'|'declined'|'deferred',
+ *                       selected_tier?, selected_tier_price?,
+ *                       deferred_until? }]   // forward contract: mixed per-item decisions
+ * }
+ * When `dispositions` is present it wins; otherwise every approved_items
+ * entry is treated as decision:'approved' (legacy contract, unchanged).
+ * Matching findings rows transition (status + approved_at/declined_at +
+ * selected_tier) and the DB trigger ledgers finding_approved /
+ * finding_declined / finding_deferred vehicle_events atomically.
  */
 router.post('/:id/approve', async (req, res) => {
   try {
     const { id } = req.params;
-    const { approved_amount, approved_items, code } = req.body;
+    const { approved_amount, approved_items, dispositions, code } = req.body;
 
     // Customer-facing endpoint: no session, so the video short_code acts
     // as the capability token (only the SMS recipient knows it).
@@ -299,49 +416,62 @@ router.post('/:id/approve', async (req, res) => {
 
     console.log(`[mpi] Inspection ${id} approved — $${approvedAmount || 0}`);
 
-    // Immutable approval archive (research §4/§5, CA BAR retention):
-    // capture exactly what was offered at approval time — items, the
-    // pricing presentation config, the disclosures shown, and the
-    // approved amount. approval_renders is append-only (migration 011).
-    // Fire-and-forget: archiving must never fail or delay the approval.
-    // approved_items is customer-controlled jsonb: never archive it
-    // verbatim. Archive the SERVER-SIDE item objects the customer
-    // selected, matched by name against data.items — arbitrary payloads
-    // can't reach the legal record.
+    // Per-item customer decisions, sanitized. Forward contract is the
+    // dispositions array (mixed approve/decline/defer + tier picks);
+    // legacy approved_items still means "everything listed = approved".
     const serverItems = Array.isArray(data.items) ? data.items : [];
-    let approvedItemsArchive = null;
-    if (Array.isArray(approved_items)) {
-      const requestedNames = new Set(
-        approved_items
-          .map(it => (typeof it === 'string' ? it : it?.name))
-          .filter(n => typeof n === 'string')
-      );
-      const matched = serverItems.filter(it => it?.name && requestedNames.has(it.name));
-      approvedItemsArchive = matched.length > 0 ? matched : null;
-    }
+    const decisions = normalizeDispositions({ dispositions, approved_items });
+
+    // Findings lifecycle (fire-and-forget, never blocks the approval):
+    // flip the matching findings rows; the findings_transition_ledger
+    // trigger appends the finding_approved / finding_declined /
+    // finding_deferred vehicle_events row atomically with each update.
+    applyFindingDispositions({ inspectionId: id, dispositions: decisions });
+
+    // Immutable approval archive (research §4/§5, CA BAR retention):
+    // capture exactly what was offered AS RENDERED at approval time —
+    // items, the pricing presentation config, the disclosures shown,
+    // per-item selected tiers, and the approved amount. approval_renders
+    // is append-only (migration 011). Fire-and-forget: archiving must
+    // never fail or delay the approval, but a lost archive is a
+    // compliance incident — writeApprovalRender retries once and logs
+    // loudly on final failure.
+    // approved_items/dispositions are customer-controlled jsonb: never
+    // archive them verbatim. Archive the SERVER-SIDE item objects the
+    // customer selected (matched by index, then name, against data.items)
+    // with only the sanitized tier choice merged in — arbitrary payloads
+    // can't reach the legal record.
+    const approvedItemsArchive = decisions
+      .filter(d => d.decision === 'approved')
+      .map(d => {
+        const item = matchServerItem(serverItems, d);
+        if (!item) return null;
+        return {
+          ...item,
+          ...(d.selected_tier ? { selected_tier: d.selected_tier } : {}),
+          ...(d.selected_tier_price !== null ? { selected_tier_price: d.selected_tier_price } : {}),
+        };
+      })
+      .filter(Boolean);
 
     (async () => {
       const pricing = await getPricingRenderBlock(data.rooftop_id);
-      const { error: archErr } = await supabase
-        .from('approval_renders')
-        .insert({
-          inspection_id: id,
-          rendered_payload: {
-            items: serverItems,
-            approved_items: approvedItemsArchive,
-            approved_amount: approvedAmount ?? data.total_estimate ?? 0,
-            pricing,
-            disclosures: {
-              general: pricing.general_disclosure,
-              lifetime: pricing.lifetime.disclosure,
-              financing: pricing.financing.disclosure,
-            },
-            approved_at: data.approved_at,
-          },
-        });
-      if (archErr) throw archErr;
-      console.log(`[mpi] Approval render archived for inspection ${id}`);
-    })().catch(err => console.error('[mpi] Approval archive error:', err.message));
+      await writeApprovalRender(id, {
+        items: serverItems,
+        approved_items: approvedItemsArchive.length > 0 ? approvedItemsArchive : null,
+        dispositions: decisions.length > 0 ? decisions : null,
+        approved_amount: approvedAmount ?? data.total_estimate ?? 0,
+        pricing,
+        disclosures: {
+          general: pricing.general_disclosure,
+          lifetime: pricing.lifetime.disclosure,
+          financing: pricing.financing.disclosure,
+        },
+        approved_at: data.approved_at,
+      });
+    })().catch(err =>
+      console.error(`[mpi] ARCHIVE WRITE FAILED — compliance: unexpected archive error for inspection ${id}:`, err.message)
+    );
 
     // Notify the service advisor immediately — approved work is money waiting
     const { data: advisor } = await supabase
@@ -376,6 +506,117 @@ router.post('/:id/approve', async (req, res) => {
 });
 
 /**
+ * POST /api/mpi/:id/decline
+ * Customer declines (or defers) recommended service. Code-gated like
+ * /:id/approve — the video short_code is the capability token.
+ *
+ * Body: {
+ *   code,
+ *   dispositions?:   [{ index?, name?, decision: 'declined'|'deferred',
+ *                       deferred_until? }],   // per-item decline/defer
+ *   declined_items?: [ 'name' | { name, index? } ],  // shorthand: all declined
+ *   reason?: string
+ * }
+ * With no per-item list, the WHOLE inspection is declined: every item's
+ * finding transitions to declined and the inspection status becomes
+ * 'declined' (unless already approved). Approve decisions are ignored
+ * here — a decline endpoint must never approve work.
+ */
+router.post('/:id/decline', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { code, dispositions, declined_items, reason } = req.body || {};
+
+    // Customer-facing endpoint: no session, so the video short_code acts
+    // as the capability token (only the SMS recipient knows it).
+    const { data: inspection } = await supabase
+      .from('mpi_inspections')
+      .select('id, status, items, rep_id, rooftop_id, video_id, customer_name, vehicle, videos(short_code)')
+      .eq('id', id)
+      .single();
+    if (!inspection || inspection.videos?.short_code !== code) {
+      return res.status(403).json({ error: 'Invalid inspection link' });
+    }
+
+    const serverItems = Array.isArray(inspection.items) ? inspection.items : [];
+
+    // Per-item decisions — approvals are stripped on this route.
+    let decisions = normalizeDispositions({
+      dispositions,
+      approved_items: null,
+    }).filter(d => d.decision !== 'approved');
+
+    if (decisions.length === 0 && Array.isArray(declined_items)) {
+      decisions = normalizeDispositions({
+        dispositions: declined_items
+          .map(it => (typeof it === 'string' ? { name: it } : it))
+          .filter(it => it && typeof it === 'object')
+          .map(it => ({ ...it, decision: 'declined' })),
+      });
+    }
+
+    // A per-item list that matched nothing must NOT escalate to a full
+    // decline — only the total absence of a list means "decline all".
+    const explicitList = Array.isArray(dispositions) || Array.isArray(declined_items);
+    if (explicitList && decisions.length === 0) {
+      return res.status(400).json({ error: 'No valid items to decline' });
+    }
+
+    // No per-item list = full decline of every recommended item.
+    const fullDecline = !explicitList;
+    if (fullDecline) {
+      decisions = serverItems.map((it, i) => ({
+        index: i,
+        name: typeof it?.name === 'string' ? it.name : null,
+        decision: 'declined',
+        deferred_until: null,
+        selected_tier: null,
+        selected_tier_price: null,
+      }));
+    }
+
+    if (fullDecline && inspection.status !== 'approved') {
+      const { error: upErr } = await supabase
+        .from('mpi_inspections')
+        .update({ status: 'declined' })
+        .eq('id', id);
+      if (upErr) throw upErr;
+    }
+
+    console.log(`[mpi] Inspection ${id} decline — ${fullDecline ? 'all items' : decisions.length + ' item(s)'}${reason ? ` (reason: ${String(reason).slice(0, 200)})` : ''}`);
+
+    // Findings lifecycle (fire-and-forget): the DB trigger ledgers
+    // finding_declined / finding_deferred vehicle_events atomically.
+    applyFindingDispositions({ inspectionId: id, dispositions: decisions });
+
+    // Notify the service advisor — a decline is a follow-up opportunity.
+    const { data: advisor } = await supabase
+      .from('reps')
+      .select('push_subscription')
+      .eq('id', inspection.rep_id)
+      .single();
+    if (advisor?.push_subscription) {
+      sendPush(advisor.push_subscription, {
+        title: 'Service declined',
+        body: `${inspection.customer_name || 'Customer'} declined ${fullDecline ? 'the recommended work' : `${decisions.length} item(s)`}${inspection.vehicle ? ` — ${inspection.vehicle}` : ''}`,
+        data: { type: 'mpi_declined', inspection_id: id },
+      }).catch(() => {});
+    }
+
+    res.json({
+      success: true,
+      declined: decisions.filter(d => d.decision === 'declined').length,
+      deferred: decisions.filter(d => d.decision === 'deferred').length,
+      full_decline: fullDecline,
+    });
+
+  } catch (err) {
+    console.error('[mpi] Decline error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * GET /api/mpi/:id/public?code=SHORT_CODE
  * Customer-facing inspection details for the MPI approval page.
  * No auth — like /:id/approve, the video short_code is the capability
@@ -390,12 +631,38 @@ router.get('/:id/public', async (req, res) => {
 
     const { data: inspection } = await supabase
       .from('mpi_inspections')
-      .select('id, rooftop_id, status, customer_name, vehicle, vehicle_image_url, mileage, ro_number, items, total_estimate, approved_amount, approved_at, videos(short_code, mux_playback_id, reps(name, nickname, title, photo_url, rooftops(name)))')
+      .select('id, rooftop_id, vehicle_id, status, customer_name, vehicle, vehicle_image_url, mileage, ro_number, items, total_estimate, approved_amount, approved_at, videos(short_code, mux_playback_id, reps(name, nickname, title, photo_url, rooftops(name)))')
       .eq('id', id)
       .single();
 
     if (!inspection || inspection.videos?.short_code !== code) {
       return res.status(403).json({ error: 'Invalid inspection link' });
+    }
+
+    // Passport ledger: first customer open = one inspection_viewed event
+    // (fire-and-forget — must never delay or fail the page load).
+    if (inspection.vehicle_id) {
+      (async () => {
+        const { data: prior, error: priorErr } = await supabase
+          .from('vehicle_events')
+          .select('id')
+          .eq('event_type', 'inspection_viewed')
+          .eq('subject_table', 'mpi_inspections')
+          .eq('subject_id', inspection.id)
+          .limit(1);
+        if (priorErr) throw priorErr;
+        if (!prior || prior.length === 0) {
+          await recordEvent(inspection.vehicle_id, {
+            event_type: 'inspection_viewed',
+            rooftop_id: inspection.rooftop_id,
+            actor_type: 'customer',
+            subject_table: 'mpi_inspections',
+            subject_id: inspection.id,
+            payload: { short_code: code },
+          });
+          console.log(`[mpi] First public view ledgered for inspection ${inspection.id}`);
+        }
+      })().catch(err => console.error('[mpi] inspection_viewed ledger error (non-fatal):', err.message));
     }
 
     const rep = inspection.videos?.reps;

@@ -12,3 +12,8 @@ import { customAlphabet } from 'nanoid';
 const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
 
 export const shortCode = customAlphabet(ALPHABET, 8);
+
+// Stable per-vehicle passport code (migration 014). Longer than a video
+// short_code because it never rotates — but still inside the CF worker's
+// [a-zA-Z0-9]{4,12} route match.
+export const newPassportCode = customAlphabet(ALPHABET, 10);
