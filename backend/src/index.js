@@ -40,6 +40,12 @@ import distributeRoute from './routes/distribute.js';
 // Vehicle stock imagery (MPI header / Passport card)
 import vehicleImageRoute from './routes/vehicleImage.js';
 
+// Vehicle Passport (point-of-truth vehicle record)
+import passportRoute from './routes/passport.js';
+
+// Per-rooftop pricing presentation + financing config
+import pricingConfigRoute from './routes/pricingConfig.js';
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 const VERSION = '3.6.0';
@@ -144,6 +150,8 @@ app.use('/api/admin', generalLimiter, adminRoute);
 app.use('/api/avatar', generalLimiter, avatarRoute);
 app.use('/api/distribute', generalLimiter, distributeRoute);
 app.use('/api/vehicle-image', generalLimiter, vehicleImageRoute);
+app.use('/api/passport', generalLimiter, passportRoute);
+app.use('/api/pricing-config', generalLimiter, pricingConfigRoute);
 
 // 404
 app.use((req, res) => {

@@ -11,6 +11,8 @@ import { kvPut } from '../lib/cloudflare.js';
 import { storeThumbnails } from '../lib/thumbnail.js';
 import { syncVideoEvent } from '../lib/crm.js';
 import { attachVehicleImage } from '../lib/vehicleImage.js';
+import { attachPassport } from '../lib/passport.js';
+import { getPricingRenderBlock } from './pricingConfig.js';
 
 const router = express.Router();
 
@@ -40,6 +42,20 @@ router.post('/', requireAuth(), async (req, res) => {
 
     if (!rep_id) return res.status(400).json({ error: 'rep_id required' });
     if (!customer_name) return res.status(400).json({ error: 'customer_name required' });
+
+    // rep_id lands on the videos/mpi_inspections rows AND as actor_id in
+    // the append-only vehicle_events ledger — it must be a real rep of
+    // the caller's rooftop, never an arbitrary UUID from the body.
+    const { data: repRow, error: repErr } = await supabase
+      .from('reps')
+      .select('id')
+      .eq('id', rep_id)
+      .eq('rooftop_id', rooftop_id)
+      .maybeSingle();
+    if (repErr) throw repErr;
+    if (!repRow) {
+      return res.status(400).json({ error: 'rep_id does not belong to your rooftop' });
+    }
 
     // 1. Create Mux upload for the inspection video
     const upload = await video.uploads.create({
@@ -103,6 +119,13 @@ router.post('/', requireAuth(), async (req, res) => {
       vin,
       vehicle,
     });
+
+    // Fire-and-forget: wire this visit into the Vehicle Passport —
+    // find/create the global vehicles row, link vehicle_id on the
+    // inspection + video, explode items jsonb into findings rows
+    // (DUAL-WRITE: items stays untouched), and ledger the
+    // inspection_created event. Must never fail or delay RO creation.
+    attachPassport({ inspection, videoId: videoRow.id, rep_id });
 
     res.json({
       success: true,
@@ -254,11 +277,18 @@ router.post('/:id/approve', async (req, res) => {
       return res.status(403).json({ error: 'Invalid approval link' });
     }
 
+    // This is an unauthenticated, customer-facing endpoint: coerce and
+    // validate everything before it reaches the DB or the append-only
+    // approval archive. approved_amount must be a finite, non-negative
+    // number — anything else is treated as absent.
+    const amt = Number(approved_amount);
+    const approvedAmount = Number.isFinite(amt) && amt >= 0 ? amt : null;
+
     const { data, error } = await supabase
       .from('mpi_inspections')
       .update({
         status: 'approved',
-        approved_amount: approved_amount || null,
+        approved_amount: approvedAmount,
         approved_at: new Date().toISOString(),
       })
       .eq('id', id)
@@ -267,7 +297,51 @@ router.post('/:id/approve', async (req, res) => {
 
     if (error) throw error;
 
-    console.log(`[mpi] Inspection ${id} approved — $${approved_amount || 0}`);
+    console.log(`[mpi] Inspection ${id} approved — $${approvedAmount || 0}`);
+
+    // Immutable approval archive (research §4/§5, CA BAR retention):
+    // capture exactly what was offered at approval time — items, the
+    // pricing presentation config, the disclosures shown, and the
+    // approved amount. approval_renders is append-only (migration 011).
+    // Fire-and-forget: archiving must never fail or delay the approval.
+    // approved_items is customer-controlled jsonb: never archive it
+    // verbatim. Archive the SERVER-SIDE item objects the customer
+    // selected, matched by name against data.items — arbitrary payloads
+    // can't reach the legal record.
+    const serverItems = Array.isArray(data.items) ? data.items : [];
+    let approvedItemsArchive = null;
+    if (Array.isArray(approved_items)) {
+      const requestedNames = new Set(
+        approved_items
+          .map(it => (typeof it === 'string' ? it : it?.name))
+          .filter(n => typeof n === 'string')
+      );
+      const matched = serverItems.filter(it => it?.name && requestedNames.has(it.name));
+      approvedItemsArchive = matched.length > 0 ? matched : null;
+    }
+
+    (async () => {
+      const pricing = await getPricingRenderBlock(data.rooftop_id);
+      const { error: archErr } = await supabase
+        .from('approval_renders')
+        .insert({
+          inspection_id: id,
+          rendered_payload: {
+            items: serverItems,
+            approved_items: approvedItemsArchive,
+            approved_amount: approvedAmount ?? data.total_estimate ?? 0,
+            pricing,
+            disclosures: {
+              general: pricing.general_disclosure,
+              lifetime: pricing.lifetime.disclosure,
+              financing: pricing.financing.disclosure,
+            },
+            approved_at: data.approved_at,
+          },
+        });
+      if (archErr) throw archErr;
+      console.log(`[mpi] Approval render archived for inspection ${id}`);
+    })().catch(err => console.error('[mpi] Approval archive error:', err.message));
 
     // Notify the service advisor immediately — approved work is money waiting
     const { data: advisor } = await supabase
@@ -278,7 +352,7 @@ router.post('/:id/approve', async (req, res) => {
     if (advisor?.push_subscription) {
       sendPush(advisor.push_subscription, {
         title: '✅ Service approved',
-        body: `${data.customer_name || 'Customer'} approved $${(approved_amount || data.total_estimate || 0).toLocaleString()} in recommended work`,
+        body: `${data.customer_name || 'Customer'} approved $${(approvedAmount ?? data.total_estimate ?? 0).toLocaleString()} in recommended work`,
         data: { type: 'mpi_approved', inspection_id: id },
       }).catch(() => {});
     }
@@ -316,7 +390,7 @@ router.get('/:id/public', async (req, res) => {
 
     const { data: inspection } = await supabase
       .from('mpi_inspections')
-      .select('id, status, customer_name, vehicle, vehicle_image_url, mileage, ro_number, items, total_estimate, approved_amount, approved_at, videos(short_code, mux_playback_id, reps(name, nickname, title, photo_url, rooftops(name)))')
+      .select('id, rooftop_id, status, customer_name, vehicle, vehicle_image_url, mileage, ro_number, items, total_estimate, approved_amount, approved_at, videos(short_code, mux_playback_id, reps(name, nickname, title, photo_url, rooftops(name)))')
       .eq('id', id)
       .single();
 
@@ -326,6 +400,10 @@ router.get('/:id/public', async (req, res) => {
 
     const rep = inspection.videos?.reps;
     const playbackId = inspection.videos?.mux_playback_id || null;
+
+    // Rooftop pricing presentation config, reduced to render fields.
+    // Never throws — defaults to one_price when the rooftop has no row.
+    const pricing = await getPricingRenderBlock(inspection.rooftop_id);
 
     console.log(`[mpi] Public view of inspection ${id}`);
 
@@ -341,14 +419,20 @@ router.get('/:id/public', async (req, res) => {
         total_estimate: inspection.total_estimate || 0,
         approved_amount: inspection.approved_amount,
         approved_at: inspection.approved_at,
+        // Items pass through unchanged — the server does not synthesize
+        // tier options. Per-item tier data comes later from the RO side:
+        // the frontend renders tier columns from item.tiers jsonb IF an
+        // item carries it; otherwise the item renders per pricing.mode.
         items: (inspection.items || []).map(it => ({
           name: it.name || '',
           description: it.description || it.note || '',
           price: Number(it.price ?? it.cost ?? 0) || 0,
           urgency: it.urgency || it.status || 'green',
           status: it.status || it.urgency || 'green',
+          ...(it.tiers ? { tiers: it.tiers } : {}),
         })),
       },
+      pricing,
       advisor: {
         name: rep?.nickname || rep?.name || 'Your Service Advisor',
         title: rep?.title || 'Service Advisor',
