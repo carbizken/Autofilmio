@@ -14,6 +14,12 @@ import { parseVehicleString } from './vehicleImage.js';
 import { getThumbnails } from './thumbnail.js';
 import { kvPut } from './cloudflare.js';
 import { newPassportCode } from './shortcode.js';
+import { retentionExpiresAt } from './retentionSweep.js';
+
+// Retention policy stamped on media rows this writer creates. Matches
+// the vehicle_media.retention_policy column default (migration 010);
+// per-rooftop overrides land in a later migration.
+const DEFAULT_RETENTION_POLICY = 'retain_2y';
 
 const CF_WORKER_URL = process.env.CF_WORKER_URL || 'https://links.autofilm.io';
 
@@ -214,13 +220,41 @@ export async function recordEvent(vehicleId, {
 const SUPERSEDABLE_STATUSES = ['recommended', 'declined', 'deferred'];
 
 /** Lowercased/trimmed finding name for supersede matching. */
-function normFindingName(name) {
+export function normFindingName(name) {
   return typeof name === 'string' ? name.trim().toLowerCase() : '';
 }
 
 /** "Front Brake Pads" matches "brake pads" — equal or one contains the other. */
-function findingNamesMatch(a, b) {
+export function findingNamesMatch(a, b) {
   return !!a && !!b && (a === b || a.includes(b) || b.includes(a));
+}
+
+/**
+ * Pure supersede matcher: chain each new finding row to the newest
+ * still-open prior finding with a matching name.
+ *
+ * rows:      [{ name, ... }] — mutated in place: a match sets
+ *            row.supersedes_finding_id.
+ * openPrior: [{ id, norm, ... }] — newest first, `norm` is the
+ *            normFindingName of the prior finding.
+ *
+ * CLAIM-ONCE: each prior finding may be claimed by at most one new row
+ * (first claimant wins), so two same-named new items can't both close
+ * the same old finding. Returns the Set of claimed prior finding ids.
+ */
+export function assignSupersedes(rows, openPrior) {
+  const supersededIds = new Set();
+  for (const row of rows) {
+    const rowNorm = normFindingName(row.name);
+    // Newest-first order, so the first match is the chain head.
+    const match = openPrior.find(f =>
+      !supersededIds.has(f.id) && findingNamesMatch(rowNorm, f.norm));
+    if (match) {
+      row.supersedes_finding_id = match.id;
+      supersededIds.add(match.id);
+    }
+  }
+  return supersededIds;
 }
 
 /**
@@ -287,7 +321,7 @@ export async function explodeFindings(inspection) {
     // Chain each new item to the newest still-open finding from a PRIOR
     // inspection with a matching name. A failed lookup only costs the
     // chain, never the insert (fire-and-forget context).
-    const supersededIds = new Set();
+    let supersededIds = new Set();
     try {
       const { data: open, error: openErr } = await supabase
         .from('findings')
@@ -302,16 +336,7 @@ export async function explodeFindings(inspection) {
         .filter(f => f.inspection_id !== inspection.id)
         .map(f => ({ ...f, norm: normFindingName(f.name) }));
 
-      for (const row of rows) {
-        const rowNorm = normFindingName(row.name);
-        // Newest-first order, so the first match is the chain head.
-        const match = openPrior.find(f =>
-          !supersededIds.has(f.id) && findingNamesMatch(rowNorm, f.norm));
-        if (match) {
-          row.supersedes_finding_id = match.id;
-          supersededIds.add(match.id);
-        }
-      }
+      supersededIds = assignSupersedes(rows, openPrior);
     } catch (err) {
       console.error('[passport] Supersede matching failed (non-fatal):', err.message);
     }
@@ -717,6 +742,10 @@ export function attachInspectionMedia({ videoId, muxAssetId, muxPlaybackId, dura
         mux_playback_id: muxPlaybackId,
         duration_s: Number.isFinite(durationS) ? Math.round(durationS) : null,
         thumbnail_url: thumbs?.static || null,
+        // Retention as data from birth: created_at + policy duration.
+        // The daily retention sweep (retentionSweep.js) acts on this.
+        retention_policy: DEFAULT_RETENTION_POLICY,
+        retention_expires_at: retentionExpiresAt(DEFAULT_RETENTION_POLICY),
       })
       .select()
       .single();

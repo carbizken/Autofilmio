@@ -21,7 +21,7 @@ const CF_WORKER_URL = process.env.CF_WORKER_URL || 'https://links.autofilm.io';
 const DECISIONS = new Set(['approved', 'declined', 'deferred']);
 
 /** Sanitized per-item tier selection from customer-controlled input. */
-function cleanTier(src) {
+export function cleanTier(src) {
   const tier = typeof src?.selected_tier === 'string' ? src.selected_tier.trim().slice(0, 64) : '';
   const price = Number(src?.selected_tier_price ?? src?.tier_price);
   return {
@@ -40,7 +40,7 @@ function cleanTier(src) {
  * index/name or an unknown decision are dropped — this feeds unauthenticated
  * input into the findings lifecycle and the compliance archive.
  */
-function normalizeDispositions({ dispositions, approved_items }) {
+export function normalizeDispositions({ dispositions, approved_items }) {
   const out = [];
   const push = (raw, decision) => {
     if (!DECISIONS.has(decision)) return;
@@ -69,7 +69,7 @@ function normalizeDispositions({ dispositions, approved_items }) {
 }
 
 /** Match a normalized disposition to the SERVER-SIDE item it refers to. */
-function matchServerItem(serverItems, d) {
+export function matchServerItem(serverItems, d) {
   if (d.index !== null && d.index < serverItems.length && serverItems[d.index]) {
     return serverItems[d.index];
   }

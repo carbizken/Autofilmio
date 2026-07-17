@@ -6,6 +6,7 @@ import { rateLimit } from './lib/ratelimit.js';
 import { startBDCAssistant } from './lib/bdc.js';
 import { startWorkflowEngine } from './lib/workflows.js';
 import { startReminderWorker } from './lib/reminders.js';
+import { startRetentionSweep } from './lib/retentionSweep.js';
 
 // Core routes
 import uploadRoute from './routes/upload.js';
@@ -186,6 +187,15 @@ const server = app.listen(PORT, () => {
     startReminderWorker();
   } else {
     console.log('[reminders] Worker disabled — set REMINDERS_ENABLED=true to enable');
+  }
+
+  // Media retention sweep is opt-in (RETENTION_SWEEP_ENABLED=true) so a
+  // deploy never starts marking media purged before the flag is
+  // deliberately set. Log-only first pass: Mux assets are NOT deleted.
+  if (process.env.RETENTION_SWEEP_ENABLED === 'true') {
+    startRetentionSweep();
+  } else {
+    console.log('[retention] Sweep disabled — set RETENTION_SWEEP_ENABLED=true to enable');
   }
 });
 

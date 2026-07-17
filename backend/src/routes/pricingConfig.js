@@ -40,7 +40,7 @@ const EDITABLE_FIELDS = [
  * invalid combination past the checks (e.g. enabling lifetime while a
  * previous request left the disclosure blank).
  */
-function validateConfig(cfg) {
+export function validateConfig(cfg) {
   if (!PRICING_MODES.includes(cfg.mode)) {
     return `mode must be one of: ${PRICING_MODES.join(', ')}`;
   }

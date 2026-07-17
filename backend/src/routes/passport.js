@@ -2,6 +2,7 @@ import express from 'express';
 import { requireAuth } from '../lib/auth.js';
 import { supabase } from '../lib/supabase.js';
 import { resolveVehicle, recordEvent, ensurePassportCode } from '../lib/passport.js';
+import { captureValueSnapshot, VALUE_SOURCES } from '../lib/vehicleValue.js';
 
 const router = express.Router();
 
@@ -471,11 +472,24 @@ router.get('/:vehicle_id/public', async (req, res) => {
  * vehicle_reminders row + a reminder_scheduled ledger event.
  *
  * Body: { due_at?: 'YYYY-MM-DD', due_miles?: number, kind?: string }
+ * At least one of due_at / due_miles is required (400 otherwise) — a
+ * reminder with neither trigger would never be picked up by the worker.
  */
 router.post('/:vehicle_id/findings/:finding_id/followup', requireAuth(), async (req, res) => {
   try {
     const { vehicle_id, finding_id } = req.params;
     const { due_at, due_miles, kind = 'deferred_followup' } = req.body || {};
+
+    // A reminder with neither trigger can never come due — the delivery
+    // worker picks up rows by due_at (date pass) or due_miles (mileage
+    // pass), so reject undeliverable rows at creation time.
+    const dueMiles = due_miles != null ? parseInt(due_miles, 10) : null;
+    if (due_miles != null && (!Number.isFinite(dueMiles) || dueMiles <= 0)) {
+      return res.status(400).json({ error: 'due_miles must be a positive number' });
+    }
+    if (!due_at && dueMiles == null) {
+      return res.status(400).json({ error: 'A follow-up needs a trigger: provide due_at (YYYY-MM-DD) and/or due_miles' });
+    }
 
     const vehicle = await resolveVehicle(vehicle_id);
     if (!vehicle) return res.status(404).json({ error: 'Vehicle not found' });
@@ -514,7 +528,7 @@ router.post('/:vehicle_id/findings/:finding_id/followup', requireAuth(), async (
         finding_id: finding.id,
         kind,
         due_at: due_at || null,
-        due_miles: due_miles != null ? parseInt(due_miles) : null,
+        due_miles: dueMiles,
         status: 'scheduled',
       })
       .select()
@@ -535,7 +549,7 @@ router.post('/:vehicle_id/findings/:finding_id/followup', requireAuth(), async (
         finding_name: finding.name,
         kind,
         due_at: due_at || null,
-        due_miles: due_miles != null ? parseInt(due_miles) : null,
+        due_miles: dueMiles,
       },
     });
 
@@ -545,6 +559,172 @@ router.post('/:vehicle_id/findings/:finding_id/followup', requireAuth(), async (
 
   } catch (err) {
     console.error('[passport] Followup error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Matches the vehicle_documents.doc_type comment in migration 010.
+const DOC_TYPES = ['invoice', 'estimate', 'ro', 'warranty', 'recall', 'other'];
+// Matches the vehicle_documents_visibility_check constraint (migration 010).
+const DOC_VISIBILITIES = ['group', 'rooftop', 'customer'];
+
+/**
+ * POST /api/passport/:vehicle_id/documents
+ * Add a document (invoice, RO, warranty, ...) to a vehicle's vault:
+ * one vehicle_documents row + one document_added ledger event.
+ *
+ * Body: { doc_type, title, storage_path, amount?, issued_at?,
+ *         inspection_id?, visibility? }
+ * The file itself is already in Supabase Storage — this endpoint records
+ * its passport-side truth. Documents are the writing rooftop's record:
+ * rooftop_id is always the caller's, never taken from the body.
+ */
+router.post('/:vehicle_id/documents', requireAuth(), async (req, res) => {
+  try {
+    const {
+      doc_type, title, storage_path, amount,
+      issued_at, inspection_id, visibility = 'customer',
+    } = req.body || {};
+
+    if (!DOC_TYPES.includes(doc_type)) {
+      return res.status(400).json({ error: `doc_type must be one of: ${DOC_TYPES.join(', ')}` });
+    }
+    if (typeof title !== 'string' || !title.trim()) {
+      return res.status(400).json({ error: 'title is required' });
+    }
+    if (typeof storage_path !== 'string' || !storage_path.trim()) {
+      return res.status(400).json({ error: 'storage_path is required' });
+    }
+    if (!DOC_VISIBILITIES.includes(visibility)) {
+      return res.status(400).json({ error: `visibility must be one of: ${DOC_VISIBILITIES.join(', ')}` });
+    }
+    const amt = amount != null && amount !== '' ? Number(amount) : null;
+    if (amt != null && (!Number.isFinite(amt) || amt < 0)) {
+      return res.status(400).json({ error: 'amount must be a non-negative number' });
+    }
+    if (issued_at != null && !/^\d{4}-\d{2}-\d{2}$/.test(String(issued_at))) {
+      return res.status(400).json({ error: 'issued_at must be YYYY-MM-DD' });
+    }
+
+    const vehicle = await resolveVehicle(req.params.vehicle_id);
+    if (!vehicle) return res.status(404).json({ error: 'Vehicle not found' });
+
+    const myRooftop = req.rep.rooftop_id;
+    if (!(await rooftopMayViewVehicle(vehicle.id, myRooftop))) {
+      return res.status(404).json({ error: 'Vehicle not found' });
+    }
+
+    // An attached inspection must be this rooftop's own AND belong to
+    // this vehicle (canonical ids — the inspection may hold a pre-merge
+    // vehicle_id): a document is that rooftop's commercial record.
+    if (inspection_id) {
+      const { data: inspection } = await supabase
+        .from('mpi_inspections')
+        .select('id, rooftop_id, vehicle_id')
+        .eq('id', inspection_id)
+        .maybeSingle();
+      const inspVehicle = inspection?.vehicle_id
+        ? await resolveVehicle(inspection.vehicle_id)
+        : null;
+      if (!inspection || inspection.rooftop_id !== myRooftop
+          || !inspVehicle || inspVehicle.id !== vehicle.id) {
+        return res.status(400).json({ error: 'inspection_id does not match this vehicle' });
+      }
+    }
+
+    const { data: document, error: docErr } = await supabase
+      .from('vehicle_documents')
+      .insert({
+        vehicle_id: vehicle.id,
+        rooftop_id: myRooftop,
+        inspection_id: inspection_id || null,
+        doc_type,
+        title: title.trim(),
+        storage_path: storage_path.trim(),
+        amount: amt,
+        issued_at: issued_at || null,
+        visibility,
+      })
+      .select()
+      .single();
+    if (docErr) throw docErr;
+
+    // Ledger visibility mirrors the document's: a rooftop-private doc
+    // leaves no group-visible trace; everything else is group-shared.
+    await recordEvent(vehicle.id, {
+      event_type: 'document_added',
+      rooftop_id: myRooftop,
+      actor_type: 'rep',
+      actor_id: req.rep.id,
+      subject_table: 'vehicle_documents',
+      subject_id: document.id,
+      visibility: visibility === 'rooftop' ? 'rooftop' : 'group',
+      payload: {
+        doc_type,
+        title: document.title,
+        amount: document.amount,
+        issued_at: document.issued_at,
+      },
+    });
+
+    console.log(`[passport] Document ${document.id} (${doc_type}) added to vehicle ${vehicle.id}`);
+
+    res.json({ success: true, document });
+
+  } catch (err) {
+    console.error('[passport] Document add error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/passport/:vehicle_id/value-snapshots
+ * Manual value snapshot writer: one vehicle_value_snapshots row + one
+ * value_snapshot ledger event (via lib/vehicleValue.js).
+ *
+ * Body: { source?, value?, value_low?, value_high?, odometer? } —
+ * source defaults to 'manual'; at least one value field is required.
+ *
+ * No live appraisal path exists in this backend yet — when AutoCurb
+ * appraisals flow through, captureValueSnapshot is called from that
+ * hook with source 'autocurb' (see the AUTOCURB HOOK note in
+ * lib/vehicleValue.js) and this endpoint stays the manual/kbb writer.
+ */
+router.post('/:vehicle_id/value-snapshots', requireAuth(), async (req, res) => {
+  try {
+    const { source = 'manual', value, value_low, value_high, odometer } = req.body || {};
+
+    if (!VALUE_SOURCES.includes(source)) {
+      return res.status(400).json({ error: `source must be one of: ${VALUE_SOURCES.join(', ')}` });
+    }
+    const hasValue = [value, value_low, value_high].some(
+      v => v != null && v !== '' && Number.isFinite(Number(v)) && Number(v) >= 0);
+    if (!hasValue) {
+      return res.status(400).json({ error: 'Provide at least one of value, value_low, value_high' });
+    }
+
+    const vehicle = await resolveVehicle(req.params.vehicle_id);
+    if (!vehicle) return res.status(404).json({ error: 'Vehicle not found' });
+
+    if (!(await rooftopMayViewVehicle(vehicle.id, req.rep.rooftop_id))) {
+      return res.status(404).json({ error: 'Vehicle not found' });
+    }
+
+    const snapshot = await captureValueSnapshot(vehicle.id, {
+      source, value, value_low, value_high, odometer,
+      rooftop_id: req.rep.rooftop_id,
+      actor_type: 'rep',
+      actor_id: req.rep.id,
+    });
+    if (!snapshot) {
+      // captureValueSnapshot never throws — a null here is the insert failing.
+      return res.status(500).json({ error: 'Value snapshot capture failed' });
+    }
+
+    res.json({ success: true, snapshot });
+
+  } catch (err) {
+    console.error('[passport] Value snapshot error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

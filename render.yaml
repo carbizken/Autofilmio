@@ -44,7 +44,14 @@ services:
       # Feature flags (default OFF — set in the dashboard to enable):
       #   REMINDERS_ENABLED=true — start the vehicle_reminders SMS delivery
       #     worker (requires migration 015; REMINDER_WORKER_INTERVAL_MS
-      #     optionally overrides the hourly tick)
+      #     optionally overrides the hourly tick). Handles both date-due
+      #     (due_at) and mileage-due (due_miles vs latest odometer_readings)
+      #   RETENTION_SWEEP_ENABLED=true — start the daily vehicle_media
+      #     retention sweep: rows past retention_expires_at are marked
+      #     storage_state='purged' + purged_at. LOG-ONLY first pass — the
+      #     mux_asset_id deletion worklist is logged, no Mux delete call
+      #     is made yet (RETENTION_SWEEP_INTERVAL_MS optionally overrides
+      #     the daily tick)
       #   LIFETIME_OFFERS_ENABLED=true — allow rooftops to save AND render
       #     lifetime pricing configs (tier_plus_lifetime / lifetime_enabled);
       #     off pending legal review — while off, saved lifetime configs

@@ -7,6 +7,14 @@
  * reminders that have come due, and texts the customer a deep link to
  * the vehicle's passport, anchored to the specific finding.
  *
+ * A reminder comes due two ways:
+ *   - due_at:    calendar date has arrived (date-based pass)
+ *   - due_miles: the vehicle's latest odometer_readings row has reached
+ *     due_miles (mileage-based pass, for due_at-null rows — "follow up
+ *     at 45k miles"). No reading yet = not due; the row just waits.
+ * Both passes share the exact same delivery path (deliverReminder), so
+ * consent, claiming, and attempt bounding are identical.
+ *
  * Delivery rules:
  *   - Consent first: every send goes through guardedSms (TCPA opt-out
  *     check). A blocked number cancels the reminder — never retried.
@@ -32,6 +40,11 @@ import { ensurePassportCode, resolveVehicle, recordEvent, toE164 } from './passp
 const DEFAULT_INTERVAL_MS = 60 * 60 * 1000; // hourly
 const BATCH_SIZE = 25;
 const MAX_ATTEMPTS = 3;
+// Mileage pass page cap: dueness can't be expressed in the query (it
+// needs a per-vehicle odometer lookup), so not-yet-due rows stay
+// 'scheduled' and would starve newer rows if we only ever read the
+// first page. Walk up to this many pages per tick instead.
+const MAX_MILEAGE_PAGES = 20;
 
 /**
  * Start the background loop. Runs one tick shortly after boot (so a
@@ -56,7 +69,9 @@ export function startReminderWorker() {
 
 /**
  * One pass: pick up to BATCH_SIZE scheduled reminders whose due_at has
- * arrived and deliver each. Exported for tests / manual drains.
+ * arrived (date pass) plus up to BATCH_SIZE whose due_miles has been
+ * reached (mileage pass), and deliver each. Exported for tests /
+ * manual drains.
  */
 export async function processDueReminders() {
   const today = new Date().toISOString().slice(0, 10);
@@ -72,20 +87,92 @@ export async function processDueReminders() {
 
   if (error) {
     console.error('[reminders] Due query failed:', error.message);
-    return;
-  }
-  if (!due?.length) return;
-
-  console.log(`[reminders] ${due.length} reminder(s) due`);
-
-  for (const reminder of due) {
-    try {
-      await deliverReminder(reminder);
-    } catch (err) {
-      console.error(`[reminders] Reminder ${reminder.id} delivery error:`, err.message);
-      await recordAttemptFailure(reminder, err.message);
+  } else if (due?.length) {
+    console.log(`[reminders] ${due.length} reminder(s) due`);
+    for (const reminder of due) {
+      try {
+        await deliverReminder(reminder);
+      } catch (err) {
+        console.error(`[reminders] Reminder ${reminder.id} delivery error:`, err.message);
+        await recordAttemptFailure(reminder, err.message);
+      }
     }
   }
+
+  await processMileageDueReminders();
+}
+
+/**
+ * Mileage pass: scheduled reminders with due_miles set and NO due_at
+ * (date-carrying rows already ride the date pass — never double-pick).
+ * A reminder is due once the vehicle's latest odometer reading has
+ * reached due_miles; vehicles with no reading yet simply aren't due.
+ * Pages through ALL scheduled mileage rows (created_at keyset cursor,
+ * capped at MAX_MILEAGE_PAGES) — not-yet-due rows stay 'scheduled', so
+ * a single first-page read would let 25 old not-due rows starve newer
+ * due ones forever. Delivery goes through the same deliverReminder
+ * path, so claiming, consent, and MAX_ATTEMPTS bounding are identical
+ * to the date pass.
+ */
+async function processMileageDueReminders() {
+  let dueCount = 0;
+  let cursor = null; // created_at keyset cursor — offset pagination would skip rows as delivered ones leave the 'scheduled' set
+
+  for (let page = 0; page < MAX_MILEAGE_PAGES; page++) {
+    let query = supabase
+      .from('vehicle_reminders')
+      .select('*')
+      .eq('status', 'scheduled')
+      .is('due_at', null)
+      .not('due_miles', 'is', null)
+      .lt('attempts', MAX_ATTEMPTS)
+      .order('created_at', { ascending: true })
+      .limit(BATCH_SIZE);
+    if (cursor) query = query.gt('created_at', cursor);
+
+    const { data: scheduled, error } = await query;
+    if (error) {
+      console.error('[reminders] Mileage-due query failed:', error.message);
+      break;
+    }
+    if (!scheduled?.length) break;
+    cursor = scheduled[scheduled.length - 1].created_at;
+
+    for (const reminder of scheduled) {
+      try {
+        const miles = await latestOdometerMiles(reminder.vehicle_id);
+        if (miles == null || miles < reminder.due_miles) continue; // not due yet — just waits
+
+        dueCount++;
+        console.log(`[reminders] Reminder ${reminder.id} mileage-due (${miles} >= ${reminder.due_miles} mi)`);
+        await deliverReminder(reminder);
+      } catch (err) {
+        console.error(`[reminders] Reminder ${reminder.id} delivery error:`, err.message);
+        await recordAttemptFailure(reminder, err.message);
+      }
+    }
+
+    if (scheduled.length < BATCH_SIZE) break; // drained
+  }
+
+  if (dueCount) console.log(`[reminders] ${dueCount} mileage-based reminder(s) delivered this tick`);
+}
+
+/**
+ * Latest odometer reading for a vehicle (odometer_readings is the only
+ * mileage source in this schema — vehicles carries no cached miles).
+ * Returns miles as a number, or null when no reading exists.
+ */
+async function latestOdometerMiles(vehicleId) {
+  const { data, error } = await supabase
+    .from('odometer_readings')
+    .select('miles')
+    .eq('vehicle_id', vehicleId)
+    .order('reading_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.miles ?? null;
 }
 
 /**
