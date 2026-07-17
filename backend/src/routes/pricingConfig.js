@@ -93,16 +93,32 @@ function validateConfig(cfg) {
  * player payload and the approval archive. Lifetime counts as enabled
  * whenever the preset implies it, so the player never has to reason
  * about mode vs flag.
+ *
+ * Render-time half of the LIFETIME_OFFERS_ENABLED kill switch (the PUT
+ * handler blocks saves): a config saved while the flag was on renders
+ * WITHOUT lifetime the moment the flag is switched off — mode falls back
+ * to three_tier (including category overrides), lifetime.enabled is
+ * forced false, regardless of what the rooftop saved.
  */
 export function toRenderBlock(cfg) {
   const c = cfg || DEFAULT_CONFIG;
+  const lifetimeAllowed = process.env.LIFETIME_OFFERS_ENABLED === 'true';
+
+  const stripMode = (mode) =>
+    !lifetimeAllowed && mode === 'tier_plus_lifetime' ? 'three_tier' : mode;
+
+  const overrides = {};
+  for (const [category, mode] of Object.entries(c.category_overrides || {})) {
+    overrides[category] = stripMode(mode);
+  }
+
   return {
-    mode: c.mode || 'one_price',
+    mode: stripMode(c.mode || 'one_price'),
     tier_names: Array.isArray(c.tier_names) ? c.tier_names : DEFAULT_CONFIG.tier_names,
-    category_overrides: c.category_overrides || {},
+    category_overrides: overrides,
     lifetime: {
-      enabled: c.mode === 'tier_plus_lifetime' || !!c.lifetime_enabled,
-      disclosure: c.lifetime_disclosure || null,
+      enabled: lifetimeAllowed && (c.mode === 'tier_plus_lifetime' || !!c.lifetime_enabled),
+      disclosure: lifetimeAllowed ? (c.lifetime_disclosure || null) : null,
     },
     financing: {
       enabled: !!c.financing_enabled,

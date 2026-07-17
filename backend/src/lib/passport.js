@@ -17,6 +17,19 @@ import { newPassportCode } from './shortcode.js';
 
 const CF_WORKER_URL = process.env.CF_WORKER_URL || 'https://links.autofilm.io';
 
+// Where the p_<code> short links land. The default is the passport view
+// of the MPI page — a dedicated autofilm-passport.html never shipped.
+// The base may already carry a query string (the default does), so
+// passportPageUrl() picks ? vs & accordingly.
+const PASSPORT_URL_BASE = process.env.PASSPORT_URL_BASE
+  || 'https://autofilm.io/mpi.html?view=passport';
+
+/** Full passport page URL for a passport_code (handles ? vs & in the base). */
+export function passportPageUrl(code) {
+  const sep = PASSPORT_URL_BASE.includes('?') ? '&' : '?';
+  return `${PASSPORT_URL_BASE}${sep}code=${encodeURIComponent(code)}`;
+}
+
 /**
  * Normalize a raw VIN: uppercase + trim. Returns null unless the result
  * passes the same 17-char shape check the vehicles table enforces.
@@ -196,6 +209,20 @@ export async function recordEvent(vehicleId, {
   }
 }
 
+// Statuses still awaiting resolution — eligible to be superseded by a
+// re-recommendation on a later inspection.
+const SUPERSEDABLE_STATUSES = ['recommended', 'declined', 'deferred'];
+
+/** Lowercased/trimmed finding name for supersede matching. */
+function normFindingName(name) {
+  return typeof name === 'string' ? name.trim().toLowerCase() : '';
+}
+
+/** "Front Brake Pads" matches "brake pads" — equal or one contains the other. */
+function findingNamesMatch(a, b) {
+  return !!a && !!b && (a === b || a.includes(b) || b.includes(a));
+}
+
 /**
  * Explode an inspection's items jsonb into findings rows.
  *
@@ -204,6 +231,15 @@ export async function recordEvent(vehicleId, {
  * The findings_transition_ledger DB trigger writes one
  * 'finding_recommended' vehicle_events row per insert atomically, so no
  * explicit event insert is needed here.
+ *
+ * SUPERSEDE CHAINING (migration 010): a re-inspected vehicle re-recommends
+ * the same work as NEW rows — the old finding is never flipped back to
+ * 'recommended'. Each new item is matched (normalized name) against the
+ * vehicle's still-open findings from PRIOR inspections; a match sets
+ * supersedes_finding_id -> the newest open match and marks that older row
+ * 'superseded'. The chain length IS the "recommended 3×, declined 2×"
+ * story, and closing the old row stops duplicate open findings from
+ * double-counting passport health.
  *
  * Returns the inserted findings rows ([] on failure — never throws).
  */
@@ -248,8 +284,58 @@ export async function explodeFindings(inspection) {
 
     if (rows.length === 0) return [];
 
+    // Chain each new item to the newest still-open finding from a PRIOR
+    // inspection with a matching name. A failed lookup only costs the
+    // chain, never the insert (fire-and-forget context).
+    const supersededIds = new Set();
+    try {
+      const { data: open, error: openErr } = await supabase
+        .from('findings')
+        .select('id, name, inspection_id, created_at')
+        .eq('vehicle_id', inspection.vehicle_id)
+        .in('status', SUPERSEDABLE_STATUSES)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false });
+      if (openErr) throw openErr;
+
+      const openPrior = (open || [])
+        .filter(f => f.inspection_id !== inspection.id)
+        .map(f => ({ ...f, norm: normFindingName(f.name) }));
+
+      for (const row of rows) {
+        const rowNorm = normFindingName(row.name);
+        // Newest-first order, so the first match is the chain head.
+        const match = openPrior.find(f =>
+          !supersededIds.has(f.id) && findingNamesMatch(rowNorm, f.norm));
+        if (match) {
+          row.supersedes_finding_id = match.id;
+          supersededIds.add(match.id);
+        }
+      }
+    } catch (err) {
+      console.error('[passport] Supersede matching failed (non-fatal):', err.message);
+    }
+
     const { data, error } = await supabase.from('findings').insert(rows).select();
     if (error) throw error;
+
+    // Close the superseded rows. The findings_transition_ledger DB trigger
+    // (migration 010) appends the finding_superseded vehicle_events row
+    // ATOMICALLY with each status flip — no explicit recordEvent here, or
+    // the ledger would double-count every supersede.
+    if (supersededIds.size > 0) {
+      const ids = [...supersededIds];
+      const { error: supErr } = await supabase
+        .from('findings')
+        .update({ status: 'superseded' })
+        .in('id', ids)
+        .in('status', SUPERSEDABLE_STATUSES); // guard: never flip resolved rows
+      if (supErr) {
+        console.error('[passport] Supersede status update failed (non-fatal):', supErr.message);
+      } else {
+        console.log(`[passport] Superseded ${ids.length} older finding(s) for vehicle ${inspection.vehicle_id}`);
+      }
+    }
 
     console.log(`[passport] Exploded ${data.length} findings for inspection ${inspection.id}`);
     return data || [];
@@ -700,7 +786,7 @@ export async function ensurePassportCode(vehicleId) {
     }
     if (!code) return null;
 
-    const pageUrl = `https://autofilm.io/autofilm-passport.html?code=${code}`;
+    const pageUrl = passportPageUrl(code);
     // Fire-and-forget: a hung CF API must never block a passport view.
     kvPut(`p_${code}`, pageUrl)
       .catch(e => console.warn('[passport] KV write failed (non-fatal):', e.message));
