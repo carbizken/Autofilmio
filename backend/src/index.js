@@ -5,6 +5,8 @@ import { resolveTenant } from './lib/tenant.js';
 import { rateLimit } from './lib/ratelimit.js';
 import { startBDCAssistant } from './lib/bdc.js';
 import { startWorkflowEngine } from './lib/workflows.js';
+import { startReminderWorker } from './lib/reminders.js';
+import { startRetentionSweep } from './lib/retentionSweep.js';
 
 // Core routes
 import uploadRoute from './routes/upload.js';
@@ -36,6 +38,15 @@ import avatarRoute from './routes/avatar.js';
 // Messaging + Distribution
 import messagingRoute from './routes/messaging.js';
 import distributeRoute from './routes/distribute.js';
+
+// Vehicle stock imagery (MPI header / Passport card)
+import vehicleImageRoute from './routes/vehicleImage.js';
+
+// Vehicle Passport (point-of-truth vehicle record)
+import passportRoute from './routes/passport.js';
+
+// Per-rooftop pricing presentation + financing config
+import pricingConfigRoute from './routes/pricingConfig.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -140,6 +151,9 @@ app.use('/api/onboard', authLimiter, onboardRoute);
 app.use('/api/admin', generalLimiter, adminRoute);
 app.use('/api/avatar', generalLimiter, avatarRoute);
 app.use('/api/distribute', generalLimiter, distributeRoute);
+app.use('/api/vehicle-image', generalLimiter, vehicleImageRoute);
+app.use('/api/passport', generalLimiter, passportRoute);
+app.use('/api/pricing-config', generalLimiter, pricingConfigRoute);
 
 // 404
 app.use((req, res) => {
@@ -166,6 +180,23 @@ const server = app.listen(PORT, () => {
   // Background services
   startBDCAssistant();
   startWorkflowEngine();
+
+  // Reminder delivery is opt-in (REMINDERS_ENABLED=true) so a deploy
+  // never starts texting customers before the flag is deliberately set.
+  if (process.env.REMINDERS_ENABLED === 'true') {
+    startReminderWorker();
+  } else {
+    console.log('[reminders] Worker disabled — set REMINDERS_ENABLED=true to enable');
+  }
+
+  // Media retention sweep is opt-in (RETENTION_SWEEP_ENABLED=true) so a
+  // deploy never starts marking media purged before the flag is
+  // deliberately set. Log-only first pass: Mux assets are NOT deleted.
+  if (process.env.RETENTION_SWEEP_ENABLED === 'true') {
+    startRetentionSweep();
+  } else {
+    console.log('[retention] Sweep disabled — set RETENTION_SWEEP_ENABLED=true to enable');
+  }
 });
 
 // A single crashing background job (workflow tick, BDC poll, render) must not

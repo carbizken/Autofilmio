@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { supabase } from '../lib/supabase.js';
 import { kvPut } from '../lib/cloudflare.js';
 import { storeThumbnails } from '../lib/thumbnail.js';
+import { attachInspectionMedia } from '../lib/passport.js';
 
 const router = express.Router();
 
@@ -82,6 +83,19 @@ router.post('/mux', async (req, res) => {
             `v_${videoRow.short_code}`,
             `https://autofilm.io/autofilm-player.html?code=${videoRow.short_code}&playback_id=${playbackId}`
           ).catch(e => console.warn('[webhooks] KV write failed:', e.message));
+        }
+
+        // Fire-and-forget: MPI videos become passport evidence — one
+        // vehicle_media row (kind 'mpi_video') + video_attached ledger
+        // event. Idempotent inside (Mux retries this webhook), never
+        // throws, never delays the 200 back to Mux.
+        if (videoRow.type === 'mpi') {
+          attachInspectionMedia({
+            videoId: videoRow.id,
+            muxAssetId: asset.id,
+            muxPlaybackId: playbackId,
+            duration: asset.duration,
+          });
         }
 
         console.log(`[webhooks] Mux asset ready — finalized video ${videoRow.id} (${videoRow.type || 'sales'})`);

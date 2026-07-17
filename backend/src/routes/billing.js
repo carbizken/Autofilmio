@@ -1,7 +1,7 @@
 import express from 'express';
 import { supabase } from '../lib/supabase.js';
 import { requireAuth, requireRole } from '../lib/auth.js';
-import { stripeRequest, verifyStripeSignature, getPriceId, TRIAL_DAYS } from '../lib/stripe.js';
+import { stripeRequest, verifyStripeSignature, getPriceId, getPlanFromPriceId, SUBSCRIBABLE_PLANS, TRIAL_DAYS } from '../lib/stripe.js';
 
 const router = express.Router();
 
@@ -10,28 +10,38 @@ const APP_URL = process.env.APP_URL || 'https://autofilm.io';
 /**
  * POST /api/billing/checkout
  * Admin starts a subscription for their rooftop.
- * Body: { plan?: 'standard' | 'bundle', return_to?: string }
+ * Body: {
+ *   plan?: 'sales' | 'service' | 'complete' | 'bundle',
+ *   billing_period?: 'monthly' | 'annual',   // default 'monthly'
+ *   return_to?: string
+ * }
  * return_to is an optional same-origin path (e.g. '/autofilm-onboard.html')
  * Stripe redirects back to with ?billing=success|canceled appended.
  * Returns: { checkout_url }
  */
 router.post('/checkout', requireAuth(), requireRole('admin', 'manager'), async (req, res) => {
   try {
-    const { plan = 'standard', return_to } = req.body;
+    const { plan = 'sales', billing_period = 'monthly', return_to } = req.body;
 
     // Whitelist the plan so the charged price and the plan we persist can't
     // diverge (an arbitrary plan string would otherwise land in metadata).
-    if (!['standard', 'bundle'].includes(plan)) {
+    if (!SUBSCRIBABLE_PLANS.includes(plan)) {
       return res.status(400).json({ error: `Invalid plan: ${plan}` });
     }
+    const period = billing_period === 'annual' ? 'annual' : 'monthly';
 
     // Only allow absolute paths on our own origin (no '//host', no query) —
     // anything else falls back to the settings page.
     const returnPath = (typeof return_to === 'string' && /^\/(?!\/)[\w./-]*$/.test(return_to))
       ? return_to
       : '/autofilm-settings.html';
-    const priceId = getPriceId(plan);
-    if (!priceId) return res.status(500).json({ error: `No Stripe price configured for plan: ${plan}` });
+    const priceId = getPriceId(plan, period);
+    // A configured plan with no matching Stripe price means this tier isn't
+    // wired yet — fail cleanly so the rooftop is never charged a wrong or
+    // fallback price for a different plan.
+    if (!priceId) {
+      return res.status(503).json({ error: `The ${plan} plan isn't available for checkout yet. Please contact support.` });
+    }
 
     const { data: rooftop, error } = await supabase
       .from('rooftops')
@@ -62,15 +72,15 @@ router.post('/checkout', requireAuth(), requireRole('admin', 'manager'), async (
       line_items: [{ price: priceId, quantity: 1 }],
       subscription_data: {
         trial_period_days: TRIAL_DAYS,
-        metadata: { rooftop_id: rooftop.id, plan },
+        metadata: { rooftop_id: rooftop.id, plan, billing_period: period },
       },
       success_url: `${APP_URL}${returnPath}?billing=success`,
       cancel_url: `${APP_URL}${returnPath}?billing=canceled`,
       allow_promotion_codes: true,
-      metadata: { rooftop_id: rooftop.id, plan },
+      metadata: { rooftop_id: rooftop.id, plan, billing_period: period },
     });
 
-    console.log(`[billing] Checkout session ${session.id} for rooftop ${rooftop.id} (${plan})`);
+    console.log(`[billing] Checkout session ${session.id} for rooftop ${rooftop.id} (${plan}/${period})`);
     res.json({ checkout_url: session.url });
 
   } catch (err) {
@@ -159,10 +169,10 @@ router.post('/webhook', async (req, res) => {
           await supabase.from('rooftops').update({
             stripe_subscription_id: session.subscription,
             subscription_status: 'trialing',
-            plan: session.metadata?.plan || 'standard',
+            plan: session.metadata?.plan || 'sales',
             active: true,
           }).eq('id', rooftopId);
-          console.log(`[billing] Subscription started for rooftop ${rooftopId}`);
+          console.log(`[billing] Subscription started for rooftop ${rooftopId} (${session.metadata?.plan || 'sales'})`);
         }
         break;
       }
@@ -181,11 +191,8 @@ router.post('/webhook', async (req, res) => {
         // Keep plan in sync with the subscribed price — upgrades/downgrades
         // happen in the Stripe billing portal, not through our checkout.
         const priceId = sub.items?.data?.[0]?.price?.id;
-        if (priceId && priceId === process.env.STRIPE_PRICE_BUNDLE) {
-          update.plan = 'bundle';
-        } else if (priceId && priceId === process.env.STRIPE_PRICE_STANDARD) {
-          update.plan = 'standard';
-        }
+        const resolvedPlan = getPlanFromPriceId(priceId);
+        if (resolvedPlan) update.plan = resolvedPlan;
         if (rooftopId) {
           await supabase.from('rooftops').update(update).eq('id', rooftopId);
         } else {
